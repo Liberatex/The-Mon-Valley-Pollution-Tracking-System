@@ -2,10 +2,18 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const axios = require('axios');
+const { 
+  logger, 
+  analytics, 
+  performanceMiddleware, 
+  errorTrackingMiddleware, 
+  healthCheck 
+} = require('./monitoring');
 
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
+app.use(performanceMiddleware);
 
 // Custom knowledge base for Mon Valley air quality data
 const MON_VALLEY_KNOWLEDGE = {
@@ -94,6 +102,7 @@ Always provide accurate, helpful information and prioritize user health and safe
     }
     
     // Call Ollama API
+    const ollamaStart = performance.now();
     const ollamaResponse = await axios.post('http://127.0.0.1:11434/api/generate', {
       model: 'llama3:latest',
       prompt: `${system_prompt}\n\nUser: ${user_prompt}\n\nBreatheAI:`,
@@ -105,6 +114,9 @@ Always provide accurate, helpful information and prioritize user health and safe
       }
     });
     
+    const ollamaDuration = performance.now() - ollamaStart;
+    analytics.trackOllamaRequest(true, ollamaDuration);
+    
     const response = ollamaResponse.data.response || 'Sorry, I could not generate a response.';
     
     res.json({
@@ -114,7 +126,8 @@ Always provide accurate, helpful information and prioritize user health and safe
     });
     
   } catch (error) {
-    console.error('Ollama API error:', error.message);
+    logger.error('Ollama API error', { error: error.message, stack: error.stack });
+    analytics.trackOllamaRequest(false, 0);
     
     // Fallback response if Ollama is not available
     const fallback_response = `I'm BreatheAI, your air quality health assistant for the Mon Valley region. I'm currently experiencing technical difficulties, but I can help you with:
@@ -158,21 +171,25 @@ app.get('/api/ollama-test', async (req, res) => {
   }
 });
 
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    services: {
-      backend: 'running',
-      ollama: 'checking...'
-    }
-  });
+// Health check endpoint with detailed metrics
+app.get('/api/health', healthCheck);
+
+// Metrics endpoint for monitoring
+app.get('/api/metrics', (req, res) => {
+  res.json(analytics.getMetrics());
 });
+
+// Error handling middleware (must be last)
+app.use(errorTrackingMiddleware);
 
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
-  console.log(`BreatheAI backend listening on port ${PORT}`);
-  console.log(`Ollama integration enabled`);
-  console.log(`RAG knowledge base loaded with ${Object.keys(MON_VALLEY_KNOWLEDGE).length} categories`);
+  logger.info('Server started', { 
+    port: PORT, 
+    knowledgeBaseCategories: Object.keys(MON_VALLEY_KNOWLEDGE).length 
+  });
+  console.log(`🚀 BreatheAI backend listening on port ${PORT}`);
+  console.log(`🤖 Ollama integration enabled`);
+  console.log(`📚 RAG knowledge base loaded with ${Object.keys(MON_VALLEY_KNOWLEDGE).length} categories`);
+  console.log(`📊 Monitoring & analytics enabled`);
 }); 

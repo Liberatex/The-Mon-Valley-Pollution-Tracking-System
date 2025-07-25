@@ -36,6 +36,7 @@ const severityLabels = ['Mild', 'Moderate', 'Severe', 'Very Severe', 'Extreme'];
 
 const SymptomReportForm: React.FC<SymptomReportFormProps> = ({ onSuccess }) => {
   const [user, setUser] = useState<any>(null);
+  const [anonymousUserId, setAnonymousUserId] = useState<string>('');
   const [fullName, setFullName] = useState('');
   const [age, setAge] = useState('');
   const [symptoms, setSymptoms] = useState<string[]>([]);
@@ -57,6 +58,10 @@ const SymptomReportForm: React.FC<SymptomReportFormProps> = ({ onSuccess }) => {
         setUser(u);
         setFullName(u.displayName || '');
         // Optionally, if age is stored in user profile, setAge(u.age || '');
+      } else {
+        // Generate anonymous user ID for non-authenticated users
+        const anonymousId = `anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        setAnonymousUserId(anonymousId);
       }
     });
     return () => unsubscribe();
@@ -77,7 +82,7 @@ const SymptomReportForm: React.FC<SymptomReportFormProps> = ({ onSuccess }) => {
 
   // Validate fields for each step
   const validateStep = () => {
-    if (step === 1 && !user?.uid) return 'User ID is required.';
+    if (step === 1 && !user?.uid && !anonymousUserId) return 'User ID is required.';
     if (step === 2 && symptoms.length === 0) return 'Please add at least one symptom.';
     if (step === 3 && (!osac.onset || !osac.course)) return 'Please fill in all required fields.';
     return null;
@@ -110,7 +115,7 @@ const SymptomReportForm: React.FC<SymptomReportFormProps> = ({ onSuccess }) => {
     setSubmitSuccess(false);
     try {
       const reportData = {
-        userId: user?.uid || '',
+        userId: user?.uid || anonymousUserId,
         fullName,
         age,
         symptoms,
@@ -162,13 +167,14 @@ const SymptomReportForm: React.FC<SymptomReportFormProps> = ({ onSuccess }) => {
             <span title="A unique identifier for your session. This can be anonymous."> ℹ️</span>
             <input
               id="userId"
-              value={user?.uid || ''}
+              value={user?.uid || anonymousUserId}
               onChange={() => {}}
               required
               autoFocus
               aria-required="true"
               aria-label="User ID"
               disabled
+              style={{ backgroundColor: '#f5f5f5', color: '#333' }}
             />
           </label>
           <label>
@@ -278,7 +284,7 @@ const SymptomReportForm: React.FC<SymptomReportFormProps> = ({ onSuccess }) => {
         <div className="form-step">
           <h3>Review Your Report</h3>
           <div className="review-summary" style={{ background: '#f5f5f5', padding: 12, borderRadius: 8, marginBottom: 12 }}>
-            <div><strong>User ID:</strong> {user?.uid || 'N/A'}</div>
+            <div><strong>User ID:</strong> {user?.uid || anonymousUserId}</div>
             <div><strong>Full Name:</strong> {fullName || 'N/A'}</div>
             <div><strong>Age:</strong> {age || 'N/A'}</div>
             <div><strong>Symptoms:</strong> {symptoms.join(', ')}</div>

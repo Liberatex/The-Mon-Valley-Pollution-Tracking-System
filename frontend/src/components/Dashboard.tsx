@@ -122,11 +122,11 @@ const Dashboard: React.FC = () => {
         textAlign: 'center', 
         color: '#1976d2', 
         marginBottom: '30px',
-        fontSize: '2.5rem',
+        fontSize: window.innerWidth <= 768 ? '1.8rem' : '2.5rem',
         fontWeight: 'bold',
         textShadow: '0 2px 4px rgba(0,0,0,0.1)'
       }}>
-        🌬️ Community Health Dashboard
+        Community Health Dashboard
       </h2>
       
       {/* PM2.5 Graph - Now at the top and bigger */}
@@ -135,19 +135,23 @@ const Dashboard: React.FC = () => {
           marginBottom: '40px',
           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
           borderRadius: '20px',
-          padding: '30px',
+          padding: window.innerWidth <= 768 ? '20px' : '30px',
           boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
           color: 'white'
         }}>
           <h3 style={{ 
             marginBottom: '20px', 
-            fontSize: '1.8rem',
+            fontSize: window.innerWidth <= 768 ? '1.3rem' : '1.8rem',
             fontWeight: '600',
             textAlign: 'center'
           }}>
-            📈 PM2.5 Forecast (Next 5 Days)
+            PM2.5 Forecast (Next 5 Days)
           </h3>
-          <div style={{ height: '400px', position: 'relative' }}>
+          <div style={{ 
+            height: window.innerWidth <= 768 ? '300px' : '400px', 
+            position: 'relative',
+            width: '100%'
+          }}>
             <Line
               data={{
                 labels: pm25History.map((d) => dayjs.unix(d.dt).format('MMM D, HH:mm')),
@@ -162,8 +166,8 @@ const Dashboard: React.FC = () => {
                     pointBackgroundColor: 'rgba(255, 255, 255, 0.9)',
                     pointBorderColor: '#fff',
                     pointBorderWidth: 2,
-                    pointRadius: 6,
-                    pointHoverRadius: 8,
+                    pointRadius: window.innerWidth <= 768 ? 4 : 6,
+                    pointHoverRadius: window.innerWidth <= 768 ? 6 : 8,
                     tension: 0.4,
                   },
                 ],
@@ -177,7 +181,10 @@ const Dashboard: React.FC = () => {
                     position: 'top',
                     labels: {
                       color: 'white',
-                      font: { size: 14, weight: 'bold' }
+                      font: { 
+                        size: window.innerWidth <= 768 ? 12 : 14, 
+                        weight: 'bold' 
+                      }
                     }
                   },
                   title: { display: false },
@@ -186,7 +193,17 @@ const Dashboard: React.FC = () => {
                     titleColor: 'white',
                     bodyColor: 'white',
                     borderColor: 'rgba(255,255,255,0.2)',
-                    borderWidth: 1
+                    borderWidth: 1,
+                    cornerRadius: 8,
+                    displayColors: false,
+                    callbacks: {
+                      title: function(context) {
+                        return context[0].label;
+                      },
+                      label: function(context) {
+                        return `PM2.5: ${context.parsed.y.toFixed(2)} μg/m³`;
+                      }
+                    }
                   }
                 },
                 scales: {
@@ -196,13 +213,21 @@ const Dashboard: React.FC = () => {
                       display: true, 
                       text: 'Time',
                       color: 'white',
-                      font: { size: 14, weight: 'bold' }
+                      font: { 
+                        size: window.innerWidth <= 768 ? 12 : 14, 
+                        weight: 'bold' 
+                      }
                     },
                     grid: {
                       color: 'rgba(255,255,255,0.1)'
                     },
                     ticks: {
-                      color: 'white'
+                      color: 'white',
+                      maxRotation: window.innerWidth <= 768 ? 45 : 0,
+                      minRotation: window.innerWidth <= 768 ? 45 : 0,
+                      font: {
+                        size: window.innerWidth <= 768 ? 10 : 12
+                      }
                     }
                   },
                   y: { 
@@ -211,13 +236,19 @@ const Dashboard: React.FC = () => {
                       display: true, 
                       text: 'PM2.5 (μg/m³)',
                       color: 'white',
-                      font: { size: 14, weight: 'bold' }
+                      font: { 
+                        size: window.innerWidth <= 768 ? 12 : 14, 
+                        weight: 'bold' 
+                      }
                     },
                     grid: {
                       color: 'rgba(255,255,255,0.1)'
                     },
                     ticks: {
-                      color: 'white'
+                      color: 'white',
+                      font: {
+                        size: window.innerWidth <= 768 ? 10 : 12
+                      }
                     }
                   },
                 },
@@ -228,6 +259,11 @@ const Dashboard: React.FC = () => {
                 animation: {
                   duration: 2000,
                   easing: 'easeInOutQuart'
+                },
+                elements: {
+                  point: {
+                    hoverRadius: window.innerWidth <= 768 ? 8 : 10
+                  }
                 }
               }}
             />
@@ -238,15 +274,15 @@ const Dashboard: React.FC = () => {
       {/* Stats Cards - Now below the graph with improved design */}
       <div className="dashboard-cards" style={{ 
         display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-        gap: '20px', 
+        gridTemplateColumns: window.innerWidth <= 768 ? 'repeat(auto-fit, minmax(200px, 1fr))' : 'repeat(auto-fit, minmax(250px, 1fr))',
+        gap: window.innerWidth <= 768 ? '15px' : '20px', 
         marginBottom: '30px' 
       }}>
         <div className="card" style={{ 
           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          padding: '25px',
+          padding: window.innerWidth <= 768 ? '20px' : '25px',
           borderRadius: '15px',
-          minHeight: '120px',
+          minHeight: window.innerWidth <= 768 ? '100px' : '120px',
           boxShadow: '0 8px 25px rgba(102, 126, 234, 0.3)',
           color: 'white',
           display: 'flex',
@@ -261,15 +297,15 @@ const Dashboard: React.FC = () => {
           e.currentTarget.style.transform = 'translateY(0)';
           e.currentTarget.style.boxShadow = '0 8px 25px rgba(102, 126, 234, 0.3)';
         }}>
-          <div style={{ fontSize: '1.1rem', marginBottom: '8px', opacity: 0.9 }}>🌡️ Current AQI</div>
-          <div style={{ fontSize: '2.5rem', fontWeight: 'bold' }}>{aqi !== null ? aqi : 'N/A'}</div>
+          <div style={{ fontSize: window.innerWidth <= 768 ? '1rem' : '1.1rem', marginBottom: '8px', opacity: 0.9 }}>Current AQI</div>
+          <div style={{ fontSize: window.innerWidth <= 768 ? '2rem' : '2.5rem', fontWeight: 'bold' }}>{aqi !== null ? aqi : 'N/A'}</div>
         </div>
         
         <div className="card" style={{ 
           background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-          padding: '25px',
+          padding: window.innerWidth <= 768 ? '20px' : '25px',
           borderRadius: '15px',
-          minHeight: '120px',
+          minHeight: window.innerWidth <= 768 ? '100px' : '120px',
           boxShadow: '0 8px 25px rgba(240, 147, 251, 0.3)',
           color: 'white',
           display: 'flex',
@@ -284,15 +320,15 @@ const Dashboard: React.FC = () => {
           e.currentTarget.style.transform = 'translateY(0)';
           e.currentTarget.style.boxShadow = '0 8px 25px rgba(240, 147, 251, 0.3)';
         }}>
-          <div style={{ fontSize: '1.1rem', marginBottom: '8px', opacity: 0.9 }}>💨 PM2.5 (μg/m³)</div>
-          <div style={{ fontSize: '2.5rem', fontWeight: 'bold' }}>{pm25 !== null ? pm25.toFixed(1) : 'N/A'}</div>
+          <div style={{ fontSize: window.innerWidth <= 768 ? '1rem' : '1.1rem', marginBottom: '8px', opacity: 0.9 }}>PM2.5 (μg/m³)</div>
+          <div style={{ fontSize: window.innerWidth <= 768 ? '2rem' : '2.5rem', fontWeight: 'bold' }}>{pm25 !== null ? pm25.toFixed(1) : 'N/A'}</div>
         </div>
         
         <div className="card" style={{ 
           background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-          padding: '25px',
+          padding: window.innerWidth <= 768 ? '20px' : '25px',
           borderRadius: '15px',
-          minHeight: '120px',
+          minHeight: window.innerWidth <= 768 ? '100px' : '120px',
           boxShadow: '0 8px 25px rgba(79, 172, 254, 0.3)',
           color: 'white',
           display: 'flex',
@@ -307,15 +343,15 @@ const Dashboard: React.FC = () => {
           e.currentTarget.style.transform = 'translateY(0)';
           e.currentTarget.style.boxShadow = '0 8px 25px rgba(79, 172, 254, 0.3)';
         }}>
-          <div style={{ fontSize: '1.1rem', marginBottom: '8px', opacity: 0.9 }}>📡 Active Sensors</div>
-          <div style={{ fontSize: '2.5rem', fontWeight: 'bold' }}>{stats?.sensorCount ?? 'N/A'}</div>
+          <div style={{ fontSize: window.innerWidth <= 768 ? '1rem' : '1.1rem', marginBottom: '8px', opacity: 0.9 }}>Active Sensors</div>
+          <div style={{ fontSize: window.innerWidth <= 768 ? '2rem' : '2.5rem', fontWeight: 'bold' }}>{stats?.sensorCount ?? 'N/A'}</div>
         </div>
         
         <div className="card" style={{ 
           background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-          padding: '25px',
+          padding: window.innerWidth <= 768 ? '20px' : '25px',
           borderRadius: '15px',
-          minHeight: '120px',
+          minHeight: window.innerWidth <= 768 ? '100px' : '120px',
           boxShadow: '0 8px 25px rgba(67, 233, 123, 0.3)',
           color: 'white',
           display: 'flex',
@@ -330,8 +366,8 @@ const Dashboard: React.FC = () => {
           e.currentTarget.style.transform = 'translateY(0)';
           e.currentTarget.style.boxShadow = '0 8px 25px rgba(67, 233, 123, 0.3)';
         }}>
-          <div style={{ fontSize: '1.1rem', marginBottom: '8px', opacity: 0.9 }}>📊 Symptom Reports</div>
-          <div style={{ fontSize: '2.5rem', fontWeight: 'bold' }}>{stats?.reportCount ?? 'N/A'}</div>
+          <div style={{ fontSize: window.innerWidth <= 768 ? '1rem' : '1.1rem', marginBottom: '8px', opacity: 0.9 }}>Symptom Reports</div>
+          <div style={{ fontSize: window.innerWidth <= 768 ? '2rem' : '2.5rem', fontWeight: 'bold' }}>{stats?.reportCount ?? 'N/A'}</div>
         </div>
       </div>
       {/* Additional Stats and Health Advisory */}

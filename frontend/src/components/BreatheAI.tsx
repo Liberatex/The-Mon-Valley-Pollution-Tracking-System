@@ -63,16 +63,21 @@ const BreatheAI: React.FC = () => {
   const sendToLlama3 = async (input: string) => {
     setIsTyping(true);
     try {
-      // Use Firebase Functions for production, localhost for development
-      const baseUrl = window.location.hostname === 'localhost' 
-        ? 'http://localhost:5001' 
-        : 'https://us-central1-mv-pollution-tracking-system.cloudfunctions.net';
-      
-      const endpoint = window.location.hostname === 'localhost' 
-        ? '/api/llama3-chat' 
-        : '/llama3Chat';
-      
-      const res = await axios.post(`${baseUrl}${endpoint}`, { message: input });
+      // First try local backend for real Ollama responses
+      try {
+        const localResponse = await axios.post('http://localhost:5001/api/llama3-chat', { message: input }, {
+          timeout: 5000 // 5 second timeout for local
+        });
+        const response = localResponse.data.response || 'Sorry, I could not generate a response.';
+        addMessage(response, 'ai');
+        return;
+      } catch (localError) {
+        console.log('Local backend not available, trying Firebase Functions...');
+      }
+
+      // Fallback to Firebase Functions
+      const baseUrl = 'https://us-central1-mv-pollution-tracking-system.cloudfunctions.net';
+      const res = await axios.post(`${baseUrl}/llama3Chat`, { message: input });
       const response = res.data.response || 'Sorry, I could not generate a response.';
       addMessage(response, 'ai');
     } catch (error) {

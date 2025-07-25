@@ -123,22 +123,25 @@ const SymptomReportForm: React.FC<SymptomReportFormProps> = ({ onSuccess }) => {
         osac,
         submittedAt: new Date().toISOString(),
       };
-      const res = await fetch('/api/symptom-report', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(reportData),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Submission failed');
-      setSuccessMsg('Report submitted!');
-      onSuccess(data.reportId);
-      setUser(null); // Clear user data after submission
+      
+      // Use Firestore directly instead of API endpoint
+      const { addDoc, collection } = await import('firebase/firestore');
+      const { db } = await import('../firebase');
+      
+      const docRef = await addDoc(collection(db, 'symptomReports'), reportData);
+      
+      setSuccessMsg('Report submitted successfully!');
+      onSuccess(docRef.id);
+      
+      // Reset form
+      setUser(null);
       setFullName('');
       setAge('');
       setSymptoms([]);
       setOSAC(initialOSAC);
       setStep(1);
     } catch (err: any) {
+      console.error('Submission error:', err);
       setError(err.message);
       setSubmitError('Failed to submit report. Please try again.');
     } finally {
@@ -283,15 +286,24 @@ const SymptomReportForm: React.FC<SymptomReportFormProps> = ({ onSuccess }) => {
       {step === 4 && (
         <div className="form-step">
           <h3>Review Your Report</h3>
-          <div className="review-summary" style={{ background: '#f5f5f5', padding: 12, borderRadius: 8, marginBottom: 12 }}>
-            <div><strong>User ID:</strong> {user?.uid || anonymousUserId}</div>
-            <div><strong>Full Name:</strong> {fullName || 'N/A'}</div>
-            <div><strong>Age:</strong> {age || 'N/A'}</div>
-            <div><strong>Symptoms:</strong> {symptoms.join(', ')}</div>
-            <div><strong>Onset:</strong> {osac.onset}</div>
-            <div><strong>Severity:</strong> {severityLabels[osac.severity - 1]}</div>
-            <div><strong>Aggravating Factors:</strong> {osac.aggravatingFactors.join(', ') || 'None'}</div>
-            <div><strong>Course:</strong> {osac.course}</div>
+          <div className="review-summary" style={{ 
+            background: '#f8f9fa', 
+            padding: '20px', 
+            borderRadius: '12px', 
+            marginBottom: '20px',
+            border: '2px solid #e9ecef',
+            color: '#333',
+            fontSize: '14px',
+            lineHeight: '1.6'
+          }}>
+            <div style={{ marginBottom: '8px' }}><strong style={{ color: '#1976d2' }}>User ID:</strong> <span style={{ color: '#666' }}>{user?.uid || anonymousUserId}</span></div>
+            <div style={{ marginBottom: '8px' }}><strong style={{ color: '#1976d2' }}>Full Name:</strong> <span style={{ color: '#666' }}>{fullName || 'N/A'}</span></div>
+            <div style={{ marginBottom: '8px' }}><strong style={{ color: '#1976d2' }}>Age:</strong> <span style={{ color: '#666' }}>{age || 'N/A'}</span></div>
+            <div style={{ marginBottom: '8px' }}><strong style={{ color: '#1976d2' }}>Symptoms:</strong> <span style={{ color: '#666' }}>{symptoms.join(', ')}</span></div>
+            <div style={{ marginBottom: '8px' }}><strong style={{ color: '#1976d2' }}>Onset:</strong> <span style={{ color: '#666' }}>{osac.onset}</span></div>
+            <div style={{ marginBottom: '8px' }}><strong style={{ color: '#1976d2' }}>Severity:</strong> <span style={{ color: '#666' }}>{severityLabels[osac.severity - 1]}</span></div>
+            <div style={{ marginBottom: '8px' }}><strong style={{ color: '#1976d2' }}>Aggravating Factors:</strong> <span style={{ color: '#666' }}>{osac.aggravatingFactors.join(', ') || 'None'}</span></div>
+            <div style={{ marginBottom: '8px' }}><strong style={{ color: '#1976d2' }}>Course:</strong> <span style={{ color: '#666' }}>{osac.course}</span></div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button type="button" onClick={handleBack} className="back-btn">⬅️ Back</button>

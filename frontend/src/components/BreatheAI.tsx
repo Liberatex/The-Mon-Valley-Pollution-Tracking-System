@@ -63,7 +63,16 @@ const BreatheAI: React.FC = () => {
   const sendToLlama3 = async (input: string) => {
     setIsTyping(true);
     try {
-      const res = await axios.post('http://localhost:5001/api/llama3-chat', { message: input });
+      // Use Firebase Functions for production, localhost for development
+      const baseUrl = window.location.hostname === 'localhost' 
+        ? 'http://localhost:5001' 
+        : 'https://us-central1-mv-pollution-tracking-system.cloudfunctions.net';
+      
+      const endpoint = window.location.hostname === 'localhost' 
+        ? '/api/llama3-chat' 
+        : '/llama3Chat';
+      
+      const res = await axios.post(`${baseUrl}${endpoint}`, { message: input });
       const response = res.data.response || 'Sorry, I could not generate a response.';
       addMessage(response, 'ai');
     } catch (error) {

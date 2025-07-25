@@ -37,6 +37,7 @@ const BreatheAI: React.FC = () => {
   
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [aiStatus, setAiStatus] = useState<'checking' | 'cloud' | 'fallback'>('checking');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -48,6 +49,24 @@ const BreatheAI: React.FC = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Check AI status on component mount
+  useEffect(() => {
+    checkAIStatus();
+  }, []);
+
+  const checkAIStatus = async () => {
+    try {
+      const response = await axios.get('https://us-central1-mv-pollution-tracking-system.cloudfunctions.net/healthCheck', { timeout: 5000 });
+      if (response.data.services?.ollama === 'healthy') {
+        setAiStatus('cloud');
+      } else {
+        setAiStatus('fallback');
+      }
+    } catch (error) {
+      setAiStatus('fallback');
+    }
+  };
 
   const addMessage = (text: string, sender: 'user' | 'ai', type: 'text' | 'question' | 'suggestion' | 'alert' = 'text') => {
     const newMessage: Message = {
@@ -63,19 +82,7 @@ const BreatheAI: React.FC = () => {
   const sendToLlama3 = async (input: string) => {
     setIsTyping(true);
     try {
-      // First try local backend for real Ollama responses
-      try {
-        const localResponse = await axios.post('http://localhost:5001/api/llama3-chat', { message: input }, {
-          timeout: 5000 // 5 second timeout for local
-        });
-        const response = localResponse.data.response || 'Sorry, I could not generate a response.';
-        addMessage(response, 'ai');
-        return;
-      } catch (localError) {
-        console.log('Local backend not available, trying Firebase Functions...');
-      }
-
-      // Fallback to Firebase Functions
+      // Use Firebase Functions with Ollama Cloud
       const baseUrl = 'https://us-central1-mv-pollution-tracking-system.cloudfunctions.net';
       const res = await axios.post(`${baseUrl}/llama3Chat`, { message: input });
       const response = res.data.response || 'Sorry, I could not generate a response.';
@@ -103,16 +110,57 @@ const BreatheAI: React.FC = () => {
   };
 
   return (
-    <div className="breathe-ai-container">
-      <div className="ai-header">
-        <div className="ai-avatar">🤖</div>
-        <div className="ai-info">
-          <h3>BreatheAI Assistant</h3>
-          <p>Air Quality Health Assistant</p>
+    <div className="breathe-ai-container" style={{ 
+      maxWidth: '800px', 
+      margin: '0 auto', 
+      padding: '20px',
+      fontFamily: 'Arial, sans-serif'
+    }}>
+      <div style={{ 
+        textAlign: 'center', 
+        marginBottom: '20px',
+        padding: '15px',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        borderRadius: '15px',
+        color: 'white'
+      }}>
+        <h2 style={{ margin: '0 0 10px 0', fontSize: '1.8rem' }}>BreatheAI Assistant</h2>
+        <p style={{ margin: '0 0 10px 0', opacity: 0.9 }}>Air Quality Health Assistant</p>
+        
+        {/* AI Status Indicator */}
+        <div style={{ 
+          display: 'inline-flex', 
+          alignItems: 'center', 
+          gap: '8px',
+          padding: '6px 12px',
+          borderRadius: '20px',
+          fontSize: '0.9rem',
+          fontWeight: 'bold',
+          background: aiStatus === 'cloud' ? 'rgba(76, 175, 80, 0.2)' : 'rgba(255, 152, 0, 0.2)',
+          border: aiStatus === 'cloud' ? '1px solid #4caf50' : '1px solid #ff9800'
+        }}>
+          <div style={{ 
+            width: '8px', 
+            height: '8px', 
+            borderRadius: '50%',
+            background: aiStatus === 'cloud' ? '#4caf50' : '#ff9800',
+            animation: aiStatus === 'checking' ? 'pulse 2s infinite' : 'none'
+          }}></div>
+          {aiStatus === 'checking' && 'Checking AI Status...'}
+          {aiStatus === 'cloud' && 'Cloud AI Active'}
+          {aiStatus === 'fallback' && 'Enhanced Fallback Mode'}
         </div>
-        <div className="ai-status">
-          {isTyping ? 'Typing...' : 'Online'}
-        </div>
+        
+        {aiStatus === 'fallback' && (
+          <p style={{ 
+            margin: '10px 0 0 0', 
+            fontSize: '0.85rem', 
+            opacity: 0.8,
+            fontStyle: 'italic'
+          }}>
+            Using enhanced knowledge base responses
+          </p>
+        )}
       </div>
 
       <div className="messages-container">

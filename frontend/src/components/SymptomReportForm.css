@@ -1,0 +1,131 @@
+/* SymptomReportForm.css */
+
+.symptom-report-form {
+  max-width: 420px;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  padding: 24px 18px 18px 18px;
+  font-family: 'Inter', Arial, sans-serif;
+  color: #222;
+}
+
+.symptom-report-form h2,
+.symptom-report-form label,
+.symptom-report-form .form-instructions,
+.symptom-report-form .form-step {
+  color: #222 !important;
+}
+
+.form-step input,
+.form-step select,
+.form-step textarea {
+  width: 100%;
+  padding: 8px 10px;
+  margin-top: 4px;
+  border: 1px solid #bdbdbd;
+  border-radius: 6px;
+  font-size: 1rem;
+  box-sizing: border-box;
+  color: #222 !important;
+  background: #fff !important;
+}
+
+.form-step input::placeholder,
+.form-step textarea::placeholder {
+  color: #888 !important;
+}
+
+.add-btn, .next-btn, .back-btn, .submit-btn {
+  background: #1976d2;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.add-btn {
+  background: #43a047;
+}
+
+.add-btn:hover, .next-btn:hover, .back-btn:hover, .submit-btn:hover {
+  background: #1565c0;
+}
+
+.back-btn {
+  background: #bdbdbd;
+  color: #222;
+}
+
+.submit-btn {
+  background: #388e3c;
+}
+
+ul {
+  margin: 0;
+  padding: 0;
+}
+
+li {
+  margin-bottom: 4px;
+}
+
+.error {
+  color: #d32f2f;
+  font-weight: 500;
+}
+
+.success {
+  color: #388e3c;
+  font-weight: 500;
+}
+
+.progress-bar {
+  margin-bottom: 18px;
+}
+
+.review-summary {
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+@media (max-width: 600px) {
+  .symptom-report-form {
+    padding: 12px 4px 8px 4px;
+  }
+  .form-step input, .form-step select {
+    font-size: 0.98rem;
+  }
+  .add-btn, .next-btn, .back-btn, .submit-btn {
+    font-size: 0.98rem;
+    padding: 7px 10px;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .symptom-report-form {
+    background: #222;
+    color: #fff;
+  }
+  .symptom-report-form h2,
+  .symptom-report-form label,
+  .symptom-report-form .form-instructions,
+  .symptom-report-form .form-step {
+    color: #fff !important;
+  }
+  .form-step input,
+  .form-step select,
+  .form-step textarea {
+    background: #222 !important;
+    color: #fff !important;
+    border: 1px solid #888;
+  }
+  .form-step input::placeholder,
+  .form-step textarea::placeholder {
+    color: #bbb !important;
+  }
+} 

@@ -5,9 +5,10 @@ import SymptomReportForm from './components/SymptomReportForm';
 import Dashboard from './components/Dashboard';
 import BreatheAI from './components/BreatheAI';
 import UserTesting from './components/UserTesting';
+import AdminDashboard from './components/AdminDashboard';
 import { feedbackService, UserFeedback } from './services/feedbackService';
 
-type View = 'dashboard' | 'map' | 'symptoms' | 'ai' | 'testing';
+type View = 'dashboard' | 'map' | 'symptoms' | 'ai' | 'testing' | 'admin';
 
 function App() {
   const [currentView, setCurrentView] = useState<View>('dashboard');
@@ -36,6 +37,8 @@ function App() {
         return <BreatheAI />;
       case 'testing':
         return <UserTesting onFeedbackSubmit={handleFeedbackSubmit} sessionId={`session-${Date.now()}`} />;
+      case 'admin':
+        return <AdminDashboard />;
       default:
         return <Dashboard />;
     }
@@ -98,6 +101,13 @@ function App() {
             aria-current={currentView === 'testing' ? 'page' : undefined}
           >
             🧪 User Testing
+          </button>
+          <button
+            className={`nav-button ${currentView === 'admin' ? 'active' : ''}`}
+            onClick={() => setCurrentView('admin')}
+            aria-current={currentView === 'admin' ? 'page' : undefined}
+          >
+            🔧 Admin
           </button>
         </nav>
       </header>

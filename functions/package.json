@@ -16,13 +16,15 @@
   },
   "main": "lib/index.js",
   "dependencies": {
+    "@google-cloud/storage": "^6.9.0",
     "axios": "^1.11.0",
     "cors": "^2.8.5",
-    "firebase-admin": "^12.6.0",
+    "firebase-admin": "^11.10.1",
     "firebase-functions": "^6.0.1"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
+    "@types/node": "^16.18.126",
     "@typescript-eslint/eslint-plugin": "^5.12.0",
     "@typescript-eslint/parser": "^5.12.0",
     "eslint": "^8.9.0",
@@ -31,7 +33,7 @@
     "firebase-functions-test": "^3.4.1",
     "jest": "^30.0.5",
     "ts-jest": "^29.4.0",
-    "typescript": "^4.9.0"
+    "typescript": "~4.7.4"
   },
   "private": true
 }

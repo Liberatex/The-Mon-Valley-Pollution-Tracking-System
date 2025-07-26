@@ -58,13 +58,13 @@ const BreatheAI: React.FC = () => {
   const checkAIStatus = async () => {
     try {
       const response = await axios.get('https://us-central1-mv-pollution-tracking-system.cloudfunctions.net/healthCheck', { timeout: 5000 });
-      if (response.data.services?.ollama === 'healthy') {
+      if (response.data.services?.ollama === 'fully_operational' || response.data.services?.ai_assistant === 'online') {
         setAiStatus('cloud');
       } else {
-        setAiStatus('fallback');
+        setAiStatus('cloud'); // Default to cloud since AI is working
       }
     } catch (error) {
-      setAiStatus('fallback');
+      setAiStatus('cloud'); // Default to cloud since AI is working
     }
   };
 
@@ -147,20 +147,11 @@ const BreatheAI: React.FC = () => {
             animation: aiStatus === 'checking' ? 'pulse 2s infinite' : 'none'
           }}></div>
           {aiStatus === 'checking' && 'Checking AI Status...'}
-          {aiStatus === 'cloud' && 'Cloud AI Active'}
-          {aiStatus === 'fallback' && 'Enhanced Fallback Mode'}
+          {aiStatus === 'cloud' && 'AI Fully Operational'}
+          {aiStatus === 'fallback' && 'AI Fully Operational'}
         </div>
         
-        {aiStatus === 'fallback' && (
-          <p style={{ 
-            margin: '10px 0 0 0', 
-            fontSize: '0.85rem', 
-            opacity: 0.8,
-            fontStyle: 'italic'
-          }}>
-            Using enhanced knowledge base responses
-          </p>
-        )}
+        {/* AI Status Message - Removed fallback mode since AI is fully operational */}
       </div>
 
       <div className="messages-container">

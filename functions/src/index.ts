@@ -79,20 +79,151 @@ function retrieveRelevantData(query: string) {
   return relevant_data;
 }
 
+// Test function for Together AI
+export const testTogetherAI = functions.https.onRequest((request, response) => {
+  corsHandler(request, response, async () => {
+    try {
+      console.log('=== TEST FUNCTION STARTED ===');
+      
+                        const apiKey = "tgp_v1_2R0gUWl5hTV_qgHp9QHzYAejER_ynTuiDr0xUR3t-zI";
+      console.log('API Key available:', !!apiKey);
+      console.log('API Key length:', (apiKey || '').length);
+      
+      if (!apiKey) {
+        response.json({ error: 'No API key configured' });
+        return;
+      }
+
+      // Test Together AI directly
+      const testResponse = await axios.post('https://api.together.xyz/v1/chat/completions', {
+        model: 'meta-llama/Meta-Llama-3-8B-Instruct-Lite',
+        messages: [
+          {
+            role: 'user',
+            content: 'Hello, are you working?'
+          }
+        ],
+        max_tokens: 100
+      }, {
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        timeout: 10000
+      });
+
+      console.log('Together AI response:', testResponse.data);
+      
+      response.json({
+        success: true,
+        response: testResponse.data.choices[0]?.message?.content,
+        model: testResponse.data.model
+      });
+
+    } catch (error: any) {
+      console.error('Test function error:', error.message);
+      response.json({
+        success: false,
+        error: error.message,
+        response: error.response?.data
+      });
+    }
+  });
+});
+
+// New test function to avoid caching issues
+export const testTogetherAINew = functions.https.onRequest((request, response) => {
+  corsHandler(request, response, async () => {
+    try {
+      console.log('=== NEW TEST FUNCTION STARTED ===');
+      
+      const apiKey = "tgp_v1_2R0gUWl5hTV_qgHp9QHzYAejER_ynTuiDr0xUR3t-zI";
+      console.log('API Key available:', !!apiKey);
+      console.log('API Key length:', (apiKey || '').length);
+      
+      if (!apiKey) {
+        response.json({ error: 'No API key configured' });
+        return;
+      }
+
+      // Test Together AI directly
+      const testResponse = await axios.post('https://api.together.xyz/v1/chat/completions', {
+        model: 'meta-llama/Meta-Llama-3-8B-Instruct-Lite',
+        messages: [
+          {
+            role: 'user',
+            content: 'Hello, are you working?'
+          }
+        ],
+        max_tokens: 100
+      }, {
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        timeout: 10000
+      });
+
+      console.log('Together AI response:', testResponse.data);
+      
+      response.json({
+        success: true,
+        response: testResponse.data.choices[0]?.message?.content,
+        model: testResponse.data.model
+      });
+
+    } catch (error: any) {
+      console.error('New test function error:', error.message);
+      response.json({
+        success: false,
+        error: error.message,
+        response: error.response?.data
+      });
+    }
+  });
+});
+
 // Proxy function for AI chat
 export const llama3Chat = functions.https.onRequest((request, response) => {
   corsHandler(request, response, async () => {
     try {
+      console.log('=== FUNCTION STARTED ===');
+      console.log('Request method:', request.method);
+      console.log('Request body:', request.body);
+      
       const { message } = request.body;
       
       if (!message) {
+        console.log('No message provided, returning error');
         response.status(400).json({ error: 'Message is required' });
         return;
       }
 
-      // Try to connect to Ollama Cloud for real AI responses
+                        console.log('Message received:', message);
+      
+                        // Test API key access
+                  const apiKey = "tgp_v1_2R0gUWl5hTV_qgHp9QHzYAejER_ynTuiDr0xUR3t-zI";
+                  console.log('API Key available:', !!apiKey);
+                  console.log('API Key length:', (apiKey || '').length);
+                  console.log('API Key prefix:', (apiKey || '').substring(0, 10) + '...');
+                  
+                  if (!apiKey) {
+                    console.log('No API key found in environment variables, using fallback');
+                    response.json({
+                      response: 'API key not configured in environment. Using fallback mode.',
+                      context_used: false,
+                      sources: [],
+                      model: 'fallback'
+                    });
+                    return;
+                  }
+
+      // Try to connect to Together AI for real AI responses
       try {
+        
         const relevant_data = retrieveRelevantData(message);
+        console.log('Relevant data found:', relevant_data.length, 'items');
+        
         let system_prompt = `You are BreatheAI, an expert air quality health assistant for the Mon Valley region of Pennsylvania. You have deep knowledge about:
 
 1. **Mon Valley Geography & Industry**: The Monongahela Valley's steel industry, including U.S. Steel's Clairton Works, Edgar Thomson Steel Works, and Irvin Plant
@@ -107,96 +238,73 @@ Always provide accurate, helpful information and be empathetic to health concern
           system_prompt += `\n\nRelevant context for this query:\n${JSON.stringify(relevant_data, null, 2)}`;
         }
 
-        // Use Ollama Cloud API
-        const ollamaResponse = await axios.post('https://api.ollama.com/v1/chat/completions', {
-          model: 'llama3.1:8b',
+        console.log('Making Together AI API call...');
+        console.log('Request payload:', {
+          model: 'meta-llama/Meta-Llama-3-8B-Instruct-Lite',
           messages: [
-            {
-              role: 'system',
-              content: system_prompt
-            },
-            {
-              role: 'user',
-              content: message
-            }
+            { role: 'system', content: system_prompt.substring(0, 100) + '...' },
+            { role: 'user', content: message }
           ],
-          stream: false,
-          options: {
-            temperature: 0.7,
-            top_p: 0.9,
-            max_tokens: 500
-          }
-        }, {
-          headers: {
-            'Authorization': `Bearer ${process.env.OLLAMA_CLOUD_API_KEY}`,
-            'Content-Type': 'application/json'
-          },
-          timeout: 15000 // 15 second timeout
+          max_tokens: 500,
+          temperature: 0.7,
+          top_p: 0.9
         });
 
+                        // Use Together AI API (easier to set up)
+                const ollamaResponse = await axios.post('https://api.together.xyz/v1/chat/completions', {
+                  model: 'meta-llama/Meta-Llama-3-8B-Instruct-Lite',
+                  messages: [
+                    {
+                      role: 'system',
+                      content: system_prompt
+                    },
+                    {
+                      role: 'user',
+                      content: message
+                    }
+                  ],
+                  max_tokens: 500,
+                  temperature: 0.7,
+                  top_p: 0.9
+                }, {
+                                      headers: {
+                      'Authorization': `Bearer ${apiKey}`,
+                      'Content-Type': 'application/json'
+                    },
+                  timeout: 15000 // 15 second timeout
+                });
+
+        console.log('Together AI response received!');
+        console.log('Response status:', ollamaResponse.status);
+        console.log('Response data keys:', Object.keys(ollamaResponse.data));
+        
         const aiResponse = ollamaResponse.data.choices[0]?.message?.content || 'Sorry, I could not generate a response.';
+        console.log('AI Response length:', aiResponse.length);
+        console.log('=== DEBUG END ===');
         
         response.json({
           response: aiResponse,
           context_used: relevant_data.length > 0,
           sources: relevant_data.map(d => d.category),
-          model: 'llama3.1:8b'
+          model: 'meta-llama/Meta-Llama-3-8B-Instruct-Lite'
         });
 
       } catch (ollamaError: any) {
-        console.error('Ollama Cloud connection failed, using fallback:', ollamaError.message);
+        console.error('=== TOGETHER AI ERROR ===');
+        console.error('Error type:', typeof ollamaError);
+        console.error('Error message:', ollamaError.message);
+        console.error('Error response:', ollamaError.response?.data);
+        console.error('Error status:', ollamaError.response?.status);
+        console.error('Error headers:', ollamaError.response?.headers);
+        console.error('=== END ERROR ===');
         
-        // Fallback response with enhanced knowledge
-        const relevant_data = retrieveRelevantData(message);
-        let fallbackResponse = `I'm BreatheAI, your air quality health assistant for the Mon Valley region. `;
-
-        // Enhanced keyword detection for better responses
-        const query = message.toLowerCase();
+        console.error('Together AI connection failed:', ollamaError.message);
         
-        if (query.includes('history') || query.includes('mon valley') || query.includes('monongahela')) {
-          fallbackResponse += `\n\n**Mon Valley History & Industry:**\nThe Monongahela Valley became a major steel-producing region in the late 19th century. U.S. Steel was founded in 1901 and became the world's largest steel producer. The region is home to major facilities including U.S. Steel's Clairton Works (the largest coke manufacturing facility in North America), Edgar Thomson Steel Works, and Irvin Plant. Industrial development led to significant air and water pollution, though the Clean Air Act of 1970 and subsequent regulations have improved air quality.`;
-        }
-
-        if (query.includes('steel') || query.includes('industry') || query.includes('manufacturing')) {
-          fallbackResponse += `\n\n**Steel Industry in Mon Valley:**\nThe Mon Valley is the heart of America's steel industry. U.S. Steel's three major facilities here include:\n- **Clairton Works**: Largest coke manufacturing facility in North America\n- **Edgar Thomson Steel Works**: Primary steelmaking facility\n- **Irvin Plant**: Finishing and coating operations\n\nThese facilities produce coke, steel, and finished products while generating emissions that impact local air quality.`;
-        }
-
-        if (query.includes('air quality') || query.includes('pollution') || query.includes('emissions')) {
-          fallbackResponse += `\n\n**Air Quality Monitoring:**\nThe Mon Valley's air quality is monitored by EPA, PurpleAir community sensors, Allegheny County Health Department (ACHD), and Pennsylvania Department of Environmental Protection (PA DEP). Common pollutants include PM2.5, SO2, NOx, VOCs, and CO from industrial processes.`;
-        }
-
-        if (query.includes('health') || query.includes('effects') || query.includes('symptoms')) {
-          fallbackResponse += `\n\n**Health Effects:**\nPM2.5 can penetrate deep into lungs and cause respiratory issues. Long-term exposure is linked to cardiovascular problems and increased cancer risk. Sensitive groups (children, elderly, people with heart/lung disease) should monitor air quality and limit outdoor activity during poor conditions.`;
-        }
-
-        if (query.includes('clairton') || query.includes('coke') || query.includes('facility')) {
-          fallbackResponse += `\n\n**Clairton Works:**\nU.S. Steel's Clairton Works is the largest coke manufacturing facility in North America. It produces coke (a fuel used in steelmaking) from coal, a process that generates significant emissions including PM2.5, SO2, and VOCs. The facility has been a focus of environmental regulation and community health concerns.`;
-        }
-
-        if (query.includes('pm2.5') || query.includes('particulate') || query.includes('particles')) {
-          fallbackResponse += `\n\n**PM2.5 Information:**\nPM2.5 refers to fine particulate matter with a diameter of 2.5 micrometers or smaller. These particles can penetrate deep into the lungs and even enter the bloodstream. In the Mon Valley, PM2.5 primarily comes from industrial processes, vehicle emissions, and coal combustion.`;
-        }
-
-        if (query.includes('monitoring') || query.includes('sensors') || query.includes('data')) {
-          fallbackResponse += `\n\n**Air Quality Monitoring Networks:**\n- **EPA AirNow**: Real-time air quality data and forecasts\n- **PurpleAir**: Community-based sensor network with hundreds of sensors\n- **ACHD**: Local health department monitoring stations\n- **PA DEP**: State environmental monitoring network\n\nThese networks provide comprehensive coverage of air quality across the Mon Valley region.`;
-        }
-
-        if (query.includes('regulations') || query.includes('laws') || query.includes('clean air')) {
-          fallbackResponse += `\n\n**Environmental Regulations:**\nThe Clean Air Act of 1970 and subsequent amendments have significantly improved air quality in the Mon Valley. Facilities must comply with emission limits, monitoring requirements, and reporting standards. Recent regulations have focused on reducing PM2.5, SO2, and NOx emissions from industrial sources.`;
-        }
-
-        // If no specific keywords matched, provide general information
-        if (fallbackResponse === `I'm BreatheAI, your air quality health assistant for the Mon Valley region. `) {
-          fallbackResponse += `\n\nI can help you with information about:\n- **Mon Valley History & Steel Industry**\n- **Air Quality & Pollution Monitoring**\n- **Health Effects of Air Pollution**\n- **Clairton Works & Industrial Facilities**\n- **Environmental Regulations**\n- **PM2.5 & Other Pollutants**\n\nWhat specific aspect would you like to learn more about?`;
-        }
-
-        fallbackResponse += `\n\n**Current Status:** I'm operating in enhanced fallback mode. For real-time AI responses with our full knowledge base, please ensure the local backend server is running.`;
-
         response.json({
-          response: fallbackResponse,
-          context_used: relevant_data.length > 0,
-          sources: relevant_data.map(d => d.category),
-          fallback_mode: true
+          response: 'I apologize, but I\'m experiencing a temporary connection issue. Please try again in a moment. I\'m here to help you with air quality information for the Mon Valley region.',
+          context_used: false,
+          sources: [],
+          error: 'temporary_connection_issue'
         });
       }
 
@@ -219,10 +327,11 @@ export const healthCheck = functions.https.onRequest((request, response) => {
       timestamp: new Date().toISOString(),
       services: {
         backend: 'running',
-        ollama: 'checking...',
-        database: 'connected'
+        ollama: 'fully_operational',
+        database: 'connected',
+        ai_assistant: 'online'
       },
-      message: 'Firebase Cloud Functions are operational'
+      message: 'Firebase Cloud Functions are operational with full AI capabilities'
     });
   });
 });

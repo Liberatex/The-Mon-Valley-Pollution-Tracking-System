@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Mon Valley Pollution Tracking System
 
 A comprehensive, data-driven platform for monitoring air quality and health impacts in the Mon Valley region of Pennsylvania. Built with world-class attention to detail and modern web technologies.
@@ -312,3 +313,7 @@ For support and questions:
 ---
 
 **Built with ❤️ for the Mon Valley community** 
+=======
+# The-Mon-Valley-Pollution-Tracking-System
+ Pollution Tracking System for the The Mon Valley Area 
+>>>>>>> 682b90e0319de37a8f55f9ca3fdf80890771b63b

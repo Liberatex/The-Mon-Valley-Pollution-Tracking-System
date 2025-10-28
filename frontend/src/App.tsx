@@ -1,18 +1,21 @@
 import React, { useState } from 'react';
 import './App.css';
+import Home from './components/Home';
 import SensorMap from './components/SensorMap';
 import SymptomReportForm from './components/SymptomReportForm';
 import Dashboard from './components/Dashboard';
 import BreatheAI from './components/BreatheAI';
 import UserTesting from './components/UserTesting';
 import AdminDashboard from './components/AdminDashboard';
+import ExposureModel from './components/ExposureModel';
+import EvidenceReport from './components/EvidenceReport';
+import Logo from './components/Logo';
 import { feedbackService, UserFeedback } from './services/feedbackService';
 
-type View = 'dashboard' | 'map' | 'symptoms' | 'ai' | 'testing' | 'admin';
+type View = 'home' | 'dashboard' | 'map' | 'symptoms' | 'ai' | 'exposure';
 
 function App() {
-  const [currentView, setCurrentView] = useState<View>('dashboard');
-  const [language, setLanguage] = useState<'en' | 'es'>('en');
+  const [currentView, setCurrentView] = useState<View>('home');
 
   const handleFeedbackSubmit = async (feedback: UserFeedback) => {
     try {
@@ -27,6 +30,8 @@ function App() {
 
   const renderView = () => {
     switch (currentView) {
+      case 'home':
+        return <Home />;
       case 'dashboard':
         return <Dashboard />;
       case 'map':
@@ -35,38 +40,27 @@ function App() {
         return <SymptomReportForm onSuccess={(id) => console.log('Report submitted:', id)} />;
       case 'ai':
         return <BreatheAI />;
-      case 'testing':
-        return <UserTesting onFeedbackSubmit={handleFeedbackSubmit} sessionId={`session-${Date.now()}`} />;
-      case 'admin':
-        return <AdminDashboard />;
+      case 'exposure':
+        return <ExposureModel />;
       default:
-        return <Dashboard />;
+        return <Home />;
     }
   };
 
   return (
-    <div className="App" lang={language}>
+    <div className="App" lang="en">
       <header className="App-header">
         <div className="header-content">
-          <h1 className="App-title">Mon Valley Pollution Tracking System</h1>
-          <div className="header-controls">
-            <div className="language-selector">
-              <label htmlFor="language-select" className="sr-only">
-                Language
-              </label>
-              <select
-                id="language-select"
-                value={language}
-                onChange={(e) => setLanguage(e.target.value as 'en' | 'es')}
-                aria-label="Language"
-              >
-                <option value="en">English</option>
-                <option value="es">Español</option>
-              </select>
-            </div>
-          </div>
+          <Logo />
         </div>
         <nav className="App-nav" role="navigation" aria-label="Main navigation">
+          <button
+            className={`nav-button ${currentView === 'home' ? 'active' : ''}`}
+            onClick={() => setCurrentView('home')}
+            aria-current={currentView === 'home' ? 'page' : undefined}
+          >
+            🏠 Home
+          </button>
           <button
             className={`nav-button ${currentView === 'dashboard' ? 'active' : ''}`}
             onClick={() => setCurrentView('dashboard')}
@@ -96,18 +90,11 @@ function App() {
             🤖 AI Assistant
           </button>
           <button
-            className={`nav-button ${currentView === 'testing' ? 'active' : ''}`}
-            onClick={() => setCurrentView('testing')}
-            aria-current={currentView === 'testing' ? 'page' : undefined}
+            className={`nav-button ${currentView === 'exposure' ? 'active' : ''}`}
+            onClick={() => setCurrentView('exposure')}
+            aria-current={currentView === 'exposure' ? 'page' : undefined}
           >
-            🧪 User Testing
-          </button>
-          <button
-            className={`nav-button ${currentView === 'admin' ? 'active' : ''}`}
-            onClick={() => setCurrentView('admin')}
-            aria-current={currentView === 'admin' ? 'page' : undefined}
-          >
-            🔧 Admin
+            🔬 Exposure Risk
           </button>
         </nav>
       </header>

@@ -1,0 +1,32 @@
+// Add to functions/src/index.ts after line 931
+
+// ============================================================================
+// ACHD OFFICIAL AIR QUALITY DATA INTEGRATION
+// ============================================================================
+
+/**
+ * Get official ACHD air quality data for Mon Valley
+ * This uses EPA AQS data that ACHD reports to
+ */
+export const getACHDAirQuality = functions.https.onRequest(async (req, res) => {
+  corsHandler(req, res, async () => {
+    try {
+      const data = await getMonValleyAirQuality();
+      
+      res.json({
+        success: data.success,
+        data: data.data,
+        source: data.source,
+        lastUpdated: data.lastUpdated,
+        notes: 'Data from Allegheny County Health Department via EPA AQS'
+      });
+    } catch (error: any) {
+      console.error('Error fetching ACHD data:', error);
+      res.status(500).json({
+        error: 'Failed to fetch ACHD air quality data',
+        message: error.message
+      });
+    }
+  });
+});
+

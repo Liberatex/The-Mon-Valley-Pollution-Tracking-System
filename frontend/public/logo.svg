@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 40" width="120" height="40">
+  <!-- Mountains -->
+  <g>
+    <path d="M10 25 L15 15 L20 25 Z" fill="#16A085" stroke="none"/>
+    <path d="M16 25 L25 10 L30 25 Z" fill="none" stroke="#5D6D7E" stroke-width="1.5" fill="none"/>
+    <path d="M10 25 L20 25 L30 25 L25 10 L15 15" fill="#E8F4F8" stroke="#16A085" stroke-width="1"/>
+  </g>
+  
+  <!-- Air particles -->
+  <circle cx="32" cy="12" r="2" fill="#16A085"/>
+  <circle cx="36" cy="9" r="1.5" fill="#5D6D7E" opacity="0.7"/>
+  <circle cx="39" cy="11" r="1" fill="#16A085" opacity="0.8"/>
+</svg>
+
+

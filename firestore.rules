@@ -1,38 +1,139 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow public read access to sensor data
-    match /sensors/{sensorId} {
+    
+    // ===================================================================
+    // SECURE RULES: PRIVACY-BY-DESIGN FOR PROJECT LUMNA/PHPA PLATFORM
+    // ===================================================================
+    
+    // Helper function: Check if user is admin
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
+    }
+    
+    // Helper function: Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // ===================================================================
+    // PUBLIC READ DATA (NO AUTHENTICATION REQUIRED)
+    // ===================================================================
+    
+    // Title V facilities - public regulatory data
+    match /titleVFacilities/{facilityId} {
       allow read: if true;
-      allow write: if request.auth != null && request.auth.token.admin == true;
+      allow write: if false; // Only backend can write
     }
     
-    // Allow authenticated users to read/write their own symptom reports
-    match /symptomReports/{reportId} {
-      allow read, write: if request.auth != null && 
-        (request.auth.uid == resource.data.userId || request.auth.token.admin == true);
-      allow create: if request.auth != null && 
-        request.auth.uid == request.resource.data.userId;
+    // Processed sensor readings - public environmental data
+    match /processedSensorReadings/{readingId} {
+      allow read: if true;
+      allow write: if false; // Only backend can write
     }
     
-    // Allow authenticated users to read/write their own user profiles
-    match /users/{userId} {
-      allow read, write: if request.auth != null && 
-        (request.auth.uid == userId || request.auth.token.admin == true);
-    }
-    
-    // Allow public read access to air quality data
+    // Air quality data - public environmental data
     match /airQualityData/{dataId} {
       allow read: if true;
-      allow write: if request.auth != null && request.auth.token.admin == true;
+      allow write: if false; // Only backend can write
     }
     
-    // Allow authenticated users to read/write their own health assessments
-    match /healthAssessments/{assessmentId} {
-      allow read, write: if request.auth != null && 
-        (request.auth.uid == resource.data.userId || request.auth.token.admin == true);
-      allow create: if request.auth != null && 
-        request.auth.uid == request.resource.data.userId;
+    // ===================================================================
+    // PROTECTED HEALTH DATA (SERVER-SIDE ONLY)
+    // ===================================================================
+    
+    // Symptom reports - MUST go through Cloud Functions for validation
+    match /symptomReports/{reportId} {
+      // Read only aggregated/anonymized data for admins
+      allow read: if isAdmin();
+      // NO CLIENT WRITES - Must use submitSymptomReport Cloud Function
+      allow write: if false;
+    }
+    
+    // Health alerts - backend only
+    match /healthAlerts/{alertId} {
+      allow read: if isAdmin();
+      allow write: if false; // Only backend can write
+    }
+    
+    // Rate limits - backend only
+    match /rateLimits/{userId} {
+      allow read: if false;
+      allow write: if false; // Only backend can manage
+    }
+    
+    // ===================================================================
+    // USER PROFILES & CONSENT
+    // ===================================================================
+    
+    // User profiles (non-PHI metadata)
+    match /users/{userId} {
+      allow read: if isAuthenticated() && 
+        (request.auth.uid == userId || isAdmin());
+      allow write: if isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // User consent records
+    match /userConsent/{userId} {
+      allow read: if isAuthenticated() && 
+        (request.auth.uid == userId || isAdmin());
+      allow write: if isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // ===================================================================
+    // FEEDBACK & ANALYTICS (LIMITED WRITE ACCESS)
+    // ===================================================================
+    
+    // User feedback - authenticated users can submit
+    match /userFeedback/{feedbackId} {
+      allow read: if isAdmin();
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+      allow update, delete: if false;
+    }
+    
+    // ===================================================================
+    // ADVOCACY WORKFLOW DATA
+    // ===================================================================
+    
+    // Advocacy cases - authenticated users and advocates
+    match /advocacyCases/{caseId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && 
+        (resource.data.createdBy == request.auth.uid || isAdmin());
+      allow delete: if isAdmin();
+    }
+    
+    // Evidence attachments
+    match /evidenceAttachments/{attachmentId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+    
+    // ===================================================================
+    // ADMIN ONLY COLLECTIONS
+    // ===================================================================
+    
+    // System logs and audit trails
+    match /auditLogs/{logId} {
+      allow read: if isAdmin();
+      allow write: if false; // Only backend
+    }
+    
+    // System configuration
+    match /systemConfig/{configId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+    
+    // ===================================================================
+    // FALLBACK: DENY ALL BY DEFAULT
+    // ===================================================================
+    
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 } 

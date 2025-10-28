@@ -212,7 +212,7 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
   console.log('PurpleAir API KEY:', process.env.REACT_APP_PURPLEAIR_API_KEY);
 
   return (
-    <div className="sensor-map">
+    <div className="sensor-map" style={{ background: 'transparent' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '15px' }}>
         <h2>Sensor Map - Mon Valley Air Quality</h2>
         <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>

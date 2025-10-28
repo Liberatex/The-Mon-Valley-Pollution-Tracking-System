@@ -1,8 +1,35 @@
-import React from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 
 const Home: React.FC = () => {
+  const [isVisible, setIsVisible] = useState(false);
+  const sectionRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
+    <div ref={sectionRef} style={{ 
+      padding: '40px 20px', 
+      maxWidth: '1200px', 
+      margin: '0 auto',
+      opacity: isVisible ? 1 : 0,
+      transform: isVisible ? 'translateY(0)' : 'translateY(30px)',
+      transition: 'opacity 0.8s ease, transform 0.8s ease'
+    }}>
       {/* Hero Section */}
       <div style={{
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -35,7 +62,7 @@ const Home: React.FC = () => {
         border: '2px solid #16A085'
       }}>
         <h3 style={{ color: '#16A085', fontSize: '1.8rem', marginBottom: '15px' }}>
-          🌍 About Valley Clean Air Now
+          About Valley Clean Air Now
         </h3>
         <p style={{ fontSize: '1.1rem', lineHeight: '1.8', color: '#333' }}>
           Valley Clean Air Now (VCAN) is a community-led movement fighting for the residents 
@@ -45,7 +72,7 @@ const Home: React.FC = () => {
         
         <div style={{ marginTop: '25px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
           <div style={{ background: '#f8f9fa', padding: '20px', borderRadius: '10px' }}>
-            <h4 style={{ color: '#667eea', marginBottom: '10px' }}>📍 Location</h4>
+            <h4 style={{ color: '#667eea', marginBottom: '10px' }}>Location</h4>
             <p style={{ color: '#666', margin: 0 }}>
               635 Monongahela Avenue, First FL Rear Office<br />
               Glassport, PA 15045
@@ -53,7 +80,7 @@ const Home: React.FC = () => {
           </div>
           
           <div style={{ background: '#f8f9fa', padding: '20px', borderRadius: '10px' }}>
-            <h4 style={{ color: '#667eea', marginBottom: '10px' }}>📞 Contact</h4>
+            <h4 style={{ color: '#667eea', marginBottom: '10px' }}>Contact</h4>
             <p style={{ color: '#666', margin: 0 }}>
               Phone: (412) 226-6512<br />
               Email: info@valleycleanair.com
@@ -61,7 +88,7 @@ const Home: React.FC = () => {
           </div>
           
           <div style={{ background: '#f8f9fa', padding: '20px', borderRadius: '10px' }}>
-            <h4 style={{ color: '#667eea', marginBottom: '10px' }}>🌐 Visit VCAN</h4>
+            <h4 style={{ color: '#667eea', marginBottom: '10px' }}>Visit VCAN</h4>
             <p style={{ color: '#666', margin: 0 }}>
               <a href="https://www.valleycleanair.com" target="_blank" rel="noopener noreferrer" 
                  style={{ color: '#16A085', textDecoration: 'none', fontWeight: 'bold' }}>
@@ -86,7 +113,7 @@ const Home: React.FC = () => {
           borderRadius: '15px',
           boxShadow: '0 8px 25px rgba(245, 87, 108, 0.3)'
         }}>
-          <h3 style={{ fontSize: '1.8rem', marginBottom: '15px' }}>🎯 Mission</h3>
+          <h3 style={{ fontSize: '1.8rem', marginBottom: '15px' }}>Mission</h3>
           <p style={{ fontSize: '1.1rem', lineHeight: '1.8' }}>
             To empower Mon Valley residents with data-driven tools to track air pollution, 
             document health impacts, and advocate for environmental justice through 
@@ -101,7 +128,7 @@ const Home: React.FC = () => {
           borderRadius: '15px',
           boxShadow: '0 8px 25px rgba(79, 172, 254, 0.3)'
         }}>
-          <h3 style={{ fontSize: '1.8rem', marginBottom: '15px' }}>👁️ Vision</h3>
+          <h3 style={{ fontSize: '1.8rem', marginBottom: '15px' }}>Vision</h3>
           <p style={{ fontSize: '1.1rem', lineHeight: '1.8' }}>
             A future where Mon Valley communities breathe clean air, where industrial 
             polluters are held accountable, and where residents have the tools and 
@@ -116,7 +143,7 @@ const Home: React.FC = () => {
           borderRadius: '15px',
           boxShadow: '0 8px 25px rgba(250, 112, 154, 0.3)'
         }}>
-          <h3 style={{ fontSize: '1.8rem', marginBottom: '15px' }}>🌟 Goals</h3>
+          <h3 style={{ fontSize: '1.8rem', marginBottom: '15px' }}>Goals</h3>
           <ul style={{ fontSize: '1.1rem', lineHeight: '2', paddingLeft: '20px' }}>
             <li>Real-time air quality monitoring</li>
             <li>Health impact documentation</li>
@@ -148,7 +175,7 @@ const Home: React.FC = () => {
             paddingLeft: '20px'
           }}>
             <h4 style={{ color: '#E74C3C', marginBottom: '10px', fontSize: '1.3rem' }}>
-              📊 Real-Time Monitoring
+              Real-Time Monitoring
             </h4>
             <p style={{ color: '#666', lineHeight: '1.7' }}>
               Track air quality from PurpleAir sensors and official monitoring stations 
@@ -161,7 +188,7 @@ const Home: React.FC = () => {
             paddingLeft: '20px'
           }}>
             <h4 style={{ color: '#3498DB', marginBottom: '10px', fontSize: '1.3rem' }}>
-              🏭 Source Attribution
+              Source Attribution
             </h4>
             <p style={{ color: '#666', lineHeight: '1.7' }}>
               Connect pollution sources to health impacts using Title V permit data, 
@@ -174,7 +201,7 @@ const Home: React.FC = () => {
             paddingLeft: '20px'
           }}>
             <h4 style={{ color: '#9B59B6', marginBottom: '10px', fontSize: '1.3rem' }}>
-              🏥 Health Tracking
+              Health Tracking
             </h4>
             <p style={{ color: '#666', lineHeight: '1.7' }}>
               Securely document symptoms and health impacts using the OSAC framework 
@@ -187,7 +214,7 @@ const Home: React.FC = () => {
             paddingLeft: '20px'
           }}>
             <h4 style={{ color: '#16A085', marginBottom: '10px', fontSize: '1.3rem' }}>
-              📄 Evidence Generation
+              Evidence Generation
             </h4>
             <p style={{ color: '#666', lineHeight: '1.7' }}>
               Generate actionable advocacy reports linking pollution events to health 
@@ -200,7 +227,7 @@ const Home: React.FC = () => {
             paddingLeft: '20px'
           }}>
             <h4 style={{ color: '#F39C12', marginBottom: '10px', fontSize: '1.3rem' }}>
-              🤖 AI Assistant
+              AI Assistant
             </h4>
             <p style={{ color: '#666', lineHeight: '1.7' }}>
               Get personalized health advice and pollution information through our 
@@ -213,7 +240,7 @@ const Home: React.FC = () => {
             paddingLeft: '20px'
           }}>
             <h4 style={{ color: '#1ABC9C', marginBottom: '10px', fontSize: '1.3rem' }}>
-              🔬 Risk Modeling
+              Risk Modeling
             </h4>
             <p style={{ color: '#666', lineHeight: '1.7' }}>
               Calculate exposure risks based on distance to facilities, current 
@@ -264,7 +291,7 @@ const Home: React.FC = () => {
       <div style={{ textAlign: 'center', marginTop: '40px', color: '#999', fontSize: '0.9rem' }}>
         <p>This platform is part of VCAN's Proactive Health and Pollution Advocacy (PHPA) initiative.</p>
         <p style={{ marginTop: '10px' }}>
-          Built with ❤️ for the Mon Valley community by Liberate X in partnership with VCAN.
+          Built for the Mon Valley community by Liberate X in partnership with VCAN.
         </p>
       </div>
     </div>

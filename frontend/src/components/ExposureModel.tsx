@@ -63,72 +63,83 @@ const ExposureModel: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Load data in two independent steps to avoid race conditions on some devices
   useEffect(() => {
-    async function loadData() {
-      setLoading(true);
+    let isMounted = true;
+    async function loadFacilities() {
       try {
-        // Fetch Title V facilities
         const isDevelopment = process.env.REACT_APP_USE_EMULATOR === 'true';
         const baseUrl = isDevelopment 
           ? 'http://127.0.0.1:5001/mv-pollution-tracking-system/us-central1'
           : 'https://us-central1-mv-pollution-tracking-system.cloudfunctions.net';
         const facilitiesResp = await axios.get(`${baseUrl}/getTitleVFacilities`);
-        const facilitiesData = facilitiesResp.data.facilities || [];
+        if (!isMounted) return;
+        const facilitiesData = facilitiesResp.data?.facilities || [];
         setFacilities(facilitiesData);
-
-        // Fetch current air quality (using Clairton coords as example)
+      } catch (err) {
+        console.warn('Facilities fetch failed, continuing with empty list.', err);
+        if (isMounted) setFacilities([]);
+      }
+    }
+    async function loadAirQuality() {
+      try {
         const CLAIRTON_LAT = 40.292;
         const CLAIRTON_LNG = -79.881;
         const OWM_API_KEY = process.env.REACT_APP_OWM_API_KEY || '';
-        
-        try {
-          const aqResp = await axios.get(
-            `https://api.openweathermap.org/data/2.5/air_pollution?lat=${CLAIRTON_LAT}&lon=${CLAIRTON_LNG}&appid=${OWM_API_KEY}`
-          );
-          setCurrentAQI(aqResp.data.list[0]?.main.aqi || null);
-          setCurrentPM25(aqResp.data.list[0]?.components.pm2_5 || null);
-        } catch (err) {
-          console.warn('Could not fetch air quality:', err);
-          setCurrentPM25(50); // Fallback value
-        }
-
-        // Calculate exposure for each facility
-        if (facilitiesData.length > 0 && currentPM25 !== null) {
-          const exposure = facilitiesData
-            .filter((f: any) => f.location?.lat && f.location?.lng)
-            .map((facility: any) => {
-              const distance = calculateDistance(
-                CLAIRTON_LAT,
-                CLAIRTON_LNG,
-                facility.location.lat,
-                facility.location.lng
-              );
-              const { score, riskLevel } = calculateExposureScore(currentPM25, distance);
-              
-              return {
-                location: { lat: CLAIRTON_LAT, lng: CLAIRTON_LNG },
-                facilityId: facility.facilityId,
-                facilityName: facility.name,
-                distance: Math.round(distance * 10) / 10,
-                pm25: currentPM25,
-                exposureScore: Math.round(score * 10) / 10,
-                riskLevel
-              };
-            })
-            .sort((a: any, b: any) => b.exposureScore - a.exposureScore); // Sort by highest exposure
-          
-          setExposureData(exposure);
-        }
+        const aqResp = await axios.get(
+          `https://api.openweathermap.org/data/2.5/air_pollution?lat=${CLAIRTON_LAT}&lon=${CLAIRTON_LNG}&appid=${OWM_API_KEY}`
+        );
+        if (!isMounted) return;
+        setCurrentAQI(aqResp.data?.list?.[0]?.main?.aqi || null);
+        setCurrentPM25(aqResp.data?.list?.[0]?.components?.pm2_5 ?? 35.0);
       } catch (err) {
-        console.error('Failed to load exposure data:', err);
-        setError('Failed to load exposure data. Please try again later.');
-      } finally {
-        setLoading(false);
+        console.warn('Air quality fetch failed, using fallback.', err);
+        if (isMounted) setCurrentPM25(35.0);
       }
     }
-    
-    loadData();
+    setLoading(true);
+    setError(null);
+    Promise.all([loadFacilities(), loadAirQuality()])
+      .finally(() => setLoading(false));
+    return () => { isMounted = false; };
   }, []);
+
+  // Compute exposure whenever inputs are ready
+  useEffect(() => {
+    const CLAIRTON_LAT = 40.292;
+    const CLAIRTON_LNG = -79.881;
+    if (!currentPM25 || facilities.length === 0) {
+      setExposureData([]);
+      return;
+    }
+    try {
+      const exposure = facilities
+        .filter((f: any) => f.location?.lat && f.location?.lng)
+        .map((facility: any) => {
+          const distance = calculateDistance(
+            CLAIRTON_LAT,
+            CLAIRTON_LNG,
+            facility.location.lat,
+            facility.location.lng
+          );
+          const { score, riskLevel } = calculateExposureScore(currentPM25, distance);
+          return {
+            location: { lat: CLAIRTON_LAT, lng: CLAIRTON_LNG },
+            facilityId: facility.facilityId,
+            facilityName: facility.name,
+            distance: Math.round(distance * 10) / 10,
+            pm25: currentPM25,
+            exposureScore: Math.round(score * 10) / 10,
+            riskLevel
+          };
+        })
+        .sort((a: any, b: any) => b.exposureScore - a.exposureScore);
+      setExposureData(exposure);
+    } catch (err) {
+      console.error('Exposure computation failed:', err);
+      setError('Failed to load exposure data. Please try again later.');
+    }
+  }, [facilities, currentPM25]);
 
   const getRiskColor = (level: string) => {
     switch (level) {
@@ -165,7 +176,7 @@ const ExposureModel: React.FC = () => {
         WebkitBackgroundClip: 'text',
         WebkitTextFillColor: 'transparent'
       }}>
-        🔬 Exposure Risk Model
+        Exposure Risk Model
       </h2>
 
       <div style={{
@@ -177,7 +188,7 @@ const ExposureModel: React.FC = () => {
         boxShadow: '0 8px 25px rgba(0,0,0,0.1)',
         border: '2px solid #e0e0e0'
       }}>
-        <h3 style={{ marginBottom: '15px', fontSize: '1.5rem', color: '#1976d2' }}>📊 Current Conditions</h3>
+        <h3 style={{ marginBottom: '15px', fontSize: '1.5rem', color: '#1976d2' }}>Current Conditions</h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
           <div style={{ color: '#333', fontSize: '1rem' }}>
             <strong style={{ color: '#1976d2' }}>Current AQI:</strong> {currentAQI || 'N/A'}
@@ -212,7 +223,7 @@ const ExposureModel: React.FC = () => {
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                   <h4 style={{ color: '#1976d2', fontSize: '1.3rem', margin: 0 }}>
-                    🏭 {data.facilityName}
+                    {data.facilityName}
                   </h4>
                   <span style={{
                     background: getRiskColor(data.riskLevel),
@@ -283,7 +294,7 @@ const ExposureModel: React.FC = () => {
         border: '2px solid #e0e0e0',
         boxShadow: '0 5px 15px rgba(0,0,0,0.1)'
       }}>
-        <h4 style={{ color: '#1976d2', marginBottom: '15px', fontSize: '1.3rem' }}>📖 How Exposure Risk is Calculated</h4>
+        <h4 style={{ color: '#1976d2', marginBottom: '15px', fontSize: '1.3rem' }}>How Exposure Risk is Calculated</h4>
         <div style={{ lineHeight: '1.8', color: '#333', fontSize: '1rem' }}>
           <p style={{ color: '#333' }}><strong style={{ color: '#1976d2' }}>Formula:</strong> Exposure Score = PM2.5 Concentration (μg/m³) ÷ Distance from Facility (miles)</p>
           <p style={{ color: '#333' }}><strong style={{ color: '#1976d2' }}>Interpretation:</strong></p>

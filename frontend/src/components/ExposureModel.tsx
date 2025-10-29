@@ -62,8 +62,15 @@ const ExposureModel: React.FC = () => {
   const [currentPM25, setCurrentPM25] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // User location state
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number; address?: string } | null>(null);
+  const [locationInput, setLocationInput] = useState<string>('');
+  const [locationMethod, setLocationMethod] = useState<'geolocation' | 'address' | 'coordinates' | null>(null);
+  const [gettingLocation, setGettingLocation] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
 
-  // Load data in two independent steps to avoid race conditions on some devices
+  // Load facilities on mount
   useEffect(() => {
     let isMounted = true;
     async function loadFacilities() {
@@ -81,13 +88,24 @@ const ExposureModel: React.FC = () => {
         if (isMounted) setFacilities([]);
       }
     }
+    setLoading(true);
+    loadFacilities().finally(() => {
+      if (isMounted) setLoading(false);
+    });
+    return () => { isMounted = false; };
+  }, []);
+
+  // Load air quality when user location is set
+  useEffect(() => {
+    if (!userLocation) return;
+    
+    let isMounted = true;
+    const location = userLocation; // Capture for closure
     async function loadAirQuality() {
       try {
-        const CLAIRTON_LAT = 40.292;
-        const CLAIRTON_LNG = -79.881;
         const OWM_API_KEY = process.env.REACT_APP_OWM_API_KEY || '';
         const aqResp = await axios.get(
-          `https://api.openweathermap.org/data/2.5/air_pollution?lat=${CLAIRTON_LAT}&lon=${CLAIRTON_LNG}&appid=${OWM_API_KEY}`
+          `https://api.openweathermap.org/data/2.5/air_pollution?lat=${location.lat}&lon=${location.lng}&appid=${OWM_API_KEY}`
         );
         if (!isMounted) return;
         setCurrentAQI(aqResp.data?.list?.[0]?.main?.aqi || null);
@@ -97,18 +115,13 @@ const ExposureModel: React.FC = () => {
         if (isMounted) setCurrentPM25(35.0);
       }
     }
-    setLoading(true);
-    setError(null);
-    Promise.all([loadFacilities(), loadAirQuality()])
-      .finally(() => setLoading(false));
+    loadAirQuality();
     return () => { isMounted = false; };
-  }, []);
+  }, [userLocation]);
 
   // Compute exposure whenever inputs are ready
   useEffect(() => {
-    const CLAIRTON_LAT = 40.292;
-    const CLAIRTON_LNG = -79.881;
-    if (!currentPM25 || facilities.length === 0) {
+    if (!userLocation || !currentPM25 || facilities.length === 0) {
       setExposureData([]);
       return;
     }
@@ -117,14 +130,14 @@ const ExposureModel: React.FC = () => {
         .filter((f: any) => f.location?.lat && f.location?.lng)
         .map((facility: any) => {
           const distance = calculateDistance(
-            CLAIRTON_LAT,
-            CLAIRTON_LNG,
+            userLocation.lat,
+            userLocation.lng,
             facility.location.lat,
             facility.location.lng
           );
           const { score, riskLevel } = calculateExposureScore(currentPM25, distance);
           return {
-            location: { lat: CLAIRTON_LAT, lng: CLAIRTON_LNG },
+            location: { lat: userLocation.lat, lng: userLocation.lng },
             facilityId: facility.facilityId,
             facilityName: facility.name,
             distance: Math.round(distance * 10) / 10,
@@ -139,7 +152,7 @@ const ExposureModel: React.FC = () => {
       console.error('Exposure computation failed:', err);
       setError('Failed to load exposure data. Please try again later.');
     }
-  }, [facilities, currentPM25]);
+  }, [facilities, currentPM25, userLocation]);
 
   const getRiskColor = (level: string) => {
     switch (level) {
@@ -161,6 +174,116 @@ const ExposureModel: React.FC = () => {
     }
   };
 
+  // Handle geolocation
+  const handleUseGeolocation = () => {
+    setGettingLocation(true);
+    setLocationError(null);
+    setLocationMethod('geolocation');
+    
+    if (!navigator.geolocation) {
+      setLocationError('Geolocation is not supported by your browser.');
+      setGettingLocation(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setUserLocation({ lat: latitude, lng: longitude });
+        setLocationError(null);
+        setGettingLocation(false);
+      },
+      (err) => {
+        setLocationError('Could not get your location. Please try entering your address manually.');
+        setGettingLocation(false);
+      },
+      { timeout: 10000, enableHighAccuracy: true }
+    );
+  };
+
+  // Handle address geocoding (using OpenWeatherMap geocoding API)
+  const handleGeocodeAddress = async () => {
+    if (!locationInput.trim()) {
+      setLocationError('Please enter an address.');
+      return;
+    }
+
+    setGettingLocation(true);
+    setLocationError(null);
+    setLocationMethod('address');
+
+    try {
+      const OWM_API_KEY = process.env.REACT_APP_OWM_API_KEY || '';
+      const geocodeResp = await axios.get(
+        `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(locationInput)}&limit=1&appid=${OWM_API_KEY}`
+      );
+
+      if (geocodeResp.data && geocodeResp.data.length > 0) {
+        const { lat, lon, name, state, country } = geocodeResp.data[0];
+        setUserLocation({ 
+          lat, 
+          lng: lon,
+          address: `${name}${state ? `, ${state}` : ''}${country ? `, ${country}` : ''}`
+        });
+        setLocationError(null);
+        setLocationInput(`${name}${state ? `, ${state}` : ''}${country ? `, ${country}` : ''}`);
+      } else {
+        setLocationError('Address not found. Please try a different address or use coordinates.');
+      }
+    } catch (err) {
+      console.error('Geocoding error:', err);
+      setLocationError('Could not find that address. Please try again or use coordinates.');
+    } finally {
+      setGettingLocation(false);
+    }
+  };
+
+  // Handle coordinate input (format: "lat,lng" or "lat, lng")
+  const handleParseCoordinates = () => {
+    if (!locationInput.trim()) {
+      setLocationError('Please enter coordinates in the format: latitude,longitude');
+      return;
+    }
+
+    setGettingLocation(true);
+    setLocationError(null);
+    setLocationMethod('coordinates');
+
+    try {
+      const parts = locationInput.trim().split(',').map(s => s.trim());
+      if (parts.length !== 2) {
+        throw new Error('Invalid format');
+      }
+
+      const lat = parseFloat(parts[0]);
+      const lng = parseFloat(parts[1]);
+
+      if (isNaN(lat) || isNaN(lng)) {
+        throw new Error('Invalid numbers');
+      }
+
+      if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+        throw new Error('Out of range');
+      }
+
+      setUserLocation({ lat, lng });
+      setLocationError(null);
+    } catch (err) {
+      setLocationError('Invalid coordinates. Please use format: latitude,longitude (e.g., 40.292,-79.881)');
+    } finally {
+      setGettingLocation(false);
+    }
+  };
+
+  const handleResetLocation = () => {
+    setUserLocation(null);
+    setLocationInput('');
+    setLocationError(null);
+    setExposureData([]);
+    setCurrentAQI(null);
+    setCurrentPM25(null);
+  };
+
   if (loading) return <div className="loading">Calculating exposure risks...</div>;
   if (error) return <div className="error">Error: {error}</div>;
 
@@ -179,34 +302,205 @@ const ExposureModel: React.FC = () => {
         Exposure Risk Model
       </h2>
 
+      {/* Location Input Section */}
       <div style={{
-        background: 'white',
-        padding: '25px',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        padding: '30px',
         borderRadius: '15px',
-        color: '#333',
+        color: 'white',
         marginBottom: '30px',
-        boxShadow: '0 8px 25px rgba(0,0,0,0.1)',
-        border: '2px solid #e0e0e0'
+        boxShadow: '0 8px 25px rgba(0,0,0,0.2)'
       }}>
-        <h3 style={{ marginBottom: '15px', fontSize: '1.5rem', color: '#1976d2' }}>Current Conditions</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
-          <div style={{ color: '#333', fontSize: '1rem' }}>
-            <strong style={{ color: '#1976d2' }}>Current AQI:</strong> {currentAQI || 'N/A'}
-          </div>
-          <div style={{ color: '#333', fontSize: '1rem' }}>
-            <strong style={{ color: '#1976d2' }}>Current PM2.5:</strong> {currentPM25?.toFixed(1) || 'N/A'} μg/m³
-          </div>
-          <div style={{ color: '#333', fontSize: '1rem' }}>
-            <strong style={{ color: '#1976d2' }}>Active Facilities:</strong> {facilities.length}
-          </div>
-        </div>
-        <p style={{ marginTop: '15px', fontSize: '0.95rem', color: '#666' }}>
-          <strong>Formula:</strong> Exposure Risk = PM2.5 Concentration ÷ Distance from Facility
+        <h3 style={{ marginBottom: '20px', fontSize: '1.8rem', fontWeight: 'bold' }}>
+          Enter Your Location
+        </h3>
+        <p style={{ marginBottom: '25px', fontSize: '1rem', opacity: 0.95 }}>
+          Get personalized exposure risk analysis based on your location relative to industrial facilities.
         </p>
+
+        {userLocation ? (
+          <div style={{
+            background: 'rgba(255,255,255,0.15)',
+            padding: '20px',
+            borderRadius: '10px',
+            marginBottom: '20px',
+            backdropFilter: 'blur(10px)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
+              <div>
+                <strong style={{ fontSize: '1.1rem', display: 'block', marginBottom: '8px' }}>
+                  {userLocation.address || `Location: ${userLocation.lat.toFixed(4)}, ${userLocation.lng.toFixed(4)}`}
+                </strong>
+                <span style={{ fontSize: '0.9rem', opacity: 0.9 }}>
+                  Exposure analysis will be calculated for this location
+                </span>
+              </div>
+              <button
+                onClick={handleResetLocation}
+                style={{
+                  background: 'rgba(255,255,255,0.2)',
+                  border: '2px solid white',
+                  color: 'white',
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  fontSize: '0.9rem',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.3)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.2)';
+                }}
+              >
+                Change Location
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            <button
+              onClick={handleUseGeolocation}
+              disabled={gettingLocation}
+              style={{
+                background: gettingLocation ? 'rgba(255,255,255,0.3)' : 'white',
+                border: 'none',
+                color: gettingLocation ? 'white' : '#667eea',
+                padding: '15px 25px',
+                borderRadius: '8px',
+                cursor: gettingLocation ? 'not-allowed' : 'pointer',
+                fontWeight: 'bold',
+                fontSize: '1rem',
+                transition: 'all 0.3s ease',
+                boxShadow: gettingLocation ? 'none' : '0 4px 15px rgba(0,0,0,0.2)'
+              }}
+            >
+              {gettingLocation ? 'Getting your location...' : 'Use My Current Location'}
+            </button>
+
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <input
+                type="text"
+                value={locationInput}
+                onChange={(e) => setLocationInput(e.target.value)}
+                placeholder="Enter address (e.g., Clairton, PA) or coordinates (e.g., 40.292,-79.881)"
+                style={{
+                  flex: '1',
+                  minWidth: '200px',
+                  padding: '12px 15px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  fontSize: '1rem',
+                  boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
+                }}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    if (locationInput.includes(',')) {
+                      handleParseCoordinates();
+                    } else {
+                      handleGeocodeAddress();
+                    }
+                  }
+                }}
+              />
+              <button
+                onClick={() => {
+                  if (locationInput.includes(',') && /^-?\d+\.?\d*,-?\d+\.?\d*$/.test(locationInput.trim())) {
+                    handleParseCoordinates();
+                  } else {
+                    handleGeocodeAddress();
+                  }
+                }}
+                disabled={gettingLocation || !locationInput.trim()}
+                style={{
+                  background: gettingLocation || !locationInput.trim() ? 'rgba(255,255,255,0.3)' : 'white',
+                  border: 'none',
+                  color: gettingLocation || !locationInput.trim() ? 'white' : '#667eea',
+                  padding: '12px 25px',
+                  borderRadius: '8px',
+                  cursor: gettingLocation || !locationInput.trim() ? 'not-allowed' : 'pointer',
+                  fontWeight: 'bold',
+                  fontSize: '1rem',
+                  transition: 'all 0.3s ease',
+                  boxShadow: gettingLocation || !locationInput.trim() ? 'none' : '0 4px 15px rgba(0,0,0,0.2)'
+                }}
+              >
+                {gettingLocation ? 'Searching...' : 'Search'}
+              </button>
+            </div>
+
+            {locationError && (
+              <div style={{
+                background: 'rgba(255,0,0,0.2)',
+                border: '1px solid rgba(255,255,255,0.5)',
+                padding: '12px',
+                borderRadius: '8px',
+                fontSize: '0.9rem',
+                color: 'white'
+              }}>
+                {locationError}
+              </div>
+            )}
+
+            <p style={{ fontSize: '0.85rem', opacity: 0.8, marginTop: '10px' }}>
+              You can enter an address (e.g., "Clairton, PA") or coordinates (e.g., "40.292,-79.881")
+            </p>
+          </div>
+        )}
       </div>
 
-      <div style={{ marginBottom: '30px' }}>
-        <h3 style={{ color: '#1976d2', fontSize: '1.8rem', marginBottom: '20px' }}>Facility Exposure Analysis</h3>
+      {/* Show results only if location is set */}
+      {!userLocation && (
+        <div style={{
+          background: 'white',
+          padding: '40px',
+          borderRadius: '15px',
+          textAlign: 'center',
+          marginBottom: '30px',
+          boxShadow: '0 5px 15px rgba(0,0,0,0.1)',
+          border: '2px solid #e0e0e0'
+        }}>
+          <p style={{ fontSize: '1.1rem', color: '#666', marginBottom: '15px' }}>
+            Enter your location above to see personalized exposure risk analysis.
+          </p>
+          <p style={{ fontSize: '0.95rem', color: '#999' }}>
+            Your exposure risk is calculated based on your proximity to industrial facilities and current air quality conditions.
+          </p>
+        </div>
+      )}
+
+      {userLocation && (
+        <>
+          <div style={{
+            background: 'white',
+            padding: '25px',
+            borderRadius: '15px',
+            color: '#333',
+            marginBottom: '30px',
+            boxShadow: '0 8px 25px rgba(0,0,0,0.1)',
+            border: '2px solid #e0e0e0'
+          }}>
+            <h3 style={{ marginBottom: '15px', fontSize: '1.5rem', color: '#1976d2' }}>Current Conditions at Your Location</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+              <div style={{ color: '#333', fontSize: '1rem' }}>
+                <strong style={{ color: '#1976d2' }}>Current AQI:</strong> {currentAQI || 'N/A'}
+              </div>
+              <div style={{ color: '#333', fontSize: '1rem' }}>
+                <strong style={{ color: '#1976d2' }}>Current PM2.5:</strong> {currentPM25?.toFixed(1) || 'N/A'} μg/m³
+              </div>
+              <div style={{ color: '#333', fontSize: '1rem' }}>
+                <strong style={{ color: '#1976d2' }}>Active Facilities:</strong> {facilities.length}
+              </div>
+            </div>
+            <p style={{ marginTop: '15px', fontSize: '0.95rem', color: '#666' }}>
+              <strong>Formula:</strong> Exposure Risk = PM2.5 Concentration ÷ Distance from Facility
+            </p>
+          </div>
+
+          <div style={{ marginBottom: '30px' }}>
+            <h3 style={{ color: '#1976d2', fontSize: '1.8rem', marginBottom: '20px' }}>Your Personal Exposure Analysis</h3>
         
         {exposureData.length > 0 ? (
           <div style={{ display: 'grid', gap: '20px' }}>
@@ -272,27 +566,30 @@ const ExposureModel: React.FC = () => {
                 </div>
 
                 <div style={{ marginTop: '10px', fontSize: '1rem', color: '#333', fontWeight: '500' }}>
-                  {data.riskLevel === 'very_high' && '⚠️ Immediate health risk - consider evacuation or protective measures'}
-                  {data.riskLevel === 'high' && '⚠️ Elevated risk - sensitive groups should take precautions'}
-                  {data.riskLevel === 'moderate' && '⚡ Moderate risk - monitor symptoms'}
-                  {data.riskLevel === 'low' && '✅ Low risk - continue normal activities with awareness'}
+                  {data.riskLevel === 'very_high' && 'Immediate health risk - consider evacuation or protective measures'}
+                  {data.riskLevel === 'high' && 'Elevated risk - sensitive groups should take precautions'}
+                  {data.riskLevel === 'moderate' && 'Moderate risk - monitor symptoms'}
+                  {data.riskLevel === 'low' && 'Low risk - continue normal activities with awareness'}
                 </div>
               </div>
             ))}
           </div>
         ) : (
           <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
-            No exposure data available. Loading facilities...
+            Calculating your exposure risk based on nearby facilities...
           </div>
         )}
-      </div>
+          </div>
+        </>
+      )}
 
       <div style={{
         background: 'white',
         padding: '25px',
         borderRadius: '15px',
         border: '2px solid #e0e0e0',
-        boxShadow: '0 5px 15px rgba(0,0,0,0.1)'
+        boxShadow: '0 5px 15px rgba(0,0,0,0.1)',
+        marginTop: '30px'
       }}>
         <h4 style={{ color: '#1976d2', marginBottom: '15px', fontSize: '1.3rem' }}>How Exposure Risk is Calculated</h4>
         <div style={{ lineHeight: '1.8', color: '#333', fontSize: '1rem' }}>

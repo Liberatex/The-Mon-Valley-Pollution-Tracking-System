@@ -31,7 +31,7 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
     <div ref={sectionRef} className="w-full">
       {/* Hero Section - Full Width */}
       <FadeInSection delay={0}>
-      <div className="bg-gradient-to-br from-slate-800 to-slate-600 text-white w-full text-center py-12 sm:py-16 lg:py-24 px-4 sm:px-6 lg:px-8">
+      <div className="bg-gradient-to-br from-slate-800 to-slate-600 text-white w-screen text-center py-12 sm:py-16 lg:py-24 px-4 sm:px-6 lg:px-8" style={{ marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
         <div className="max-w-7xl mx-auto">
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6 tracking-tight leading-tight">
             Mon Valley Pollution Tracking System
@@ -74,7 +74,7 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
       </FadeInSection>
 
       {/* Rest of content with container */}
-      <div className="w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16 max-w-7xl mx-auto">
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16 max-w-7xl mx-auto" style={{ paddingLeft: 'max(1rem, calc((100% - 1400px) / 2 + 1rem))', paddingRight: 'max(1rem, calc((100% - 1400px) / 2 + 1rem))' }}>
 
       {/* VCAN Connection */}
       <FadeInSection delay={0.2}>

@@ -130,8 +130,11 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
     // Fetch PurpleAir sensors via backend function
     const fetchPurpleAir = async () => {
       try {
-        // Always use localhost emulator when running locally
-        const baseUrl = 'http://127.0.0.1:5001/mv-pollution-tracking-system/us-central1';
+        // Use emulator URL in development, production URL otherwise
+        const isDevelopment = shouldUseEmulator();
+        const baseUrl = isDevelopment 
+          ? 'http://127.0.0.1:5001/mv-pollution-tracking-system/us-central1'
+          : 'https://us-central1-mv-pollution-tracking-system.cloudfunctions.net';
         
         const response = await axios.get(`${baseUrl}/fetchPurpleAirSensorData`, {
           timeout: 20000,
@@ -158,12 +161,12 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
           // Check if API key is not configured
           if (response.data?.message && response.data.message.includes('API key not configured')) {
             setApiKeyStatus('not_configured');
-            const mockSensors: Sensor[] = [
-              { id: 'mock-1', name: 'Clairton Sensor (Mock)', location: { lat: 40.292, lng: -79.881 }, pm25: 45.2, source: 'Mock Data' },
-              { id: 'mock-2', name: 'Braddock Sensor (Mock)', location: { lat: 40.400, lng: -79.863 }, pm25: 38.7, source: 'Mock Data' },
-              { id: 'mock-3', name: 'Dravosburg Sensor (Mock)', location: { lat: 40.350, lng: -79.886 }, pm25: 42.1, source: 'Mock Data' }
-            ];
-            setSensors(mockSensors);
+          const mockSensors: Sensor[] = [
+            { id: 'mock-1', name: 'Clairton Sensor (Mock)', location: { lat: 40.292, lng: -79.881 }, pm25: 45.2, source: 'Mock Data' },
+            { id: 'mock-2', name: 'Braddock Sensor (Mock)', location: { lat: 40.400, lng: -79.863 }, pm25: 38.7, source: 'Mock Data' },
+            { id: 'mock-3', name: 'Dravosburg Sensor (Mock)', location: { lat: 40.350, lng: -79.886 }, pm25: 42.1, source: 'Mock Data' }
+          ];
+          setSensors(mockSensors);
           } else {
             setApiKeyStatus('configured');
             setSensors([]);
@@ -172,12 +175,12 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
       } catch (err: any) {
         if (err.response?.data?.message?.includes('API key not configured')) {
           setApiKeyStatus('not_configured');
-          const mockSensors: Sensor[] = [
-            { id: 'mock-1', name: 'Clairton Sensor (Mock)', location: { lat: 40.292, lng: -79.881 }, pm25: 45.2, source: 'Mock Data' },
-            { id: 'mock-2', name: 'Braddock Sensor (Mock)', location: { lat: 40.400, lng: -79.863 }, pm25: 38.7, source: 'Mock Data' },
-            { id: 'mock-3', name: 'Dravosburg Sensor (Mock)', location: { lat: 40.350, lng: -79.886 }, pm25: 42.1, source: 'Mock Data' }
-          ];
-          setSensors(mockSensors);
+        const mockSensors: Sensor[] = [
+          { id: 'mock-1', name: 'Clairton Sensor (Mock)', location: { lat: 40.292, lng: -79.881 }, pm25: 45.2, source: 'Mock Data' },
+          { id: 'mock-2', name: 'Braddock Sensor (Mock)', location: { lat: 40.400, lng: -79.863 }, pm25: 38.7, source: 'Mock Data' },
+          { id: 'mock-3', name: 'Dravosburg Sensor (Mock)', location: { lat: 40.350, lng: -79.886 }, pm25: 42.1, source: 'Mock Data' }
+        ];
+        setSensors(mockSensors);
         } else {
           setApiKeyStatus('configured');
           setSensors([]);
@@ -243,8 +246,11 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
   useEffect(() => {
     const fetchTitleVFacilities = async () => {
       try {
-        // Always use localhost emulator when running locally
-        const baseUrl = 'http://127.0.0.1:5001/mv-pollution-tracking-system/us-central1';
+        // Use emulator URL in development, production URL otherwise
+        const isDevelopment = shouldUseEmulator();
+        const baseUrl = isDevelopment 
+          ? 'http://127.0.0.1:5001/mv-pollution-tracking-system/us-central1'
+          : 'https://us-central1-mv-pollution-tracking-system.cloudfunctions.net';
         const resp = await axios.get(`${baseUrl}/getTitleVFacilities`, {
           timeout: 15000,
           headers: {
@@ -427,10 +433,10 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
           className="shadow-lg"
         >
           <MapController center={[CLAIRTON_COORDS.lat, CLAIRTON_COORDS.lng]} zoom={MAP_ZOOM} />
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
           
           {/* PurpleAir Sensors with color-coded markers */}
           {showSensors && sensors.length > 0 && sensors.map((sensor) => {
@@ -444,14 +450,14 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
             const aqiLevel = getAQILevel(pm25);
             
             return (
-              <Marker
-                key={sensor.id}
-                position={[sensor.location.lat, sensor.location.lng]}
+          <Marker
+            key={sensor.id}
+            position={[sensor.location.lat, sensor.location.lng]}
                 icon={createColoredIcon(color, 24)}
-                eventHandlers={{
-                  click: () => handleSelect(sensor),
-                }}
-              >
+            eventHandlers={{
+              click: () => handleSelect(sensor),
+            }}
+          >
                 <Popup className="custom-popup" maxWidth={300}>
                   <div className="p-2">
                     <div className="flex items-start gap-2 mb-2">
@@ -499,9 +505,9 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
                         <strong>Location:</strong> {Number(sensor.location.lat).toFixed(4)}, {Number(sensor.location.lng).toFixed(4)}
                       </p>
                     </div>
-                  </div>
-                </Popup>
-              </Marker>
+              </div>
+            </Popup>
+          </Marker>
             );
           })}
           
@@ -513,11 +519,11 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
             }
             
             return (
-            <Marker
-              key={facility.facilityId}
-              position={[facility.location.lat, facility.location.lng]}
-              icon={L.divIcon({
-                className: 'custom-titlev-marker',
+          <Marker
+            key={facility.facilityId}
+            position={[facility.location.lat, facility.location.lng]}
+            icon={L.divIcon({
+              className: 'custom-titlev-marker',
                 html: '<div style="background: #d32f2f; width: 28px; height: 28px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; font-size: 16px;">🏭</div>',
                 iconSize: [28, 28],
                 iconAnchor: [14, 14]
@@ -530,7 +536,7 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
                     <div>
                       <strong>Operator:</strong> {facility.operator}
                     </div>
-                    <div>
+              <div>
                       <strong>Permit ID:</strong> {facility.permitId}
                     </div>
                     {facility.permittedPollutants && facility.permittedPollutants.length > 0 && (
@@ -551,9 +557,9 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
                       </div>
                     )}
                   </div>
-                </div>
-              </Popup>
-            </Marker>
+              </div>
+            </Popup>
+          </Marker>
             );
           })}
           
@@ -565,11 +571,11 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
             }
             
             return (
-            <Marker
-              key={site.id}
-              position={[site.location.lat, site.location.lng]}
-              icon={L.divIcon({
-                className: 'custom-achd-marker',
+          <Marker
+            key={site.id}
+            position={[site.location.lat, site.location.lng]}
+            icon={L.divIcon({
+              className: 'custom-achd-marker',
                 html: '<div style="background: #1976d2; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; font-size: 14px;">🏢</div>',
                 iconSize: [24, 24],
                 iconAnchor: [12, 12]
@@ -811,4 +817,4 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
   );
 };
 
-export default SensorMap;
+export default SensorMap; 

@@ -226,11 +226,16 @@
 
 .App-main {
   flex: 1;
-  padding: 20px;
-  max-width: 1400px;
-  margin: 0 auto;
+  padding: 0;
+  max-width: 100%;
+  margin: 0;
   width: 100%;
   background: white !important;
+  overflow-x: hidden;
+}
+
+.view-container {
+  padding: 0;
 }
 
 .view-container {

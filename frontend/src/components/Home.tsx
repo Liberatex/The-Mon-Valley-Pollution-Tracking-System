@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { FadeInSection } from './ui/FadeInSection';
 
 const Home: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -22,281 +23,234 @@ const Home: React.FC = () => {
   }, []);
 
   return (
-    <div ref={sectionRef} style={{ 
-      padding: '40px 20px', 
-      maxWidth: '1200px', 
-      margin: '0 auto',
-      opacity: isVisible ? 1 : 0,
-      transform: isVisible ? 'translateY(0)' : 'translateY(30px)',
-      transition: 'opacity 0.8s ease, transform 0.8s ease'
-    }}>
+    <div ref={sectionRef} className="w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16 max-w-7xl mx-auto">
       {/* Hero Section */}
-      <div style={{
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        color: 'white',
-        padding: '60px 40px',
-        borderRadius: '20px',
-        textAlign: 'center',
-        marginBottom: '40px',
-        boxShadow: '0 10px 40px rgba(102, 126, 234, 0.3)'
-      }}>
-        <h1 style={{ fontSize: '3rem', marginBottom: '20px', fontWeight: 'bold' }}>
+      <FadeInSection delay={0}>
+      <div className="bg-gradient-to-br from-slate-800 to-slate-600 text-white rounded-2xl text-center mb-12 sm:mb-16 lg:mb-20 shadow-2xl p-8 sm:p-12 lg:p-20">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6 tracking-tight leading-tight">
           Mon Valley Pollution Tracking System
         </h1>
-        <h2 style={{ fontSize: '1.8rem', marginBottom: '30px', fontWeight: '300' }}>
+        <h2 className="text-lg sm:text-xl md:text-2xl mb-6 sm:mb-8 font-light opacity-95">
           A Project by Valley Clean Air Now (VCAN)
         </h2>
-        <p style={{ fontSize: '1.2rem', maxWidth: '800px', margin: '0 auto', lineHeight: '1.8' }}>
-          Empowering Mon Valley residents with real-time air quality data, health tracking, 
-          and evidence-based advocacy tools to fight for clean air in our communities.
+        <p className="text-base sm:text-lg md:text-xl max-w-3xl mx-auto leading-relaxed opacity-90 font-light px-4">
+          Empowering Mon Valley residents with real-time air quality data, comprehensive health tracking, 
+          and evidence-based advocacy tools to advance environmental justice in our communities.
         </p>
       </div>
+      </FadeInSection>
 
       {/* VCAN Connection */}
-      <div style={{
-        background: 'white',
-        padding: '30px',
-        borderRadius: '15px',
-        boxShadow: '0 5px 15px rgba(0,0,0,0.1)',
-        marginBottom: '30px',
-        border: '2px solid #16A085'
-      }}>
-        <h3 style={{ color: '#16A085', fontSize: '1.8rem', marginBottom: '15px' }}>
+      <FadeInSection delay={0.2}>
+      <div className="bg-white rounded-2xl shadow-lg mb-12 sm:mb-16 border border-gray-200 p-6 sm:p-8 lg:p-12">
+        <h3 className="text-2xl sm:text-3xl lg:text-4xl text-slate-800 mb-4 sm:mb-6 font-semibold tracking-tight">
           About Valley Clean Air Now
         </h3>
-        <p style={{ fontSize: '1.1rem', lineHeight: '1.8', color: '#333' }}>
-          Valley Clean Air Now (VCAN) is a community-led movement fighting for the residents 
-          of the Mon Valley. Founded to address the air quality crisis affecting Clairton, 
-          Braddock, Dravosburg, and surrounding communities.
+        <p className="text-base sm:text-lg text-gray-700 mb-6 sm:mb-8 leading-relaxed max-w-4xl">
+          Valley Clean Air Now (VCAN) is a community-led movement dedicated to protecting the health 
+          and wellbeing of Mon Valley residents. Founded to address the persistent air quality crisis 
+          affecting Clairton, Braddock, Dravosburg, and surrounding communities, VCAN works to hold 
+          industrial polluters accountable and advocate for stronger environmental protections.
         </p>
         
-        <div style={{ marginTop: '25px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
-          <div style={{ background: '#f8f9fa', padding: '20px', borderRadius: '10px' }}>
-            <h4 style={{ color: '#667eea', marginBottom: '10px' }}>Location</h4>
-            <p style={{ color: '#666', margin: 0 }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mt-6 sm:mt-8">
+          <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
+            <h4 className="text-slate-700 mb-3 text-lg font-semibold">
+              Location
+            </h4>
+            <p className="text-gray-600 text-sm sm:text-base leading-relaxed">
               635 Monongahela Avenue, First FL Rear Office<br />
               Glassport, PA 15045
             </p>
           </div>
           
-          <div style={{ background: '#f8f9fa', padding: '20px', borderRadius: '10px' }}>
-            <h4 style={{ color: '#667eea', marginBottom: '10px' }}>Contact</h4>
-            <p style={{ color: '#666', margin: 0 }}>
+          <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
+            <h4 className="text-slate-700 mb-3 text-lg font-semibold">
+              Contact
+            </h4>
+            <p className="text-gray-600 text-sm sm:text-base leading-relaxed">
               Phone: (412) 226-6512<br />
               Email: info@valleycleanair.com
             </p>
           </div>
           
-          <div style={{ background: '#f8f9fa', padding: '20px', borderRadius: '10px' }}>
-            <h4 style={{ color: '#667eea', marginBottom: '10px' }}>Visit VCAN</h4>
-            <p style={{ color: '#666', margin: 0 }}>
-              <a href="https://www.valleycleanair.com" target="_blank" rel="noopener noreferrer" 
-                 style={{ color: '#16A085', textDecoration: 'none', fontWeight: 'bold' }}>
+          <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 sm:col-span-2 lg:col-span-1">
+            <h4 className="text-slate-700 mb-3 text-lg font-semibold">
+              Visit VCAN
+            </h4>
+            <p className="text-gray-600 text-sm sm:text-base">
+              <a 
+                href="https://www.valleycleanair.com" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-slate-700 font-semibold border-b-2 border-slate-700 hover:opacity-70 transition-opacity"
+              >
                 valleycleanair.com
               </a>
             </p>
           </div>
         </div>
       </div>
+      </FadeInSection>
 
       {/* Mission & Vision */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-        gap: '30px',
-        marginBottom: '40px'
-      }}>
-        <div style={{
-          background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-          color: 'white',
-          padding: '40px',
-          borderRadius: '15px',
-          boxShadow: '0 8px 25px rgba(245, 87, 108, 0.3)'
-        }}>
-          <h3 style={{ fontSize: '1.8rem', marginBottom: '15px' }}>Mission</h3>
-          <p style={{ fontSize: '1.1rem', lineHeight: '1.8' }}>
+      <FadeInSection delay={0.4}>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 mb-12 sm:mb-16">
+        <div className="bg-gradient-to-br from-slate-700 to-slate-600 text-white p-6 sm:p-8 lg:p-12 rounded-2xl shadow-xl">
+          <h3 className="text-xl sm:text-2xl lg:text-3xl mb-4 sm:mb-6 font-semibold tracking-tight">
+            Mission
+          </h3>
+          <p className="text-sm sm:text-base lg:text-lg leading-relaxed opacity-95 font-light">
             To empower Mon Valley residents with data-driven tools to track air pollution, 
             document health impacts, and advocate for environmental justice through 
-            evidence-based community organizing.
+            evidence-based community organizing and policy engagement.
           </p>
         </div>
 
-        <div style={{
-          background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-          color: 'white',
-          padding: '40px',
-          borderRadius: '15px',
-          boxShadow: '0 8px 25px rgba(79, 172, 254, 0.3)'
-        }}>
-          <h3 style={{ fontSize: '1.8rem', marginBottom: '15px' }}>Vision</h3>
-          <p style={{ fontSize: '1.1rem', lineHeight: '1.8' }}>
+        <div className="bg-gradient-to-br from-blue-700 to-blue-600 text-white p-6 sm:p-8 lg:p-12 rounded-2xl shadow-xl">
+          <h3 className="text-xl sm:text-2xl lg:text-3xl mb-4 sm:mb-6 font-semibold tracking-tight">
+            Vision
+          </h3>
+          <p className="text-sm sm:text-base lg:text-lg leading-relaxed opacity-95 font-light">
             A future where Mon Valley communities breathe clean air, where industrial 
             polluters are held accountable, and where residents have the tools and 
-            evidence needed to advocate for their health and wellbeing.
+            evidence needed to advocate effectively for their health and wellbeing.
           </p>
         </div>
 
-        <div style={{
-          background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-          color: 'white',
-          padding: '40px',
-          borderRadius: '15px',
-          boxShadow: '0 8px 25px rgba(250, 112, 154, 0.3)'
-        }}>
-          <h3 style={{ fontSize: '1.8rem', marginBottom: '15px' }}>Goals</h3>
-          <ul style={{ fontSize: '1.1rem', lineHeight: '2', paddingLeft: '20px' }}>
-            <li>Real-time air quality monitoring</li>
-            <li>Health impact documentation</li>
-            <li>Policy advocacy support</li>
-            <li>Community empowerment</li>
+        <div className="bg-gradient-to-br from-slate-800 to-slate-700 text-white p-6 sm:p-8 lg:p-12 rounded-2xl shadow-xl md:col-span-2 lg:col-span-1">
+          <h3 className="text-xl sm:text-2xl lg:text-3xl mb-4 sm:mb-6 font-semibold tracking-tight">
+            Strategic Goals
+          </h3>
+          <ul className="text-sm sm:text-base lg:text-lg leading-relaxed opacity-95 font-light space-y-3 list-none pl-0">
+            <li className="flex items-start">
+              <span className="mr-3">•</span>
+              <span>Real-time air quality monitoring and analysis</span>
+            </li>
+            <li className="flex items-start">
+              <span className="mr-3">•</span>
+              <span>Comprehensive health impact documentation</span>
+            </li>
+            <li className="flex items-start">
+              <span className="mr-3">•</span>
+              <span>Policy advocacy and regulatory engagement</span>
+            </li>
+            <li className="flex items-start">
+              <span className="mr-3">•</span>
+              <span>Community empowerment and education</span>
+            </li>
           </ul>
         </div>
       </div>
+      </FadeInSection>
 
-      {/* What This Platform Does */}
-      <div style={{
-        background: 'white',
-        padding: '40px',
-        borderRadius: '15px',
-        boxShadow: '0 5px 15px rgba(0,0,0,0.1)',
-        marginBottom: '40px'
-      }}>
-        <h3 style={{ color: '#2C3E50', fontSize: '2rem', marginBottom: '30px', textAlign: 'center' }}>
-          What This Platform Does
+      {/* Platform Capabilities */}
+      <FadeInSection delay={0.6}>
+      <div className="bg-white rounded-2xl shadow-lg mb-12 sm:mb-16 border border-gray-200 p-6 sm:p-8 lg:p-12">
+        <h3 className="text-2xl sm:text-3xl lg:text-4xl text-slate-800 mb-8 sm:mb-12 text-center font-semibold tracking-tight">
+          Platform Capabilities
         </h3>
         
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-          gap: '25px'
-        }}>
-          <div style={{
-            borderLeft: '4px solid #E74C3C',
-            paddingLeft: '20px'
-          }}>
-            <h4 style={{ color: '#E74C3C', marginBottom: '10px', fontSize: '1.3rem' }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+          <div className="border-l-4 border-red-500 pl-4 sm:pl-6 py-2">
+            <h4 className="text-red-600 mb-2 sm:mb-3 text-lg sm:text-xl font-semibold tracking-tight">
               Real-Time Monitoring
             </h4>
-            <p style={{ color: '#666', lineHeight: '1.7' }}>
-              Track air quality from PurpleAir sensors and official monitoring stations 
-              throughout the Mon Valley in real-time.
+            <p className="text-gray-600 text-sm sm:text-base leading-relaxed">
+              Track air quality from PurpleAir community sensors and official Allegheny County 
+              Health Department monitoring stations throughout the Mon Valley in real-time.
             </p>
           </div>
 
-          <div style={{
-            borderLeft: '4px solid #3498DB',
-            paddingLeft: '20px'
-          }}>
-            <h4 style={{ color: '#3498DB', marginBottom: '10px', fontSize: '1.3rem' }}>
+          <div className="border-l-4 border-blue-500 pl-4 sm:pl-6 py-2">
+            <h4 className="text-blue-600 mb-2 sm:mb-3 text-lg sm:text-xl font-semibold tracking-tight">
               Source Attribution
             </h4>
-            <p style={{ color: '#666', lineHeight: '1.7' }}>
+            <p className="text-gray-600 text-sm sm:text-base leading-relaxed">
               Connect pollution sources to health impacts using Title V permit data, 
-              emissions records, and regulatory compliance information.
+              emissions records, and regulatory compliance information from EPA and state agencies.
             </p>
           </div>
 
-          <div style={{
-            borderLeft: '4px solid #9B59B6',
-            paddingLeft: '20px'
-          }}>
-            <h4 style={{ color: '#9B59B6', marginBottom: '10px', fontSize: '1.3rem' }}>
+          <div className="border-l-4 border-purple-500 pl-4 sm:pl-6 py-2">
+            <h4 className="text-purple-600 mb-2 sm:mb-3 text-lg sm:text-xl font-semibold tracking-tight">
               Health Tracking
             </h4>
-            <p style={{ color: '#666', lineHeight: '1.7' }}>
+            <p className="text-gray-600 text-sm sm:text-base leading-relaxed">
               Securely document symptoms and health impacts using the OSAC framework 
-              with privacy-by-design architecture.
+              with privacy-by-design architecture and HIPAA-compliant data protection.
             </p>
           </div>
 
-          <div style={{
-            borderLeft: '4px solid #16A085',
-            paddingLeft: '20px'
-          }}>
-            <h4 style={{ color: '#16A085', marginBottom: '10px', fontSize: '1.3rem' }}>
+          <div className="border-l-4 border-teal-500 pl-4 sm:pl-6 py-2">
+            <h4 className="text-teal-600 mb-2 sm:mb-3 text-lg sm:text-xl font-semibold tracking-tight">
               Evidence Generation
             </h4>
-            <p style={{ color: '#666', lineHeight: '1.7' }}>
+            <p className="text-gray-600 text-sm sm:text-base leading-relaxed">
               Generate actionable advocacy reports linking pollution events to health 
-              outcomes for regulatory action.
+              outcomes for regulatory action and policy advocacy.
             </p>
           </div>
 
-          <div style={{
-            borderLeft: '4px solid #F39C12',
-            paddingLeft: '20px'
-          }}>
-            <h4 style={{ color: '#F39C12', marginBottom: '10px', fontSize: '1.3rem' }}>
+          <div className="border-l-4 border-yellow-500 pl-4 sm:pl-6 py-2">
+            <h4 className="text-yellow-600 mb-2 sm:mb-3 text-lg sm:text-xl font-semibold tracking-tight">
               AI Assistant
             </h4>
-            <p style={{ color: '#666', lineHeight: '1.7' }}>
-              Get personalized health advice and pollution information through our 
+            <p className="text-gray-600 text-sm sm:text-base leading-relaxed">
+              Access personalized health advice and pollution information through our 
               AI-powered community health assistant, BreatheAI.
             </p>
           </div>
 
-          <div style={{
-            borderLeft: '4px solid #1ABC9C',
-            paddingLeft: '20px'
-          }}>
-            <h4 style={{ color: '#1ABC9C', marginBottom: '10px', fontSize: '1.3rem' }}>
+          <div className="border-l-4 border-green-500 pl-4 sm:pl-6 py-2">
+            <h4 className="text-green-600 mb-2 sm:mb-3 text-lg sm:text-xl font-semibold tracking-tight">
               Risk Modeling
             </h4>
-            <p style={{ color: '#666', lineHeight: '1.7' }}>
+            <p className="text-gray-600 text-sm sm:text-base leading-relaxed">
               Calculate exposure risks based on distance to facilities, current 
-              air quality, and historical patterns.
+              air quality conditions, and historical pollution patterns.
             </p>
           </div>
         </div>
       </div>
+      </FadeInSection>
 
       {/* Call to Action */}
-      <div style={{
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        color: 'white',
-        padding: '50px',
-        borderRadius: '20px',
-        textAlign: 'center',
-        boxShadow: '0 10px 40px rgba(102, 126, 234, 0.3)'
-      }}>
-        <h3 style={{ fontSize: '2.2rem', marginBottom: '20px' }}>
+      <FadeInSection delay={0.8}>
+      <div className="bg-gradient-to-br from-slate-800 to-slate-600 text-white rounded-2xl text-center shadow-2xl p-8 sm:p-12 lg:p-16">
+        <h3 className="text-2xl sm:text-3xl lg:text-4xl mb-4 sm:mb-6 font-semibold tracking-tight">
           Ready to Make a Difference?
         </h3>
-        <p style={{ fontSize: '1.3rem', marginBottom: '30px', maxWidth: '700px', margin: '0 auto 30px' }}>
+        <p className="text-base sm:text-lg lg:text-xl mb-8 sm:mb-10 max-w-2xl mx-auto leading-relaxed opacity-95 font-light px-4">
           Join VCAN and thousands of Mon Valley residents fighting for clean air. 
           Use the navigation menu to explore the platform and start tracking your environment.
         </p>
-        <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', flexWrap: 'wrap' }}>
+        <div className="flex gap-4 sm:gap-6 justify-center flex-wrap">
           <a
             href="https://www.valleycleanair.com"
             target="_blank"
             rel="noopener noreferrer"
-            style={{
-              background: 'white',
-              color: '#667eea',
-              padding: '15px 40px',
-              borderRadius: '30px',
-              textDecoration: 'none',
-              fontWeight: 'bold',
-              fontSize: '1.1rem',
-              transition: 'transform 0.2s'
-            }}
+            className="bg-white text-slate-800 px-6 sm:px-8 lg:px-12 py-3 sm:py-4 rounded-lg font-semibold text-sm sm:text-base lg:text-lg transition-all duration-200 hover:-translate-y-1 hover:shadow-xl inline-block"
           >
-            Visit VCAN Website →
+            Visit VCAN Website
           </a>
         </div>
       </div>
+      </FadeInSection>
 
       {/* Footer Note */}
-      <div style={{ textAlign: 'center', marginTop: '40px', color: '#999', fontSize: '0.9rem' }}>
-        <p>This platform is part of VCAN's Proactive Health and Pollution Advocacy (PHPA) initiative.</p>
-        <p style={{ marginTop: '10px' }}>
+      <FadeInSection delay={1.0}>
+      <div className="text-center mt-12 sm:mt-16 lg:mt-20 text-gray-500 text-sm sm:text-base leading-relaxed">
+        <p className="mb-2">
+          This platform is part of VCAN's Proactive Health and Pollution Advocacy (PHPA) initiative.
+        </p>
+        <p>
           Built for the Mon Valley community by Liberate X in partnership with VCAN.
         </p>
       </div>
+      </FadeInSection>
     </div>
   );
 };
 
 export default Home;
-

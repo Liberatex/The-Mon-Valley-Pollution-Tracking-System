@@ -51,6 +51,8 @@
   position: sticky;
   top: 0;
   z-index: 1000;
+  backdrop-filter: blur(10px);
+  background: rgba(44, 62, 80, 0.95);
 }
 
 .header-content {
@@ -164,6 +166,26 @@
   flex: 1;
   text-align: left;
   min-height: 44px;
+}
+
+/* Responsive navigation - hide text on small screens, show icons only */
+@media (max-width: 640px) {
+  .desktop-nav .nav-button span {
+    display: none;
+  }
+  
+  .desktop-nav .nav-button {
+    padding: 12px 16px;
+    justify-content: center;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .desktop-nav .nav-button {
+    padding: 12px 16px;
+    font-size: 0.9rem;
+  }
 }
 
 .nav-button:hover {

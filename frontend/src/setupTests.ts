@@ -11,12 +11,16 @@ jest.mock('./firebase', () => ({
 }));
 
 // Mock fetch globally
-global.fetch = jest.fn(() =>
-  Promise.resolve({
-    json: () => Promise.resolve({}),
-    ok: true,
-  })
-) as jest.Mock;
+// @ts-ignore - global is available in Node.js test environment
+if (typeof global !== 'undefined') {
+  // @ts-ignore
+  global.fetch = jest.fn(() =>
+    Promise.resolve({
+      json: () => Promise.resolve({}),
+      ok: true,
+    })
+  ) as jest.Mock;
+}
 
 // Suppress console errors during tests
 const originalError = console.error;

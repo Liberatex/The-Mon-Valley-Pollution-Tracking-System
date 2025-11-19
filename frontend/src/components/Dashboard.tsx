@@ -1,21 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { db } from '../firebase';
-import { collection, getDocs } from 'firebase/firestore';
 import axios from 'axios';
 import dayjs from 'dayjs';
-import { Line } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-} from 'chart.js';
-
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { FadeInSection } from './ui/FadeInSection';
+import { shouldUseEmulator } from '../utils/env';
 
 interface DashboardStats {
   avgPM25: number;
@@ -30,8 +18,6 @@ interface AQIDataPoint {
 
 const Dashboard: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [aqi, setAqi] = useState<number | null>(null);
-  const [pm25, setPm25] = useState<number | null>(null);
   const [pm25History, setPm25History] = useState<AQIDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -42,7 +28,7 @@ const Dashboard: React.FC = () => {
         setStats({ avgPM25: 35.2, sensorCount: 239, reportCount: 0 });
 
         // Fetch ACHD data
-        const isDevelopment = process.env.REACT_APP_USE_EMULATOR === 'true';
+        const isDevelopment = shouldUseEmulator();
         const functionsUrl = isDevelopment 
           ? 'http://127.0.0.1:5001/mv-pollution-tracking-system/us-central1'
           : 'https://us-central1-mv-pollution-tracking-system.cloudfunctions.net';
@@ -54,15 +40,10 @@ const Dashboard: React.FC = () => {
           if (achdResponse?.data?.success && achdResponse.data.data?.length > 0) {
             const reading = achdResponse.data.data[0];
             console.log('ACHD reading:', reading);
-            
-            // Use fallback since WPRDC is returning null
-            setPm25(35.2);
-            setAqi(98);
+            // AQI data available for future use
           }
         } catch (err: any) {
           console.error('ACHD fetch failed:', err.message);
-          setPm25(35.2);
-          setAqi(98);
         }
 
         // Fetch historical data for chart (last 7 days)
@@ -115,178 +96,132 @@ const Dashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '100vh',
-        background: '#f5f7fa',
-        fontSize: '18px',
-        color: '#666'
-      }}>
-        Loading dashboard...
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-lg sm:text-xl text-gray-600">Loading dashboard...</div>
       </div>
     );
   }
 
-  const aqiLevel = aqi && aqi > 0 ? (aqi <= 50 ? 'Good' : aqi <= 100 ? 'Moderate' : aqi <= 150 ? 'Unhealthy for Sensitive' : 'Unhealthy') : 'Unknown';
+  // AQI level calculation (kept for potential future use)
+  // const aqiLevel = aqi && aqi > 0 ? (aqi <= 50 ? 'Good' : aqi <= 100 ? 'Moderate' : aqi <= 150 ? 'Unhealthy for Sensitive' : 'Unhealthy') : 'Unknown';
 
   return (
-    <div style={{ 
-      minHeight: '100vh',
-      background: '#f5f7fa',
-      padding: '40px 20px'
-    }}>
-      
-      <h1 style={{ 
-        textAlign: 'center', 
-        color: '#1976d2', 
-        marginBottom: '50px',
-        fontSize: '2.5rem',
-        fontWeight: 'bold'
-      }}>
+    <div className="min-h-screen bg-gray-50 py-8 sm:py-12 lg:py-16 px-4 sm:px-6 lg:px-8">
+      <h1 className="text-2xl sm:text-3xl lg:text-4xl text-center text-slate-800 mb-8 sm:mb-12 font-bold tracking-tight">
         Community Health Dashboard
       </h1>
 
-      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+      <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8 lg:space-y-12">
         
         {/* ACHD Official Air Quality Dashboard */}
-        <div style={{ 
-          background: 'white',
-          borderRadius: '16px',
-          padding: '30px',
-          marginBottom: '40px',
-          boxShadow: '0 10px 40px rgba(0,0,0,0.15)'
-        }}>
-          <h3 style={{ 
-            marginBottom: '20px', 
-            fontSize: '1.3rem',
-            color: '#333'
-          }}>
-            📊 Official ACHD Air Quality Dashboard
+        <FadeInSection delay={0}>
+        <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8">
+          <h3 className="text-lg sm:text-xl lg:text-2xl mb-3 sm:mb-4 text-slate-800 font-semibold">
+            Official ACHD Air Quality Dashboard
           </h3>
-          <p style={{ 
-            marginBottom: '20px',
-            color: '#666',
-            fontSize: '0.95rem'
-          }}>
+          <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">
             Live data from Allegheny County Health Department's official monitoring stations
           </p>
           
           {/* Tableau embedded dashboard */}
           <div 
-            style={{ 
-              width: '100%',
-              minHeight: '600px',
-              overflow: 'auto'
-            }}
+            className="w-full min-h-[400px] sm:min-h-[500px] lg:min-h-[600px] overflow-auto"
             dangerouslySetInnerHTML={{
-              __html: `<tableau-viz id='tableau-viz' src='https://tableau.alleghenycounty.us/t/PublicSite/views/AlleghenyCountyAirQuality/Today' width='900' height='777' hide-tabs toolbar='bottom' ></tableau-viz>`
+              __html: `<tableau-viz id='tableau-viz' src='https://tableau.alleghenycounty.us/t/PublicSite/views/AlleghenyCountyAirQuality/Today' width='100%' height='777' hide-tabs toolbar='bottom' ></tableau-viz>`
             }}
           />
         </div>
+        </FadeInSection>
 
         {/* PM2.5 History Chart */}
         {pm25History.length > 0 && (
-          <div style={{ 
-            background: 'white',
-            borderRadius: '16px',
-            padding: '30px',
-            marginBottom: '40px',
-            boxShadow: '0 10px 40px rgba(0,0,0,0.15)'
-          }}>
-            <h3 style={{ 
-              marginBottom: '20px', 
-              fontSize: '1.3rem',
-              color: '#333'
-            }}>
-              📈 PM2.5 Trend (Last 7 Days)
+          <FadeInSection delay={0.2}>
+          <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8">
+            <h3 className="text-lg sm:text-xl lg:text-2xl mb-4 sm:mb-6 text-slate-800 font-semibold">
+              PM2.5 Trend (Last 7 Days)
             </h3>
-            <div style={{ height: '300px' }}>
-              <Line
-                data={{
-                  labels: pm25History.map((d) => dayjs.unix(d.dt).format('MMM D')),
-                  datasets: [{
-                    label: 'PM2.5 (μg/m³)',
-                    data: pm25History.map((d) => d.pm2_5),
-                    borderColor: '#1976d2',
-                    backgroundColor: 'rgba(25, 118, 210, 0.1)',
-                    fill: true,
-                    tension: 0.4
-                  }]
-                }}
-                options={{
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  plugins: {
-                    legend: { display: true }
-                  },
-                  scales: {
-                    y: {
-                      beginAtZero: false,
-                      title: {
-                        display: true,
-                        text: 'PM2.5 (μg/m³)'
-                      }
-                    }
-                  }
-                }}
-              />
+            <div className="h-64 sm:h-80 lg:h-96 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart
+                  data={pm25History.map((d) => ({
+                    date: dayjs.unix(d.dt).format('MMM D'),
+                    pm25: Math.round(d.pm2_5 * 10) / 10
+                  }))}
+                  margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis 
+                    dataKey="date" 
+                    stroke="#64748b"
+                    style={{ fontSize: '12px' }}
+                  />
+                  <YAxis 
+                    stroke="#64748b"
+                    label={{ value: 'PM2.5 (μg/m³)', angle: -90, position: 'insideLeft', style: { fontSize: '12px' } }}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'white', 
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      padding: '8px'
+                    }}
+                  />
+                  <Legend />
+                  <Line 
+                    type="monotone" 
+                    dataKey="pm25" 
+                    stroke="#0891b2" 
+                    strokeWidth={2}
+                    fill="#0891b2"
+                    fillOpacity={0.1}
+                    name="PM2.5 (μg/m³)"
+                    dot={{ fill: '#0891b2', r: 4 }}
+                    activeDot={{ r: 6 }}
+                    animationDuration={1500}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
           </div>
+          </FadeInSection>
         )}
         
         {/* Stats Cards */}
         {stats && (
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-            gap: '25px'
-          }}>
-            <div style={{ 
-              background: 'white',
-              borderRadius: '16px',
-              padding: '30px 25px',
-              boxShadow: '0 10px 40px rgba(0,0,0,0.15)',
-              textAlign: 'center'
-            }}>
-              <div style={{ fontSize: '3rem', fontWeight: 'bold', color: '#1976d2', marginBottom: '10px' }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            <FadeInSection delay={0.4}>
+            <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 text-center">
+              <div className="text-4xl sm:text-5xl lg:text-6xl font-bold text-primary-600 mb-2">
                 {stats.sensorCount}
               </div>
-              <div style={{ fontSize: '1rem', color: '#666' }}>
+              <div className="text-base sm:text-lg text-gray-600">
                 Active Sensors
               </div>
             </div>
+            </FadeInSection>
 
-            <div style={{ 
-              background: 'white',
-              borderRadius: '16px',
-              padding: '30px 25px',
-              boxShadow: '0 10px 40px rgba(0,0,0,0.15)',
-              textAlign: 'center'
-            }}>
-              <div style={{ fontSize: '3rem', fontWeight: 'bold', color: '#4caf50', marginBottom: '10px' }}>
+            <FadeInSection delay={0.6}>
+            <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 text-center">
+              <div className="text-4xl sm:text-5xl lg:text-6xl font-bold text-success-600 mb-2">
                 {stats.reportCount}
               </div>
-              <div style={{ fontSize: '1rem', color: '#666' }}>
+              <div className="text-base sm:text-lg text-gray-600">
                 Health Reports
               </div>
             </div>
+            </FadeInSection>
 
-            <div style={{ 
-              background: 'white',
-              borderRadius: '16px',
-              padding: '30px 25px',
-              boxShadow: '0 10px 40px rgba(0,0,0,0.15)',
-              textAlign: 'center'
-            }}>
-              <div style={{ fontSize: '3rem', fontWeight: 'bold', color: '#ff9800', marginBottom: '10px' }}>
+            <FadeInSection delay={0.8}>
+            <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 text-center">
+              <div className="text-4xl sm:text-5xl lg:text-6xl font-bold text-warning-600 mb-2">
                 {stats.avgPM25.toFixed(1)}
               </div>
-              <div style={{ fontSize: '1rem', color: '#666' }}>
+              <div className="text-base sm:text-lg text-gray-600">
                 Avg PM2.5 (μg/m³)
               </div>
             </div>
+            </FadeInSection>
           </div>
         )}
 

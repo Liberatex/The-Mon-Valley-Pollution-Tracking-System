@@ -16,10 +16,25 @@ import { getMonValleyAirQuality, pm25ToAQI } from './acqdDataService';
 import { getHistoricalDataForChart } from './achdScraper';
 
 // Load environment variables from .env file
-if (process.env.FUNCTIONS_EMULATOR === 'true') {
-  const dotenv = require('dotenv');
-  dotenv.config();
-  console.log('✅ Loaded environment variables from .env');
+// Always try to load .env in development/emulator mode
+if (process.env.FUNCTIONS_EMULATOR === 'true' || !process.env.GCLOUD_PROJECT) {
+  try {
+    const dotenv = require('dotenv');
+    const result = dotenv.config();
+    if (result.error) {
+      console.warn('⚠️ Could not load .env file:', result.error.message);
+    } else {
+      console.log('✅ Loaded environment variables from .env');
+      // Verify PurpleAir key is loaded
+      if (process.env.PURPLEAIR_API_KEY) {
+        console.log('✅ PurpleAir API key found in environment');
+      } else {
+        console.warn('⚠️ PurpleAir API key not found in environment');
+      }
+    }
+  } catch (err) {
+    console.warn('⚠️ Could not load dotenv:', err);
+  }
 }
 
 // Initialize Firebase Admin SDK
@@ -905,6 +920,28 @@ export const submitSymptomReport = functions.https.onRequest(async (req, res) =>
         symptomCount: reportData.symptoms.length,
         timestamp: new Date().toISOString()
       });
+
+      // Audit log: Health data submission (HIPAA requirement)
+      const { logHealthDataAccess } = require('./auditLogging');
+      await logHealthDataAccess(
+        pseudonymizedData.pseudoId,
+        'system',
+        'write',
+        docRef.id,
+        'user_request',
+        {
+          recordCount: 1
+        }
+      );
+
+      // Add integrity checksum (HIPAA requirement: data integrity)
+      try {
+        const { addIntegrityChecksum } = require('./dataIntegrity');
+        await addIntegrityChecksum('symptomReports', docRef.id);
+      } catch (error: any) {
+        console.warn('Could not add integrity checksum:', error);
+        // Don't fail the submission if checksum fails
+      }
       
       // Check if we need to trigger health alerts (high severity)
       if (reportData.severity >= 4) {
@@ -1021,3 +1058,151 @@ export const getACHDHistoricalData = functions.https.onRequest(async (req, res) 
     }
   });
 });
+
+/**
+ * Fetch PurpleAir sensor data for Mon Valley area
+ * Fetches real-time community sensor data from PurpleAir API
+ * This was documented but not implemented - now implemented!
+ */
+export const fetchPurpleAirSensorData = functions.https.onRequest(async (req, res) => {
+  corsHandler(req, res, async () => {
+    try {
+      const apiKey = process.env.PURPLEAIR_API_KEY;
+      
+      if (!apiKey) {
+        console.warn('PurpleAir API key not configured');
+        res.json({
+          success: false,
+          data: [],
+          message: 'PurpleAir API key not configured. Please set PURPLEAIR_API_KEY in Firebase Functions environment variables.',
+          note: 'To get an API key, register at https://www2.purpleair.com'
+        });
+        return;
+      }
+
+      // Mon Valley bounding box (Clairton area)
+      const params = {
+        fields: 'sensor_index,name,latitude,longitude,pm2.5,pm2.5_cf_1,humidity,temperature,location_type',
+        nwlng: -80.3,  // NW corner (wider area to capture all sensors)
+        nwlat: 40.5,
+        selng: -79.6,  // SE corner
+        selat: 40.0,
+        location_type: 0, // Outdoor sensors only
+        max_age: 3600, // Max 1 hour old data
+      };
+
+      console.log('Fetching PurpleAir sensors for Mon Valley area...');
+      
+      const response = await axios.get('https://api.purpleair.com/v1/sensors', {
+        params,
+        headers: {
+          'X-API-Key': apiKey,
+        },
+        timeout: 15000,
+      });
+
+      const responseData = response.data as any;
+      const data = responseData.data || [];
+      const fields = responseData.fields || [];
+
+      console.log(`PurpleAir API returned ${data.length} sensors`);
+
+      // Map PurpleAir data to our format
+      const sensors = data.map((row: any[]) => {
+        const obj: any = {};
+        fields.forEach((field: string, idx: number) => {
+          obj[field] = row[idx];
+        });
+
+        // Use pm2.5_cf_1 if available (CF=ATM corrected), otherwise pm2.5
+        const pm25 = obj['pm2.5_cf_1'] !== null && obj['pm2.5_cf_1'] !== undefined 
+          ? obj['pm2.5_cf_1'] 
+          : obj['pm2.5'];
+
+        return {
+          id: `pa-${obj['sensor_index']}`,
+          sensorIndex: obj['sensor_index'],
+          name: obj['name'] || `PurpleAir Sensor ${obj['sensor_index']}`,
+          location: {
+            lat: obj['latitude'],
+            lng: obj['longitude'],
+          },
+          pm25: pm25,
+          humidity: obj['humidity'],
+          temperature: obj['temperature'],
+          source: 'PurpleAir',
+          locationType: obj['location_type'],
+        };
+      });
+
+      // Filter out sensors with invalid coordinates or missing PM2.5 data
+      const validSensors = sensors.filter((s: any) => 
+        s.location.lat && 
+        s.location.lng && 
+        s.pm25 !== null && 
+        s.pm25 !== undefined &&
+        !isNaN(s.pm25)
+      );
+
+      console.log(`Mapped ${validSensors.length} valid PurpleAir sensors`);
+
+      res.json({
+        success: true,
+        data: validSensors,
+        count: validSensors.length,
+        source: 'PurpleAir API',
+        lastUpdated: new Date().toISOString(),
+      });
+
+    } catch (error: any) {
+      console.error('Error fetching PurpleAir sensors:', error);
+      
+      // Provide helpful error message
+      let errorMessage = 'Failed to fetch PurpleAir sensor data';
+      if (error.response?.status === 401) {
+        errorMessage = 'Invalid PurpleAir API key. Please check your API key configuration.';
+      } else if (error.response?.status === 403) {
+        errorMessage = 'PurpleAir API access forbidden. Please verify your API key permissions.';
+      } else if (error.code === 'ECONNABORTED') {
+        errorMessage = 'PurpleAir API request timed out. Please try again.';
+      }
+
+      res.status(500).json({
+        success: false,
+        error: errorMessage,
+        message: error.message,
+        data: [],
+      });
+    }
+  });
+});
+
+// Export sync functions for Azure data synchronization
+export * from './syncToAzure';
+
+// Export aggregation pipeline
+export * from './aggregateHealthData';
+
+// Export audit logging
+export * from './auditLogging';
+
+// Export BigQuery export
+export * from './exportToBigQuery';
+
+// Export Synapse export
+export * from './exportToSynapse';
+
+// Export Data Lake integration
+export * from './azureDataLake';
+
+// Export automated regulatory reporting
+export * from './automatedRegulatoryReporting';
+
+// Export VCAN data access API
+export * from './vcanDataAccess';
+
+// Export breach notification
+export * from './breachNotification';
+
+// Export data integrity
+export * from './dataIntegrity';

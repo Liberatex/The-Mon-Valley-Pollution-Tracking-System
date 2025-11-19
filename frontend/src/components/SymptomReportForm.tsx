@@ -3,6 +3,7 @@ import './SymptomReportForm.css';
 import { getAuth } from 'firebase/auth';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+import { shouldUseEmulator } from '../utils/env';
 
 interface OSAC {
   onset: string;
@@ -119,7 +120,7 @@ const SymptomReportForm: React.FC<SymptomReportFormProps> = ({ onSuccess }) => {
         consent: true
       };
       
-      const isDevelopment = process.env.REACT_APP_USE_EMULATOR === 'true';
+      const isDevelopment = shouldUseEmulator();
       const functionUrl = isDevelopment
         ? 'http://127.0.0.1:5001/mv-pollution-tracking-system/us-central1/submitSymptomReport'
         : 'https://us-central1-mv-pollution-tracking-system.cloudfunctions.net/submitSymptomReport';
@@ -166,11 +167,7 @@ const SymptomReportForm: React.FC<SymptomReportFormProps> = ({ onSuccess }) => {
   const progress = (step / 4) * 100;
 
   return (
-    <div style={{ 
-      minHeight: '100vh',
-      background: '#f5f7fa',
-      padding: '40px 20px'
-    }}>
+    <div className="min-h-screen bg-gray-50 py-8 sm:py-12 lg:py-16 px-4 sm:px-6 lg:px-8">
       <div style={{ 
         maxWidth: '700px', 
         margin: '0 auto',
@@ -179,14 +176,9 @@ const SymptomReportForm: React.FC<SymptomReportFormProps> = ({ onSuccess }) => {
         padding: '40px',
         boxShadow: '0 10px 40px rgba(0,0,0,0.15)'
       }}>
-        <h2 style={{ 
-          textAlign: 'center',
-          color: '#1976d2',
-          marginBottom: '30px',
-          fontSize: '2rem',
-          fontWeight: 'bold'
-        }}>
-          📝 Submit Symptom Report
+        <div className="max-w-4xl mx-auto">
+        <h2 className="text-2xl sm:text-3xl lg:text-4xl text-center text-slate-800 mb-6 sm:mb-8 font-bold tracking-tight">
+          Submit Symptom Report
         </h2>
         
         {/* Progress Bar */}
@@ -816,6 +808,7 @@ const SymptomReportForm: React.FC<SymptomReportFormProps> = ({ onSuccess }) => {
             </div>
           </form>
         )}
+        </div>
       </div>
     </div>
   );

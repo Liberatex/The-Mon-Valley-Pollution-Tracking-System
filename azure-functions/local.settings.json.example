@@ -1,0 +1,16 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+    "AZURE_COSMOS_CONNECTION_STRING": "AccountEndpoint=https://your-account.documents.azure.com:443/;AccountKey=your-key;",
+    "AZURE_COSMOS_DATABASE_ID": "mv-pollution-tracking",
+    "EPA_AQS_EMAIL": "bjyusuph@gmail.com",
+    "EPA_AQS_KEY": "indigoosprey88",
+    "OPENAQ_API_KEY": "5724d18070a5d68251feba85b1d12b58",
+    "ADMIN_SECRET": "test-admin-secret",
+    "AZURE_KEY_VAULT_URL": "https://your-keyvault.vault.azure.net/",
+    "APPLICATIONINSIGHTS_CONNECTION_STRING": ""
+  }
+}
+

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { shouldUseEmulator } from '../utils/env';
 
 interface TitleVFacility {
   facilityId: string;
@@ -75,7 +76,7 @@ const ExposureModel: React.FC = () => {
     let isMounted = true;
     async function loadFacilities() {
       try {
-        const isDevelopment = process.env.REACT_APP_USE_EMULATOR === 'true';
+        const isDevelopment = shouldUseEmulator();
         const baseUrl = isDevelopment 
           ? 'http://127.0.0.1:5001/mv-pollution-tracking-system/us-central1'
           : 'https://us-central1-mv-pollution-tracking-system.cloudfunctions.net';

@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { db } from '../firebase';
-import { collection, getDocs, query, orderBy, limit, where, Timestamp } from 'firebase/firestore';
+// Using abstraction layer - works with both Firebase and Azure
+import { db } from '../providers';
+import jsPDF from 'jspdf';
+import { shouldUseEmulator } from '../utils/env';
 
 interface EvidenceReport {
   reportId: string;
@@ -40,9 +42,9 @@ const EvidenceReport: React.FC = () => {
   const generateReport = async () => {
     setLoading(true);
     try {
-      // Fetch symptom reports from date range
-      const reportsSnap = await getDocs(collection(db, 'symptomReports'));
-      const reports = reportsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      // Fetch symptom reports from date range using abstraction layer
+      const reportsCollection = db.getCollection('symptomReports');
+      const reports = await reportsCollection.get();
       
       // Filter by date and location
       const startDate = new Date(dateRange.start);
@@ -55,28 +57,82 @@ const EvidenceReport: React.FC = () => {
       });
 
       // Fetch Title V facilities
-      const baseUrl = 'https://us-central1-mv-pollution-tracking-system.cloudfunctions.net';
+      const isDevelopment = shouldUseEmulator();
+      const baseUrl = isDevelopment 
+        ? 'http://127.0.0.1:5001/mv-pollution-tracking-system/us-central1'
+        : 'https://us-central1-mv-pollution-tracking-system.cloudfunctions.net';
       const facilitiesResp = await axios.get(`${baseUrl}/getTitleVFacilities`);
-      const facilities = facilitiesResp.data.facilities || [];
+      const facilities = facilitiesResp.data?.facilities || [];
 
-      // Calculate findings
-      const findings = {
-        airQualityEvents: filteredReports.length,
-        symptomReports: filteredReports.filter((r: any) => (r as any).symptoms).length,
-        avgPM25: 45.2, // Would come from actual sensor data
-        maxPM25: 150, // Would come from actual sensor data
-        facilitiesAffected: facilities.map((f: any) => f.name),
-        riskLevel: filteredReports.length > 20 ? 'very_high' : 
-                   filteredReports.length > 10 ? 'high' :
-                   filteredReports.length > 5 ? 'moderate' : 'low'
+      // Calculate distance helper function (define before use)
+      const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+        const R = 3959; // Earth's radius in miles
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLng = (lng2 - lng1) * Math.PI / 180;
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+          Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
       };
 
-      const facilityDetails = facilities.map((facility: any) => ({
-        name: facility.name,
-        distance: 2.5, // Would calculate actual distance
-        emissions: facility.emissionsData || [],
-        violations: facility.violations?.length || 0
-      }));
+      // Fetch actual sensor data for PM2.5 calculations
+      let avgPM25 = 45.2; // Default fallback
+      let maxPM25 = 150; // Default fallback
+      
+      try {
+        // Try to get ACHD data
+        const achdResp = await axios.get(`${baseUrl}/getACHDAirQuality`, { timeout: 10000 });
+        if (achdResp.data?.success && achdResp.data.data?.length > 0) {
+          const pm25Values = achdResp.data.data
+            .map((d: any) => d.pm25)
+            .filter((v: any) => v && !isNaN(v));
+          if (pm25Values.length > 0) {
+            avgPM25 = pm25Values.reduce((a: number, b: number) => a + b, 0) / pm25Values.length;
+            maxPM25 = Math.max(...pm25Values);
+          }
+        }
+      } catch (err) {
+        console.warn('Could not fetch ACHD data for report, using defaults');
+      }
+
+      // Calculate findings
+      const symptomReportCount = filteredReports.filter((r: any) => (r as any).symptoms && (r as any).symptoms.length > 0).length;
+      const findings = {
+        airQualityEvents: filteredReports.length,
+        symptomReports: symptomReportCount,
+        avgPM25: Math.round(avgPM25 * 10) / 10,
+        maxPM25: Math.round(maxPM25 * 10) / 10,
+        facilitiesAffected: facilities
+          .filter((f: any) => f.location?.lat && f.location?.lng)
+          .map((f: any) => {
+            const dist = calculateDistance(centerLat, centerLng, f.location.lat, f.location.lng);
+            return dist <= radius ? f.name : null;
+          })
+          .filter((n: any) => n !== null),
+        riskLevel: symptomReportCount > 20 ? 'very_high' : 
+                   symptomReportCount > 10 ? 'high' :
+                   symptomReportCount > 5 ? 'moderate' : 'low'
+      };
+
+      const facilityDetails = facilities
+        .filter((f: any) => f.location?.lat && f.location?.lng)
+        .map((facility: any) => {
+          const distance = calculateDistance(
+            centerLat,
+            centerLng,
+            facility.location.lat,
+            facility.location.lng
+          );
+          return {
+            name: facility.name,
+            distance: Math.round(distance * 10) / 10,
+            emissions: facility.emissionsData || [],
+            violations: facility.violations?.length || 0
+          };
+        })
+        .filter((f: any) => f.distance <= radius) // Only include facilities within radius
+        .sort((a: any, b: any) => a.distance - b.distance); // Sort by distance
 
       const recommendations = [
         "Immediate ACHD investigation of U.S. Steel Clairton operations during high PM2.5 events",
@@ -106,66 +162,127 @@ const EvidenceReport: React.FC = () => {
   const exportToPDF = () => {
     if (!report) return;
     
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
-    
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Evidence Report</title>
-        <style>
-          body { font-family: Arial, sans-serif; padding: 40px; }
-          h1 { color: #1976d2; }
-          .finding { margin: 20px 0; padding: 15px; background: #f5f5f5; border-left: 4px solid #1976d2; }
-          .facility { margin: 15px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
-          .recommendation { margin: 10px 0; padding: 10px; background: #fff3cd; border-left: 4px solid #ffc107; }
-        </style>
-      </head>
-      <body>
-        <h1>${report.title}</h1>
-        <p><strong>Period:</strong> ${report.period.start} to ${report.period.end}</p>
-        <p><strong>Location:</strong> Lat ${report.location.lat}, Lng ${report.location.lng} (${report.location.radius}mi radius)</p>
-        
-        <h2>Summary Findings</h2>
-        <div class="finding">
-          <p><strong>Health Reports:</strong> ${report.findings.symptomReports} residents reported symptoms</p>
-          <p><strong>Air Quality Events:</strong> ${report.findings.airQualityEvents} documented high-pollution events</p>
-          <p><strong>Average PM2.5:</strong> ${report.findings.avgPM25} μg/m³</p>
-          <p><strong>Peak PM2.5:</strong> ${report.findings.maxPM25} μg/m³ (${(report.findings.maxPM25 / 35 * 100).toFixed(0)}% above EPA standard)</p>
-          <p><strong>Risk Level:</strong> ${report.findings.riskLevel.toUpperCase()}</p>
-        </div>
+    try {
+      const doc = new jsPDF();
+      let yPos = 20;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 20;
+      const contentWidth = pageWidth - (2 * margin);
 
-        <h2>Facilities Affected</h2>
-        ${report.facilityDetails.map((f, idx) => `
-          <div class="facility">
-            <h3>${idx + 1}. ${f.name}</h3>
-            <p><strong>Distance:</strong> ${f.distance} miles from study area</p>
-            <p><strong>Historical Emissions:</strong></p>
-            <ul>
-              ${f.emissions.map((e: any) => `<li>${e.pollutant}: ${e.quantity} ${e.year}</li>`).join('')}
-            </ul>
-            <p><strong>Documented Violations:</strong> ${f.violations}</p>
-          </div>
-        `).join('')}
+      // Title
+      doc.setFontSize(18);
+      doc.setTextColor(25, 118, 210);
+      doc.text(report.title, margin, yPos);
+      yPos += 15;
 
-        <h2>Recommendations</h2>
-        ${report.recommendations.map((r, idx) => `
-          <div class="recommendation">
-            ${idx + 1}. ${r}
-          </div>
-        `).join('')}
+      // Period and Location
+      doc.setFontSize(10);
+      doc.setTextColor(0, 0, 0);
+      doc.text(`Period: ${report.period.start} to ${report.period.end}`, margin, yPos);
+      yPos += 7;
+      doc.text(`Location: ${report.location.lat.toFixed(4)}, ${report.location.lng.toFixed(4)} (${report.location.radius}mi radius)`, margin, yPos);
+      yPos += 10;
 
-        <p style="margin-top: 40px; color: #666; font-size: 0.9rem;">
-          Generated: ${new Date().toLocaleString()}<br/>
-          Mon Valley Pollution Tracking System - Project Lumna
-        </p>
-      </body>
-      </html>
-    `);
-    
-    printWindow.document.close();
-    setTimeout(() => printWindow.print(), 250);
+      // Summary Findings
+      doc.setFontSize(14);
+      doc.setTextColor(25, 118, 210);
+      doc.text('Summary Findings', margin, yPos);
+      yPos += 10;
+
+      doc.setFontSize(10);
+      doc.setTextColor(0, 0, 0);
+      const findings = [
+        `Health Reports: ${report.findings.symptomReports} residents reported symptoms`,
+        `Air Quality Events: ${report.findings.airQualityEvents} documented high-pollution events`,
+        `Average PM2.5: ${report.findings.avgPM25} μg/m³`,
+        `Peak PM2.5: ${report.findings.maxPM25} μg/m³ (${(report.findings.maxPM25 / 35 * 100).toFixed(0)}% above EPA standard)`,
+        `Risk Level: ${report.findings.riskLevel.toUpperCase()}`
+      ];
+
+      findings.forEach((line) => {
+        if (yPos > 270) {
+          doc.addPage();
+          yPos = 20;
+        }
+        doc.text(line, margin, yPos);
+        yPos += 7;
+      });
+      yPos += 5;
+
+      // Facilities Affected
+      if (report.facilityDetails.length > 0) {
+        if (yPos > 250) {
+          doc.addPage();
+          yPos = 20;
+        }
+        doc.setFontSize(14);
+        doc.setTextColor(25, 118, 210);
+        doc.text('Facilities Affected', margin, yPos);
+        yPos += 10;
+
+        doc.setFontSize(10);
+        doc.setTextColor(0, 0, 0);
+        report.facilityDetails.forEach((facility, idx) => {
+          if (yPos > 270) {
+            doc.addPage();
+            yPos = 20;
+          }
+          doc.setFont('helvetica', 'bold');
+          doc.text(`${idx + 1}. ${facility.name}`, margin, yPos);
+          yPos += 7;
+          doc.setFont('helvetica', 'normal');
+          doc.text(`   Distance: ${facility.distance} miles`, margin, yPos);
+          yPos += 7;
+          if (facility.emissions.length > 0) {
+            doc.text(`   Emissions:`, margin, yPos);
+            yPos += 7;
+            facility.emissions.slice(0, 3).forEach((e: any) => {
+              doc.text(`     - ${e.pollutant}: ${e.quantity} ${e.unit || 'tons'} (${e.year})`, margin, yPos);
+              yPos += 7;
+            });
+          }
+          doc.text(`   Violations: ${facility.violations}`, margin, yPos);
+          yPos += 10;
+        });
+      }
+
+      // Recommendations
+      if (yPos > 250) {
+        doc.addPage();
+        yPos = 20;
+      }
+      doc.setFontSize(14);
+      doc.setTextColor(25, 118, 210);
+      doc.text('Recommendations', margin, yPos);
+      yPos += 10;
+
+      doc.setFontSize(10);
+      doc.setTextColor(0, 0, 0);
+      report.recommendations.forEach((rec, idx) => {
+        if (yPos > 270) {
+          doc.addPage();
+          yPos = 20;
+        }
+        const lines = doc.splitTextToSize(`${idx + 1}. ${rec}`, contentWidth);
+        doc.text(lines, margin, yPos);
+        yPos += lines.length * 7;
+      });
+
+      // Footer
+      yPos = doc.internal.pageSize.getHeight() - 20;
+      doc.setFontSize(8);
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Generated: ${new Date().toLocaleString()}`, margin, yPos);
+      yPos += 5;
+      doc.text('Mon Valley Pollution Tracking System - Project Lumna', margin, yPos);
+
+      // Save PDF
+      doc.save(`evidence-report-${report.reportId}.pdf`);
+    } catch (error) {
+      console.error('PDF export failed:', error);
+      // Fallback to print
+      window.print();
+    }
   };
 
   return (
@@ -239,19 +356,13 @@ const EvidenceReport: React.FC = () => {
             display: 'block'
           }}
         >
-          {loading ? '📊 Generating Report...' : '📄 Generate Evidence Report'}
+          {loading ? 'Generating Report...' : 'Generate Evidence Report'}
         </button>
       </div>
 
       {/* Generated Report Display */}
       {report && (
-        <div style={{
-          background: 'white',
-          padding: '30px',
-          borderRadius: '15px',
-          boxShadow: '0 5px 15px rgba(0,0,0,0.1)',
-          marginBottom: '20px'
-        }}>
+      <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 lg:p-10 mb-6 sm:mb-8">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <h3 style={{ color: '#1976d2', margin: 0 }}>Generated Report</h3>
             <button
@@ -266,11 +377,11 @@ const EvidenceReport: React.FC = () => {
                 fontWeight: 'bold'
               }}
             >
-              📥 Export to PDF
+              Export to PDF
             </button>
           </div>
 
-          <h4 style={{ color: '#1976d2' }}>📊 Summary</h4>
+          <h4 style={{ color: '#1976d2' }}>Summary</h4>
           <div style={{ 
             background: '#f8f9fa', 
             padding: '20px', 

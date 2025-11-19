@@ -53,67 +53,47 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  if (loading) return <div style={{ padding: '20px', textAlign: 'center' }}>Loading admin dashboard...</div>;
-  if (error) return <div style={{ padding: '20px', color: 'red' }}>Error: {error}</div>;
+  if (loading) return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="text-lg text-gray-600">Loading admin dashboard...</div>
+    </div>
+  );
+  if (error) return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="text-lg text-red-600">Error: {error}</div>
+    </div>
+  );
 
   return (
-    <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
-      <h2 style={{ 
-        textAlign: 'center', 
-        color: '#1976d2', 
-        marginBottom: '30px',
-        fontSize: '2.5rem',
-        fontWeight: 'bold'
-      }}>
-        🔧 Admin Dashboard
+    <div className="min-h-screen bg-gray-50 py-8 sm:py-12 lg:py-16 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto">
+      <h2 className="text-2xl sm:text-3xl lg:text-4xl text-center text-slate-800 mb-6 sm:mb-8 lg:mb-12 font-bold tracking-tight">
+        Admin Dashboard
       </h2>
 
       {/* System Health Overview */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-        gap: '20px',
-        marginBottom: '30px'
-      }}>
-        <div style={{ 
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          padding: '25px',
-          borderRadius: '15px',
-          color: 'white',
-          boxShadow: '0 8px 25px rgba(102, 126, 234, 0.3)'
-        }}>
-          <h3 style={{ marginBottom: '15px', fontSize: '1.3rem' }}>📊 System Health</h3>
-          <div style={{ lineHeight: '1.8' }}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+        <div className="bg-gradient-to-br from-primary-600 to-primary-700 p-6 sm:p-8 rounded-2xl text-white shadow-xl">
+          <h3 className="mb-4 text-lg sm:text-xl font-semibold">System Health</h3>
+          <div className="space-y-2 text-sm sm:text-base">
             <div><strong>Status:</strong> {stats?.systemHealth?.status}</div>
             <div><strong>Uptime:</strong> {Math.floor((stats?.systemHealth?.uptime || 0) / 1000 / 60)} minutes</div>
             <div><strong>Ollama:</strong> {stats?.systemHealth?.services?.ollama}</div>
           </div>
         </div>
 
-        <div style={{ 
-          background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-          padding: '25px',
-          borderRadius: '15px',
-          color: 'white',
-          boxShadow: '0 8px 25px rgba(240, 147, 251, 0.3)'
-        }}>
-          <h3 style={{ marginBottom: '15px', fontSize: '1.3rem' }}>👥 User Activity</h3>
-          <div style={{ lineHeight: '1.8' }}>
+        <div className="bg-gradient-to-br from-pink-500 to-red-500 p-6 sm:p-8 rounded-2xl text-white shadow-xl">
+          <h3 className="mb-4 text-lg sm:text-xl font-semibold">User Activity</h3>
+          <div className="space-y-2 text-sm sm:text-base">
             <div><strong>Total Requests:</strong> {stats?.userActivity?.requests}</div>
             <div><strong>Error Rate:</strong> {stats?.userActivity?.errorRate}%</div>
             <div><strong>Avg Response:</strong> {stats?.userActivity?.avgResponseTime}ms</div>
           </div>
         </div>
 
-        <div style={{ 
-          background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-          padding: '25px',
-          borderRadius: '15px',
-          color: 'white',
-          boxShadow: '0 8px 25px rgba(79, 172, 254, 0.3)'
-        }}>
-          <h3 style={{ marginBottom: '15px', fontSize: '1.3rem' }}>📈 Data Overview</h3>
-          <div style={{ lineHeight: '1.8' }}>
+        <div className="bg-gradient-to-br from-blue-500 to-cyan-500 p-6 sm:p-8 rounded-2xl text-white shadow-xl">
+          <h3 className="mb-4 text-lg sm:text-xl font-semibold">Data Overview</h3>
+          <div className="space-y-2 text-sm sm:text-base">
             <div><strong>Total Reports:</strong> {stats?.totalReports}</div>
             <div><strong>Active Sensors:</strong> {stats?.totalSensors}</div>
             <div><strong>AI Success Rate:</strong> {stats?.userActivity?.ollamaSuccessRate}%</div>
@@ -122,64 +102,44 @@ const AdminDashboard: React.FC = () => {
       </div>
 
       {/* Recent Reports */}
-      <div style={{ 
-        background: 'white',
-        padding: '25px',
-        borderRadius: '15px',
-        boxShadow: '0 5px 15px rgba(0,0,0,0.1)',
-        marginBottom: '30px'
-      }}>
-        <h3 style={{ 
-          marginBottom: '20px', 
-          color: '#1976d2',
-          fontSize: '1.5rem'
-        }}>📝 Recent Symptom Reports</h3>
+      <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 lg:p-10 mb-6 sm:mb-8">
+        <h3 className="mb-4 sm:mb-6 text-xl sm:text-2xl text-slate-800 font-semibold">Recent Symptom Reports</h3>
         
         {stats?.recentReports && stats.recentReports.length > 0 ? (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
               <thead>
-                <tr style={{ borderBottom: '2px solid #e0e0e0' }}>
-                  <th style={{ padding: '12px', textAlign: 'left', color: '#1976d2' }}>User ID</th>
-                  <th style={{ padding: '12px', textAlign: 'left', color: '#1976d2' }}>Name</th>
-                  <th style={{ padding: '12px', textAlign: 'left', color: '#1976d2' }}>Symptoms</th>
-                  <th style={{ padding: '12px', textAlign: 'left', color: '#1976d2' }}>Severity</th>
-                  <th style={{ padding: '12px', textAlign: 'left', color: '#1976d2' }}>Submitted</th>
+                <tr className="border-b-2 border-gray-200">
+                  <th className="p-3 sm:p-4 text-left text-slate-700 text-sm sm:text-base font-semibold">User ID</th>
+                  <th className="p-3 sm:p-4 text-left text-slate-700 text-sm sm:text-base font-semibold">Name</th>
+                  <th className="p-3 sm:p-4 text-left text-slate-700 text-sm sm:text-base font-semibold hidden sm:table-cell">Symptoms</th>
+                  <th className="p-3 sm:p-4 text-left text-slate-700 text-sm sm:text-base font-semibold">Severity</th>
+                  <th className="p-3 sm:p-4 text-left text-slate-700 text-sm sm:text-base font-semibold hidden md:table-cell">Submitted</th>
                 </tr>
               </thead>
               <tbody>
                 {stats.recentReports.map((report: any) => (
-                  <tr key={report.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
-                    <td style={{ padding: '12px' }}>
-                      <code style={{ 
-                        background: '#f5f5f5', 
-                        padding: '4px 8px', 
-                        borderRadius: '4px',
-                        fontSize: '0.9rem'
-                      }}>
+                  <tr key={report.id} className="border-b border-gray-100 hover:bg-gray-50">
+                    <td className="p-3 sm:p-4">
+                      <code className="bg-gray-100 px-2 py-1 rounded text-xs sm:text-sm">
                         {report.userId?.substring(0, 8)}...
                       </code>
                     </td>
-                    <td style={{ padding: '12px' }}>{report.fullName || 'Anonymous'}</td>
-                    <td style={{ padding: '12px' }}>
+                    <td className="p-3 sm:p-4 text-sm sm:text-base">{report.fullName || 'Anonymous'}</td>
+                    <td className="p-3 sm:p-4 text-sm sm:text-base hidden sm:table-cell">
                       {report.symptoms?.slice(0, 2).join(', ')}
                       {report.symptoms?.length > 2 && '...'}
                     </td>
-                    <td style={{ padding: '12px' }}>
-                      <span style={{ 
-                        background: report.severity >= 4 ? '#ffebee' : 
-                                   report.severity >= 3 ? '#fff3e0' : '#e8f5e9',
-                        color: report.severity >= 4 ? '#d32f2f' : 
-                               report.severity >= 3 ? '#f57c00' : '#388e3c',
-                        padding: '4px 8px',
-                        borderRadius: '4px',
-                        fontSize: '0.9rem',
-                        fontWeight: 'bold'
-                      }}>
+                    <td className="p-3 sm:p-4">
+                      <span className={`px-2 py-1 rounded text-xs sm:text-sm font-semibold ${
+                        report.severity >= 4 ? 'bg-red-100 text-red-700' : 
+                        report.severity >= 3 ? 'bg-yellow-100 text-yellow-700' : 
+                        'bg-green-100 text-green-700'
+                      }`}>
                         {report.severity}/5
                       </span>
                     </td>
-                    <td style={{ padding: '12px', color: '#666' }}>
+                    <td className="p-3 sm:p-4 text-gray-600 text-sm hidden md:table-cell">
                       {new Date(report.submittedAt).toLocaleDateString()}
                     </td>
                   </tr>
@@ -188,58 +148,46 @@ const AdminDashboard: React.FC = () => {
             </table>
           </div>
         ) : (
-          <div style={{ textAlign: 'center', color: '#666', padding: '40px' }}>
+          <div className="text-center text-gray-600 py-12">
             No recent reports found.
           </div>
         )}
       </div>
 
       {/* System Metrics */}
-      <div style={{ 
-        background: 'white',
-        padding: '25px',
-        borderRadius: '15px',
-        boxShadow: '0 5px 15px rgba(0,0,0,0.1)'
-      }}>
-        <h3 style={{ 
-          marginBottom: '20px', 
-          color: '#1976d2',
-          fontSize: '1.5rem'
-        }}>⚙️ System Metrics</h3>
+      <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 lg:p-10">
+        <h3 className="mb-4 sm:mb-6 text-xl sm:text-2xl text-slate-800 font-semibold">System Metrics</h3>
         
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: '20px'
-        }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#1976d2' }}>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+          <div className="text-center p-4 bg-gray-50 rounded-xl">
+            <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-primary-600 mb-2">
               {stats?.userActivity?.requests || 0}
             </div>
-            <div style={{ color: '#666' }}>Total Requests</div>
+            <div className="text-sm sm:text-base text-gray-600">Total Requests</div>
           </div>
           
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#f57c00' }}>
+          <div className="text-center p-4 bg-gray-50 rounded-xl">
+            <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-yellow-600 mb-2">
               {stats?.userActivity?.ollamaRequests || 0}
             </div>
-            <div style={{ color: '#666' }}>AI Requests</div>
+            <div className="text-sm sm:text-base text-gray-600">AI Requests</div>
           </div>
           
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#388e3c' }}>
+          <div className="text-center p-4 bg-gray-50 rounded-xl">
+            <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-green-600 mb-2">
               {stats?.userActivity?.ollamaSuccessRate || 0}%
             </div>
-            <div style={{ color: '#666' }}>AI Success Rate</div>
+            <div className="text-sm sm:text-base text-gray-600">AI Success Rate</div>
           </div>
           
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#d32f2f' }}>
+          <div className="text-center p-4 bg-gray-50 rounded-xl">
+            <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-red-600 mb-2">
               {stats?.userActivity?.avgResponseTime || 0}ms
             </div>
-            <div style={{ color: '#666' }}>Avg Response Time</div>
+            <div className="text-sm sm:text-base text-gray-600">Avg Response Time</div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

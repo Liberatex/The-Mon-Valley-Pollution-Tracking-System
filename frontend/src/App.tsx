@@ -1,13 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
+import { AnimatePresence } from 'framer-motion';
+import { Home, BarChart3, Map, FileText, Bot, AlertTriangle } from 'lucide-react';
 import './App.css';
-import Home from './components/Home';
-import SensorMap from './components/SensorMap';
-import SymptomReportForm from './components/SymptomReportForm';
-import Dashboard from './components/Dashboard';
-import BreatheAI from './components/BreatheAI';
-import ExposureModel from './components/ExposureModel';
 import Logo from './components/Logo';
 import { feedbackService, UserFeedback } from './services/feedbackService';
+import { PageTransition } from './components/ui/PageTransition';
 
 type View = 'home' | 'dashboard' | 'map' | 'symptoms' | 'ai' | 'exposure';
 
@@ -45,22 +42,39 @@ function App() {
     setMobileMenuOpen(false);
   };
 
+  // Lazy load page components
+  const HomePage = lazy(() => import('./components/Home'));
+  const Dashboard = lazy(() => import('./components/Dashboard'));
+  const SensorMap = lazy(() => import('./components/SensorMap'));
+  const SymptomReportForm = lazy(() => import('./components/SymptomReportForm'));
+  const BreatheAI = lazy(() => import('./components/BreatheAI'));
+  const ExposureModel = lazy(() => import('./components/ExposureModel'));
+
+  const LoadingFallback = () => (
+    <div className="flex items-center justify-center min-h-[400px]">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-2"></div>
+        <p className="text-sm text-gray-600">Loading...</p>
+      </div>
+    </div>
+  );
+
   const renderView = () => {
     switch (currentView) {
       case 'home':
-        return <Home />;
+        return <Suspense fallback={<LoadingFallback />}><HomePage /></Suspense>;
       case 'dashboard':
-        return <Dashboard />;
+        return <Suspense fallback={<LoadingFallback />}><Dashboard /></Suspense>;
       case 'map':
-        return <SensorMap onSensorSelect={() => {}} />;
+        return <Suspense fallback={<LoadingFallback />}><SensorMap onSensorSelect={() => {}} /></Suspense>;
       case 'symptoms':
-        return <SymptomReportForm onSuccess={(id) => console.log('Report submitted:', id)} />;
+        return <Suspense fallback={<LoadingFallback />}><SymptomReportForm onSuccess={(id) => console.log('Report submitted:', id)} /></Suspense>;
       case 'ai':
-        return <BreatheAI />;
+        return <Suspense fallback={<LoadingFallback />}><BreatheAI /></Suspense>;
       case 'exposure':
-        return <ExposureModel />;
+        return <Suspense fallback={<LoadingFallback />}><ExposureModel /></Suspense>;
       default:
-        return <Home />;
+        return <Suspense fallback={<LoadingFallback />}><HomePage /></Suspense>;
     }
   };
 
@@ -89,42 +103,48 @@ function App() {
             onClick={() => handleNavClick('home')}
             aria-current={currentView === 'home' ? 'page' : undefined}
           >
-            🏠 Home
+            <Home className="w-4 h-4 md:w-5 md:h-5" />
+            <span className="hidden sm:inline">Home</span>
           </button>
           <button
             className={`nav-button ${currentView === 'dashboard' ? 'active' : ''}`}
             onClick={() => handleNavClick('dashboard')}
             aria-current={currentView === 'dashboard' ? 'page' : undefined}
           >
-            📊 Dashboard
+            <BarChart3 className="w-4 h-4 md:w-5 md:h-5" />
+            <span className="hidden sm:inline">Dashboard</span>
           </button>
           <button
             className={`nav-button ${currentView === 'map' ? 'active' : ''}`}
             onClick={() => handleNavClick('map')}
             aria-current={currentView === 'map' ? 'page' : undefined}
           >
-            🗺️ Sensor Map
+            <Map className="w-4 h-4 md:w-5 md:h-5" />
+            <span className="hidden sm:inline">Sensor Map</span>
           </button>
           <button
             className={`nav-button ${currentView === 'symptoms' ? 'active' : ''}`}
             onClick={() => handleNavClick('symptoms')}
             aria-current={currentView === 'symptoms' ? 'page' : undefined}
           >
-            📝 Report Symptoms
+            <FileText className="w-4 h-4 md:w-5 md:h-5" />
+            <span className="hidden sm:inline">Report Symptoms</span>
           </button>
           <button
             className={`nav-button ${currentView === 'ai' ? 'active' : ''}`}
             onClick={() => handleNavClick('ai')}
             aria-current={currentView === 'ai' ? 'page' : undefined}
           >
-            🤖 AI Assistant
+            <Bot className="w-4 h-4 md:w-5 md:h-5" />
+            <span className="hidden sm:inline">AI Assistant</span>
           </button>
           <button
             className={`nav-button ${currentView === 'exposure' ? 'active' : ''}`}
             onClick={() => handleNavClick('exposure')}
             aria-current={currentView === 'exposure' ? 'page' : undefined}
           >
-            🔬 Exposure Risk
+            <AlertTriangle className="w-4 h-4 md:w-5 md:h-5" />
+            <span className="hidden sm:inline">Exposure Risk</span>
           </button>
         </nav>
 
@@ -134,43 +154,53 @@ function App() {
             className={`nav-button ${currentView === 'home' ? 'active' : ''}`}
             onClick={() => handleNavClick('home')}
           >
-            🏠 Home
+            <Home className="w-5 h-5" />
+            <span>Home</span>
           </button>
           <button
             className={`nav-button ${currentView === 'dashboard' ? 'active' : ''}`}
             onClick={() => handleNavClick('dashboard')}
           >
-            📊 Dashboard
+            <BarChart3 className="w-5 h-5" />
+            <span>Dashboard</span>
           </button>
           <button
             className={`nav-button ${currentView === 'map' ? 'active' : ''}`}
             onClick={() => handleNavClick('map')}
           >
-            🗺️ Sensor Map
+            <Map className="w-5 h-5" />
+            <span>Sensor Map</span>
           </button>
           <button
             className={`nav-button ${currentView === 'symptoms' ? 'active' : ''}`}
             onClick={() => handleNavClick('symptoms')}
           >
-            📝 Report Symptoms
+            <FileText className="w-5 h-5" />
+            <span>Report Symptoms</span>
           </button>
           <button
             className={`nav-button ${currentView === 'ai' ? 'active' : ''}`}
             onClick={() => handleNavClick('ai')}
           >
-            🤖 AI Assistant
+            <Bot className="w-5 h-5" />
+            <span>AI Assistant</span>
           </button>
           <button
             className={`nav-button ${currentView === 'exposure' ? 'active' : ''}`}
             onClick={() => handleNavClick('exposure')}
           >
-            🔬 Exposure Risk
+            <AlertTriangle className="w-5 h-5" />
+            <span>Exposure Risk</span>
           </button>
         </nav>
       </header>
       <main className="App-main" role="main">
         <div className="view-container">
-          {renderView()}
+          <AnimatePresence mode="wait">
+            <PageTransition key={currentView}>
+              {renderView()}
+            </PageTransition>
+          </AnimatePresence>
         </div>
       </main>
       <footer className="App-footer">

@@ -129,6 +129,34 @@ service cloud.firestore {
     }
     
     // ===================================================================
+    // ANALYTICS & AGGREGATED DATA (NO PHI)
+    // ===================================================================
+    
+    // Symptom report aggregates - aggregated data only (no PHI)
+    match /symptomReportAggregates/{aggregateId} {
+      allow read: if isAdmin() || isAuthenticated(); // Analysts can read aggregates
+      allow write: if false; // Only backend can write
+    }
+    
+    // Regulatory reports - admin and analysts
+    match /regulatoryReports/{reportId} {
+      allow read: if isAdmin() || isAuthenticated();
+      allow write: if false; // Only backend can write
+    }
+    
+    // Audit logs - admin only
+    match /auditLogs/{logId} {
+      allow read: if isAdmin();
+      allow write: if false; // Only backend
+    }
+    
+    // Breach events - admin only (HIPAA requirement)
+    match /breachEvents/{breachId} {
+      allow read: if isAdmin();
+      allow write: if false; // Only backend can write
+    }
+    
+    // ===================================================================
     // FALLBACK: DENY ALL BY DEFAULT
     // ===================================================================
     

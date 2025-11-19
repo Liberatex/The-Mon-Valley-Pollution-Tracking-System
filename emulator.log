@@ -1,0 +1,77 @@
+i  emulators: Starting emulators: functions, firestore
+⚠  functions: The following emulators are not running, calls to these services from the Functions emulator will affect production: apphosting, auth, database, hosting, pubsub, storage, dataconnect
+⚠  functions: Application Default Credentials detected. Non-emulated services will access production using these credentials. Be careful!
+i  firestore: Firestore Emulator logging to firestore-debug.log
+✔  firestore: Firestore Emulator UI websocket is running on 9150.
+i  functions: Watching "/Users/liberatex/pullution_tracker/The-Mon-Valley-Pollution-Tracking-System/functions" for Cloud Functions...
+⚠  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory.
+⚠  functions: Your requested "node" version "22" doesn't match your global version "18". Using node@18 from host.
+Serving at port 8290
+
+✔  functions: Loaded functions definitions from source: testTogetherAI, testTogetherAINew, llama3Chat, healthCheck, getMetrics, seedTitleVFacilities, getTitleVFacilities, getTitleVFacilityById, processSensorData, submitSymptomReport.
+✔  functions[us-central1-testTogetherAI]: http function initialized (http://127.0.0.1:5001/mv-pollution-tracking-system/us-central1/testTogetherAI).
+✔  functions[us-central1-testTogetherAINew]: http function initialized (http://127.0.0.1:5001/mv-pollution-tracking-system/us-central1/testTogetherAINew).
+✔  functions[us-central1-llama3Chat]: http function initialized (http://127.0.0.1:5001/mv-pollution-tracking-system/us-central1/llama3Chat).
+✔  functions[us-central1-healthCheck]: http function initialized (http://127.0.0.1:5001/mv-pollution-tracking-system/us-central1/healthCheck).
+✔  functions[us-central1-getMetrics]: http function initialized (http://127.0.0.1:5001/mv-pollution-tracking-system/us-central1/getMetrics).
+✔  functions[us-central1-seedTitleVFacilities]: http function initialized (http://127.0.0.1:5001/mv-pollution-tracking-system/us-central1/seedTitleVFacilities).
+✔  functions[us-central1-getTitleVFacilities]: http function initialized (http://127.0.0.1:5001/mv-pollution-tracking-system/us-central1/getTitleVFacilities).
+✔  functions[us-central1-getTitleVFacilityById]: http function initialized (http://127.0.0.1:5001/mv-pollution-tracking-system/us-central1/getTitleVFacilityById).
+✔  functions[us-central1-processSensorData]: http function initialized (http://127.0.0.1:5001/mv-pollution-tracking-system/us-central1/processSensorData).
+✔  functions[us-central1-submitSymptomReport]: http function initialized (http://127.0.0.1:5001/mv-pollution-tracking-system/us-central1/submitSymptomReport).
+
+[90m┌─────────────────────────────────────────────────────────────┐[39m
+[90m│[39m ✔  All emulators ready! It is now safe to connect your app. [90m│[39m
+[90m│[39m i  View Emulator UI at http://127.0.0.1:4000/               [90m│[39m
+[90m└─────────────────────────────────────────────────────────────┘[39m
+
+[90m┌───────────[39m[90m┬────────────────[39m[90m┬─────────────────────────────────┐[39m
+[90m│[39m[33m Emulator  [39m[90m│[39m[33m Host:Port      [39m[90m│[39m[33m View in Emulator UI             [39m[90m│[39m
+[90m├───────────[39m[90m┼────────────────[39m[90m┼─────────────────────────────────┤[39m
+[90m│[39m Functions [90m│[39m 127.0.0.1:5001 [90m│[39m http://127.0.0.1:4000/functions [90m│[39m
+[90m├───────────[39m[90m┼────────────────[39m[90m┼─────────────────────────────────┤[39m
+[90m│[39m Firestore [90m│[39m 127.0.0.1:8080 [90m│[39m http://127.0.0.1:4000/firestore [90m│[39m
+[90m└───────────[39m[90m┴────────────────[39m[90m┴─────────────────────────────────┘[39m
+  Emulator Hub host: 127.0.0.1 port: 4400
+  Other reserved ports: 4500, 9150
+
+Issues? Report them at https://github.com/firebase/firebase-tools/issues and attach the *-debug.log files.
+ 
+i  functions: Beginning execution of "us-central1-submitSymptomReport"
+>  Symptom report submitted: {
+>    reportId: 'GeOQwfypUjuOevON7GcG',
+>    severity: 4,
+>    symptomCount: 2,
+>    timestamp: '2025-10-27T04:38:42.661Z'
+>  }
+>  Health alert created for high-severity report: GeOQwfypUjuOevON7GcG
+i  functions: Finished "us-central1-submitSymptomReport" in 700.760417ms
+i  functions: Beginning execution of "us-central1-seedTitleVFacilities"
+i  functions: Finished "us-central1-seedTitleVFacilities" in 6.704583ms
+i  functions: Beginning execution of "us-central1-seedTitleVFacilities"
+i  functions: Finished "us-central1-seedTitleVFacilities" in 7.18125ms
+i  functions: Beginning execution of "us-central1-getTitleVFacilities"
+i  functions: Finished "us-central1-getTitleVFacilities" in 237.090709ms
+i  functions: Beginning execution of "us-central1-healthCheck"
+i  functions: Finished "us-central1-healthCheck" in 2.717125ms
+⚠  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory.
+⚠  functions: Your requested "node" version "22" doesn't match your global version "18". Using node@18 from host.
+Serving at port 8971
+
+✔  functions: Loaded functions definitions from source: testTogetherAI, testTogetherAINew, llama3Chat, healthCheck, getMetrics, seedTitleVFacilities, getTitleVFacilities, getTitleVFacilityById, processSensorData, submitSymptomReport.
+⚠  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory.
+⚠  functions: Your requested "node" version "22" doesn't match your global version "18". Using node@18 from host.
+Serving at port 8624
+
+✔  functions: Loaded functions definitions from source: testTogetherAI, testTogetherAINew, llama3Chat, healthCheck, getMetrics, seedTitleVFacilities, getTitleVFacilities, getTitleVFacilityById, processSensorData, submitSymptomReport.
+ 
+i  emulators: Received SIGTERM for the first time. Starting a clean shutdown.
+i  emulators: Please wait for a clean shutdown or send the SIGTERM signal again to stop right now.
+i  emulators: Shutting down emulators.
+i  ui: Stopping Emulator UI
+i  functions: Stopping Functions Emulator
+i  firestore: Stopping Firestore Emulator
+i  eventarc: Stopping Eventarc Emulator
+i  tasks: Stopping Cloud Tasks Emulator
+i  hub: Stopping emulator hub
+i  logging: Stopping Logging Emulator

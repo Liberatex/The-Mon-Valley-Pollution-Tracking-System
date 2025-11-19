@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './BreatheAI.css';
 import axios from 'axios';
+import { FadeInSection } from './ui/FadeInSection';
+import { Bot, Send, CheckCircle2 } from 'lucide-react';
 
 interface Message {
   id: string;
@@ -110,49 +112,40 @@ const BreatheAI: React.FC = () => {
   };
 
   return (
-    <div className="breathe-ai-container" style={{ 
-      maxWidth: '800px', 
-      margin: '0 auto', 
-      padding: '20px',
-      fontFamily: 'Arial, sans-serif'
-    }}>
-      <div style={{ 
-        textAlign: 'center', 
-        marginBottom: '20px',
-        padding: '15px',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        borderRadius: '15px',
-        color: 'white'
-      }}>
-        <h2 style={{ margin: '0 0 10px 0', fontSize: '1.8rem' }}>BreatheAI Assistant</h2>
-        <p style={{ margin: '0 0 10px 0', opacity: 0.9 }}>Air Quality Health Assistant</p>
-        
-        {/* AI Status Indicator */}
-        <div style={{ 
-          display: 'inline-flex', 
-          alignItems: 'center', 
-          gap: '8px',
-          padding: '6px 12px',
-          borderRadius: '20px',
-          fontSize: '0.9rem',
-          fontWeight: 'bold',
-          background: aiStatus === 'cloud' ? 'rgba(76, 175, 80, 0.2)' : 'rgba(255, 152, 0, 0.2)',
-          border: aiStatus === 'cloud' ? '1px solid #4caf50' : '1px solid #ff9800'
-        }}>
-          <div style={{ 
-            width: '8px', 
-            height: '8px', 
-            borderRadius: '50%',
-            background: aiStatus === 'cloud' ? '#4caf50' : '#ff9800',
-            animation: aiStatus === 'checking' ? 'pulse 2s infinite' : 'none'
-          }}></div>
-          {aiStatus === 'checking' && 'Checking AI Status...'}
-          {aiStatus === 'cloud' && 'AI Fully Operational'}
-          {aiStatus === 'fallback' && 'AI Fully Operational'}
+    <div className="min-h-screen bg-gray-50">
+      {/* Header Section - Full Width */}
+      <FadeInSection delay={0}>
+        <div className="bg-gradient-to-br from-slate-800 to-slate-600 text-white w-screen text-center py-12 sm:py-16 lg:py-24 px-4 sm:px-6 lg:px-8" style={{ marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <Bot className="w-10 h-10 sm:w-12 sm:h-12" />
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight">
+                BreatheAI Assistant
+              </h2>
+            </div>
+            <p className="text-lg sm:text-xl lg:text-2xl opacity-90 font-light max-w-3xl mx-auto mb-6">
+              Air Quality Health Assistant
+            </p>
+            
+            {/* AI Status Indicator */}
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
+              <div className={`w-2 h-2 rounded-full ${
+                aiStatus === 'cloud' ? 'bg-green-400' : 'bg-yellow-400'
+              } ${aiStatus === 'checking' ? 'animate-pulse' : ''}`}></div>
+              <span className="text-sm font-medium">
+                {aiStatus === 'checking' && 'Checking AI Status...'}
+                {aiStatus === 'cloud' && 'AI Fully Operational'}
+                {aiStatus === 'fallback' && 'AI Fully Operational'}
+              </span>
+            </div>
+          </div>
         </div>
-        
-        {/* AI Status Message - Removed fallback mode since AI is fully operational */}
-      </div>
+      </FadeInSection>
+
+      {/* Content Section with Container */}
+      <div className="py-8 sm:py-12 lg:py-16 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="breathe-ai-container bg-white rounded-2xl shadow-lg border border-gray-200 p-6 sm:p-8">
 
       <div className="messages-container">
         {messages.map((message) => (
@@ -184,30 +177,48 @@ const BreatheAI: React.FC = () => {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="quick-responses">
-        <button onClick={() => handleQuickResponse("I'm not feeling well")}>
-          Not feeling well
-        </button>
-        <button onClick={() => handleQuickResponse("I'm doing okay")}>
-          Feeling okay
-        </button>
-        <button onClick={() => handleQuickResponse("Check air quality")}>
-          Check air quality
-        </button>
-      </div>
+            <div className="quick-responses mb-6">
+              <button 
+                onClick={() => handleQuickResponse("I'm not feeling well")}
+                className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl font-medium hover:bg-slate-200 transition-colors text-sm sm:text-base"
+              >
+                Not feeling well
+              </button>
+              <button 
+                onClick={() => handleQuickResponse("I'm doing okay")}
+                className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl font-medium hover:bg-slate-200 transition-colors text-sm sm:text-base"
+              >
+                Feeling okay
+              </button>
+              <button 
+                onClick={() => handleQuickResponse("Check air quality")}
+                className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl font-medium hover:bg-slate-200 transition-colors text-sm sm:text-base"
+              >
+                Check air quality
+              </button>
+            </div>
 
-      <form onSubmit={handleSubmit} className="input-form">
-        <input
-          type="text"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          placeholder="Type your message..."
-          disabled={isTyping}
-        />
-        <button type="submit" disabled={isTyping || !inputValue.trim()}>
-          Send
-        </button>
-      </form>
+            <form onSubmit={handleSubmit} className="input-form flex gap-3">
+              <input
+                type="text"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                placeholder="Type your message..."
+                disabled={isTyping}
+                className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-slate-600 transition-colors disabled:bg-gray-50 disabled:text-gray-500"
+              />
+              <button 
+                type="submit" 
+                disabled={isTyping || !inputValue.trim()}
+                className="px-6 py-3 bg-gradient-to-r from-slate-700 to-slate-600 text-white rounded-xl font-semibold hover:from-slate-600 hover:to-slate-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                <Send className="w-5 h-5" />
+                Send
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

@@ -169,19 +169,24 @@ const SymptomReportForm: React.FC<SymptomReportFormProps> = ({ onSuccess }) => {
   const progress = (step / 4) * 100;
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 sm:py-12 lg:py-16 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl mx-auto">
-        {/* Header Section */}
-        <FadeInSection delay={0}>
-          <div className="bg-gradient-to-br from-slate-800 to-slate-600 text-white rounded-2xl shadow-xl p-8 sm:p-12 mb-8 text-center">
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 tracking-tight">
+    <div className="min-h-screen bg-gray-50">
+      {/* Header Section - Full Width */}
+      <FadeInSection delay={0}>
+        <div className="bg-gradient-to-br from-slate-800 to-slate-600 text-white w-screen text-center py-12 sm:py-16 lg:py-24 px-4 sm:px-6 lg:px-8" style={{ marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
+          <div className="max-w-7xl mx-auto">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 tracking-tight">
               Submit Symptom Report
-            </h2>
-            <p className="text-lg sm:text-xl opacity-90 font-light max-w-2xl mx-auto">
+        </h2>
+            <p className="text-lg sm:text-xl lg:text-2xl opacity-90 font-light max-w-3xl mx-auto">
               Help us track health impacts and advocate for cleaner air in the Mon Valley
             </p>
           </div>
-        </FadeInSection>
+        </div>
+      </FadeInSection>
+
+      {/* Content Section with Container */}
+      <div className="py-8 sm:py-12 lg:py-16 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-3xl mx-auto">
 
         {/* Information Section */}
         <FadeInSection delay={0.1}>
@@ -247,10 +252,10 @@ const SymptomReportForm: React.FC<SymptomReportFormProps> = ({ onSuccess }) => {
                   className="h-full bg-gradient-to-r from-slate-700 to-slate-600 rounded-full transition-all duration-500 ease-out"
                   style={{ width: `${progress}%` }}
                 />
-              </div>
-            </div>
+          </div>
+        </div>
 
-            {/* Messages */}
+        {/* Messages */}
             {error && (
               <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-lg flex items-start gap-3">
                 <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
@@ -270,9 +275,9 @@ const SymptomReportForm: React.FC<SymptomReportFormProps> = ({ onSuccess }) => {
               </div>
             )}
 
-            {/* Step 1: Personal Info */}
-            {step === 1 && (
-              <form onSubmit={(e) => { e.preventDefault(); handleNext(); }}>
+        {/* Step 1: Personal Info */}
+        {step === 1 && (
+          <form onSubmit={(e) => { e.preventDefault(); handleNext(); }}>
                 <h3 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
                   <span className="w-8 h-8 rounded-full bg-slate-700 text-white flex items-center justify-center text-sm font-semibold">1</span>
                   Personal Information
@@ -282,48 +287,48 @@ const SymptomReportForm: React.FC<SymptomReportFormProps> = ({ onSuccess }) => {
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 mb-2">
                       User ID <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={user?.uid || anonymousUserId}
-                      onChange={() => {}}
-                      required
-                      disabled
+              </label>
+              <input
+                type="text"
+                value={user?.uid || anonymousUserId}
+                onChange={() => {}}
+                required
+                disabled
                       className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-600 focus:outline-none focus:border-slate-600 transition-colors"
                     />
                     <p className="mt-2 text-xs text-gray-500">A unique identifier for your session</p>
-                  </div>
+            </div>
 
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 mb-2">
-                      Full Name
-                    </label>
-                    <input
-                      type="text"
-                      value={fullName}
-                      onChange={e => setFullName(e.target.value)}
-                      placeholder="Enter your full name"
-                      disabled={!!user}
+                Full Name
+              </label>
+              <input
+                type="text"
+                value={fullName}
+                onChange={e => setFullName(e.target.value)}
+                placeholder="Enter your full name"
+                disabled={!!user}
                       className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-slate-600 transition-colors disabled:bg-gray-50 disabled:text-gray-500"
-                    />
-                  </div>
+              />
+            </div>
 
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 mb-2">
-                      Age
-                    </label>
-                    <input
-                      type="number"
-                      value={age}
-                      onChange={e => setAge(e.target.value)}
-                      placeholder="Enter your age"
-                      disabled={!!user}
-                      min="1"
-                      max="120"
+                Age
+              </label>
+              <input
+                type="number"
+                value={age}
+                onChange={e => setAge(e.target.value)}
+                placeholder="Enter your age"
+                disabled={!!user}
+                min="1"
+                max="120"
                       className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-slate-600 transition-colors disabled:bg-gray-50 disabled:text-gray-500"
                     />
                   </div>
-                </div>
+            </div>
 
                 <button 
                   type="submit" 
@@ -331,13 +336,13 @@ const SymptomReportForm: React.FC<SymptomReportFormProps> = ({ onSuccess }) => {
                 >
                   Continue
                   <ArrowRight className="w-5 h-5" />
-                </button>
-              </form>
-            )}
+            </button>
+          </form>
+        )}
 
-            {/* Step 2: Symptoms */}
-            {step === 2 && (
-              <div>
+        {/* Step 2: Symptoms */}
+        {step === 2 && (
+          <div>
                 <h3 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
                   <span className="w-8 h-8 rounded-full bg-slate-700 text-white flex items-center justify-center text-sm font-semibold">2</span>
                   Symptoms
@@ -346,57 +351,57 @@ const SymptomReportForm: React.FC<SymptomReportFormProps> = ({ onSuccess }) => {
                 <div className="mb-8">
                   <label className="block text-sm font-semibold text-slate-700 mb-3">
                     Add Symptoms <span className="text-red-500">*</span>
-                  </label>
+              </label>
                   <div className="flex gap-3 mb-4">
-                    <input
-                      type="text"
-                      value={symptomInput}
-                      onChange={e => setSymptomInput(e.target.value)}
-                      placeholder="Enter symptom (e.g., headache, cough)"
-                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddSymptom(); } }}
+                <input
+                  type="text"
+                  value={symptomInput}
+                  onChange={e => setSymptomInput(e.target.value)}
+                  placeholder="Enter symptom (e.g., headache, cough)"
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddSymptom(); } }}
                       className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-slate-600 transition-colors"
-                    />
-                    <button 
-                      type="button" 
-                      onClick={handleAddSymptom}
+                />
+                <button 
+                  type="button" 
+                  onClick={handleAddSymptom}
                       className="px-6 py-3 bg-slate-700 text-white rounded-xl font-semibold hover:bg-slate-600 transition-colors flex items-center gap-2"
                     >
                       <Plus className="w-5 h-5" />
-                      Add
-                    </button>
-                  </div>
+                  Add
+                </button>
+              </div>
 
-                  {symptoms.length > 0 && (
+              {symptoms.length > 0 && (
                     <div className="flex flex-wrap gap-2">
-                      {symptoms.map((symptom, i) => (
+                  {symptoms.map((symptom, i) => (
                         <div key={i} className="inline-flex items-center gap-2 bg-slate-100 text-slate-700 px-4 py-2 rounded-full text-sm font-medium">
-                          <span>{symptom}</span>
-                          <button 
-                            type="button"
-                            onClick={() => handleRemoveSymptom(symptom)}
+                      <span>{symptom}</span>
+                      <button 
+                        type="button"
+                        onClick={() => handleRemoveSymptom(symptom)}
                             className="hover:bg-slate-200 rounded-full p-1 transition-colors"
                           >
                             <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ))}
+                      </button>
                     </div>
-                  )}
+                  ))}
                 </div>
+              )}
+            </div>
 
                 <div className="flex gap-4">
-                  <button 
-                    type="button"
-                    onClick={handleBack}
+              <button 
+                type="button"
+                onClick={handleBack}
                     className="flex-1 px-6 py-4 bg-gray-100 text-slate-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
                   >
                     <ArrowLeft className="w-5 h-5" />
                     Back
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={handleNext}
-                    disabled={symptoms.length === 0}
+              </button>
+              <button 
+                type="button"
+                onClick={handleNext}
+                disabled={symptoms.length === 0}
                     className={`flex-2 px-6 py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
                       symptoms.length === 0 
                         ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
@@ -405,14 +410,14 @@ const SymptomReportForm: React.FC<SymptomReportFormProps> = ({ onSuccess }) => {
                   >
                     Continue
                     <ArrowRight className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-            )}
+              </button>
+            </div>
+          </div>
+        )}
 
-            {/* Step 3: OSAC */}
-            {step === 3 && (
-              <div>
+        {/* Step 3: OSAC */}
+        {step === 3 && (
+          <div>
                 <h3 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
                   <span className="w-8 h-8 rounded-full bg-slate-700 text-white flex items-center justify-center text-sm font-semibold">3</span>
                   Symptom Details
@@ -422,120 +427,120 @@ const SymptomReportForm: React.FC<SymptomReportFormProps> = ({ onSuccess }) => {
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 mb-3">
                       Onset <span className="text-red-500">*</span>
-                    </label>
+              </label>
                     <div className="flex flex-wrap gap-3">
-                      {onsetOptions.map(opt => (
-                        <button
-                          key={opt}
-                          type="button"
-                          onClick={() => setOSAC({ ...osac, onset: opt })}
+                {onsetOptions.map(opt => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => setOSAC({ ...osac, onset: opt })}
                           className={`px-5 py-3 rounded-xl font-medium transition-all ${
                             osac.onset === opt
                               ? 'bg-slate-700 text-white shadow-lg'
                               : 'bg-gray-100 text-slate-700 hover:bg-gray-200 border-2 border-transparent'
                           }`}
-                        >
-                          {opt}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
 
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 mb-3">
                       Severity <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="range"
-                      min="1"
-                      max="5"
-                      value={osac.severity}
-                      onChange={e => setOSAC({ ...osac, severity: parseInt(e.target.value) })}
+              </label>
+              <input
+                type="range"
+                min="1"
+                max="5"
+                value={osac.severity}
+                onChange={e => setOSAC({ ...osac, severity: parseInt(e.target.value) })}
                       className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-slate-700 mb-4"
                     />
                     <div className="flex justify-between text-xs text-gray-600">
-                      {severityLabels.map((label, i) => (
+                {severityLabels.map((label, i) => (
                         <span key={i} className={osac.severity === i + 1 ? 'font-bold text-slate-700' : ''}>
-                          {label}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
+                    {label}
+                  </span>
+                ))}
+              </div>
+            </div>
 
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 mb-3">
                       Course <span className="text-red-500">*</span>
-                    </label>
+              </label>
                     <div className="flex flex-wrap gap-3">
-                      {courseOptions.map(opt => (
-                        <button
-                          key={opt}
-                          type="button"
-                          onClick={() => setOSAC({ ...osac, course: opt })}
+                {courseOptions.map(opt => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => setOSAC({ ...osac, course: opt })}
                           className={`px-5 py-3 rounded-xl font-medium transition-all ${
                             osac.course === opt
                               ? 'bg-slate-700 text-white shadow-lg'
                               : 'bg-gray-100 text-slate-700 hover:bg-gray-200 border-2 border-transparent'
                           }`}
-                        >
-                          {opt}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
 
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 mb-3">
-                      Aggravating Factors
-                    </label>
+                Aggravating Factors
+              </label>
                     <div className="flex flex-wrap gap-3">
-                      {aggravatingOptions.map(opt => (
-                        <button
-                          key={opt}
-                          type="button"
-                          onClick={() => {
-                            const updated = osac.aggravatingFactors.includes(opt)
-                              ? osac.aggravatingFactors.filter(f => f !== opt)
-                              : [...osac.aggravatingFactors, opt];
-                            setOSAC({ ...osac, aggravatingFactors: updated });
-                          }}
+                {aggravatingOptions.map(opt => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => {
+                      const updated = osac.aggravatingFactors.includes(opt)
+                        ? osac.aggravatingFactors.filter(f => f !== opt)
+                        : [...osac.aggravatingFactors, opt];
+                      setOSAC({ ...osac, aggravatingFactors: updated });
+                    }}
                           className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                             osac.aggravatingFactors.includes(opt)
                               ? 'bg-slate-700 text-white shadow-md'
                               : 'bg-gray-100 text-slate-700 hover:bg-gray-200'
                           }`}
-                        >
-                          {opt}
-                        </button>
-                      ))}
+                  >
+                    {opt}
+                  </button>
+                ))}
                     </div>
-                  </div>
-                </div>
+              </div>
+            </div>
 
                 <div className="flex gap-4 mt-8">
-                  <button 
-                    type="button"
-                    onClick={handleBack}
+              <button 
+                type="button"
+                onClick={handleBack}
                     className="flex-1 px-6 py-4 bg-gray-100 text-slate-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
                   >
                     <ArrowLeft className="w-5 h-5" />
                     Back
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={handleNext}
+              </button>
+              <button 
+                type="button"
+                onClick={handleNext}
                     className="flex-2 px-6 py-4 bg-gradient-to-r from-slate-700 to-slate-600 text-white rounded-xl font-semibold hover:from-slate-600 hover:to-slate-500 transition-all hover:-translate-y-1 hover:shadow-xl flex items-center justify-center gap-2"
                   >
                     Continue
                     <ArrowRight className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-            )}
+              </button>
+            </div>
+          </div>
+        )}
 
-            {/* Step 4: Review & Submit */}
-            {step === 4 && (
-              <form onSubmit={handleSubmit}>
+        {/* Step 4: Review & Submit */}
+        {step === 4 && (
+          <form onSubmit={handleSubmit}>
                 <h3 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
                   <span className="w-8 h-8 rounded-full bg-slate-700 text-white flex items-center justify-center text-sm font-semibold">4</span>
                   Review & Submit
@@ -549,18 +554,18 @@ const SymptomReportForm: React.FC<SymptomReportFormProps> = ({ onSuccess }) => {
                       {fullName && <p className="text-gray-700"><strong className="text-slate-700">Name:</strong> {fullName}</p>}
                       {age && <p className="text-gray-700"><strong className="text-slate-700">Age:</strong> {age}</p>}
                     </div>
-                  </div>
+            </div>
 
                   <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
                     <h4 className="text-lg font-semibold text-slate-800 mb-4">Symptoms</h4>
                     <div className="flex flex-wrap gap-2">
-                      {symptoms.map((s, i) => (
+                {symptoms.map((s, i) => (
                         <span key={i} className="bg-slate-100 text-slate-700 px-4 py-2 rounded-full text-sm font-medium">
                           {s}
                         </span>
-                      ))}
-                    </div>
-                  </div>
+                ))}
+              </div>
+            </div>
 
                   <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
                     <h4 className="text-lg font-semibold text-slate-800 mb-4">Details</h4>
@@ -568,27 +573,27 @@ const SymptomReportForm: React.FC<SymptomReportFormProps> = ({ onSuccess }) => {
                       <p className="text-gray-700"><strong className="text-slate-700">Onset:</strong> {osac.onset}</p>
                       <p className="text-gray-700"><strong className="text-slate-700">Severity:</strong> {severityLabels[osac.severity - 1]}</p>
                       <p className="text-gray-700"><strong className="text-slate-700">Course:</strong> {osac.course}</p>
-                      {osac.aggravatingFactors.length > 0 && (
+              {osac.aggravatingFactors.length > 0 && (
                         <p className="text-gray-700">
                           <strong className="text-slate-700">Aggravating:</strong> {osac.aggravatingFactors.join(', ')}
-                        </p>
-                      )}
+                </p>
+              )}
                     </div>
                   </div>
-                </div>
+            </div>
 
                 <div className="flex gap-4">
-                  <button 
-                    type="button"
-                    onClick={handleBack}
+              <button 
+                type="button"
+                onClick={handleBack}
                     className="flex-1 px-6 py-4 bg-gray-100 text-slate-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
                   >
                     <ArrowLeft className="w-5 h-5" />
                     Back
-                  </button>
-                  <button 
-                    type="submit"
-                    disabled={loading || isSubmitting}
+              </button>
+              <button 
+                type="submit"
+                disabled={loading || isSubmitting}
                     className={`flex-2 px-6 py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
                       loading || isSubmitting
                         ? 'bg-gray-400 text-white cursor-not-allowed'
@@ -603,12 +608,13 @@ const SymptomReportForm: React.FC<SymptomReportFormProps> = ({ onSuccess }) => {
                         Submit Report
                       </>
                     )}
-                  </button>
-                </div>
-              </form>
-            )}
+              </button>
+            </div>
+          </form>
+        )}
           </div>
         </FadeInSection>
+        </div>
       </div>
     </div>
   );

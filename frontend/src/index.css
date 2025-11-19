@@ -91,3 +91,25 @@
     font-size: 18px !important;
   }
 }
+
+/* Tableau dashboard mobile improvements */
+@media (max-width: 768px) {
+  tableau-viz {
+    width: 100% !important;
+    min-width: 100% !important;
+  }
+  
+  /* Ensure Tableau controls are visible and tappable */
+  tableau-viz iframe {
+    width: 100% !important;
+    min-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  
+  /* Make sure selection controls are accessible */
+  tableau-viz * {
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+    touch-action: manipulation;
+  }
+}

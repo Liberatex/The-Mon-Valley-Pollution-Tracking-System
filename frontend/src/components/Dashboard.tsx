@@ -124,12 +124,32 @@ const Dashboard: React.FC = () => {
           </p>
           
           {/* Tableau embedded dashboard */}
-          <div 
-            className="w-full min-h-[400px] sm:min-h-[500px] lg:min-h-[600px] overflow-auto"
-            dangerouslySetInnerHTML={{
-              __html: `<tableau-viz id='tableau-viz' src='https://tableau.alleghenycounty.us/t/PublicSite/views/AlleghenyCountyAirQuality/Today' width='100%' height='777' hide-tabs toolbar='bottom' ></tableau-viz>`
-            }}
-          />
+          <div className="w-full">
+            <div 
+              className="w-full min-h-[400px] sm:min-h-[500px] lg:min-h-[600px] overflow-x-auto overflow-y-visible"
+              style={{
+                WebkitOverflowScrolling: 'touch',
+                touchAction: 'pan-x pan-y'
+              }}
+            >
+              <div 
+                className="w-full"
+                style={{
+                  minWidth: '100%',
+                  minHeight: '777px',
+                  position: 'relative'
+                }}
+                dangerouslySetInnerHTML={{
+                  __html: `<tableau-viz id='tableau-viz' src='https://tableau.alleghenycounty.us/t/PublicSite/views/AlleghenyCountyAirQuality/Today' width='100%' height='777' hide-tabs toolbar='bottom' device='phone' ></tableau-viz>`
+                }}
+              />
+            </div>
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-xs sm:text-sm text-blue-800">
+                <strong>Mobile Tip:</strong> Scroll horizontally within the dashboard to access all controls and selection options. Use pinch-to-zoom if needed.
+              </p>
+            </div>
+          </div>
         </div>
         </FadeInSection>
 

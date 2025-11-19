@@ -4,7 +4,7 @@ import L from 'leaflet';
 import axios from 'axios';
 import 'leaflet/dist/leaflet.css';
 import { shouldUseEmulator } from '../utils/env';
-import { Info, AlertCircle, MapPin, Factory, Activity } from 'lucide-react';
+import { Info, AlertCircle, MapPin, Factory, Activity, Navigation } from 'lucide-react';
 
 // Fix Leaflet marker icon issue
 // @ts-ignore
@@ -114,6 +114,9 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
   const [selectedSensor, setSelectedSensor] = useState<Sensor | null>(null);
   const [loading, setLoading] = useState(false);
   const [apiKeyStatus, setApiKeyStatus] = useState<'configured' | 'not_configured' | 'checking'>('checking');
+  const [showMyLocation, setShowMyLocation] = useState(false);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
 
   useEffect(() => {
     if (propSensors && propSensors.length > 0) {
@@ -266,6 +269,53 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
     onSensorSelect(sensor);
   };
 
+  // Handle "My Location" toggle
+  useEffect(() => {
+    if (showMyLocation) {
+      if (!navigator.geolocation) {
+        setLocationError('Geolocation is not supported by your browser');
+        setShowMyLocation(false);
+        return;
+      }
+
+      setLocationError(null);
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+          setLocationError(null);
+        },
+        (error) => {
+          let errorMessage = 'Unable to retrieve your location';
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              errorMessage = 'Location access denied. Please enable location permissions in your browser settings.';
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMessage = 'Location information is unavailable.';
+              break;
+            case error.TIMEOUT:
+              errorMessage = 'Location request timed out.';
+              break;
+          }
+          setLocationError(errorMessage);
+          setShowMyLocation(false);
+          setUserLocation(null);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0,
+        }
+      );
+    } else {
+      setUserLocation(null);
+      setLocationError(null);
+    }
+  }, [showMyLocation]);
+
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-screen">
@@ -322,6 +372,18 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
               ACHD Monitors ({achdSites.length})
             </span>
           </label>
+          <label className="flex items-center gap-2 cursor-pointer px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">
+            <input 
+              type="checkbox" 
+              checked={showMyLocation} 
+              onChange={(e) => setShowMyLocation(e.target.checked)}
+              className="cursor-pointer"
+            />
+            <span className="text-sm sm:text-base font-medium">
+              <Navigation className="inline w-4 h-4 mr-1" />
+              My Location
+            </span>
+          </label>
         </div>
       </div>
 
@@ -338,6 +400,19 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
               <p className="text-xs text-yellow-600">
                 See <code className="bg-yellow-100 px-1 rounded">PURPLEAIR_SETUP.md</code> for setup instructions.
               </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Location Error Alert */}
+      {locationError && (
+        <div className="mx-4 sm:mx-6 lg:mx-8 mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="font-semibold text-red-800 mb-1">Location Access Error</h3>
+              <p className="text-sm text-red-700">{locationError}</p>
             </div>
           </div>
         </div>
@@ -521,6 +596,62 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
             </Marker>
             );
           })}
+
+          {/* My Location Marker */}
+          {showMyLocation && userLocation && (
+            <Marker
+              key="my-location"
+              position={[userLocation.lat, userLocation.lng]}
+              icon={L.divIcon({
+                className: 'custom-my-location-marker',
+                html: `<div style="
+                  background: #2196F3;
+                  width: 32px;
+                  height: 32px;
+                  border-radius: 50%;
+                  border: 4px solid white;
+                  box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  animation: pulse 2s infinite;
+                ">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2v20M2 12h20"/>
+                  </svg>
+                </div>`,
+                iconSize: [32, 32],
+                iconAnchor: [16, 16]
+              })}
+            >
+              <Popup className="custom-popup" maxWidth={300}>
+                <div className="p-2">
+                  <div className="flex items-start gap-2 mb-2">
+                    <Navigation className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <h3 className="font-bold text-base mb-1 text-blue-600">My Location</h3>
+                      <p className="text-xs text-gray-500 mb-2">Your current position</p>
+                    </div>
+                  </div>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium text-gray-700">Latitude:</span>
+                      <span className="font-semibold text-gray-900">{Number(userLocation.lat).toFixed(6)}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium text-gray-700">Longitude:</span>
+                      <span className="font-semibold text-gray-900">{Number(userLocation.lng).toFixed(6)}</span>
+                    </div>
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-gray-200">
+                    <p className="text-xs text-gray-500">
+                      This marker shows your current location relative to air quality sensors and facilities in the Mon Valley region.
+                    </p>
+                  </div>
+                </div>
+              </Popup>
+            </Marker>
+          )}
         </MapContainer>
 
         {/* Legend Panel */}
@@ -597,6 +728,24 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
                 </div>
                 <p className="text-gray-500 mt-1 ml-5 text-xs">
                   Data reported to EPA Air Quality System (AQS)
+                </p>
+              </div>
+              
+              <div className="border-t border-gray-200 pt-3">
+                <h4 className="font-semibold mb-2 flex items-center gap-2">
+                  <Navigation className="w-3 h-3" />
+                  My Location
+                </h4>
+                <div className="flex items-center gap-2 ml-5">
+                  <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 2v20M2 12h20"/>
+                    </svg>
+                  </div>
+                  <span>Your current location on the map</span>
+                </div>
+                <p className="text-gray-500 mt-1 ml-5 text-xs">
+                  Enable location tracking to see your position relative to sensors and facilities
                 </p>
               </div>
             </div>

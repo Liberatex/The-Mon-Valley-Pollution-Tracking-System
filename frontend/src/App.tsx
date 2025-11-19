@@ -59,10 +59,14 @@ function App() {
     </div>
   );
 
+  const handleNavigate = (view: 'dashboard' | 'map' | 'symptoms' | 'ai' | 'exposure') => {
+    setCurrentView(view);
+  };
+
   const renderView = () => {
     switch (currentView) {
       case 'home':
-        return <Suspense fallback={<LoadingFallback />}><HomePage /></Suspense>;
+        return <Suspense fallback={<LoadingFallback />}><HomePage onNavigate={handleNavigate} /></Suspense>;
       case 'dashboard':
         return <Suspense fallback={<LoadingFallback />}><Dashboard /></Suspense>;
       case 'map':

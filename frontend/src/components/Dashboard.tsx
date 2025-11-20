@@ -286,23 +286,6 @@ const Dashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* Stats Cards - Mobile only */}
-            {stats && (
-              <div className="lg:hidden grid grid-cols-3 gap-2">
-                <div className="bg-white rounded-lg shadow-md p-3 text-center">
-                  <div className="text-xl font-bold text-slate-700">{stats.sensorCount}</div>
-                  <div className="text-xs text-gray-600">Sensors</div>
-                </div>
-                <div className="bg-white rounded-lg shadow-md p-3 text-center">
-                  <div className="text-xl font-bold text-slate-700">{stats.reportCount}</div>
-                  <div className="text-xs text-gray-600">Reports</div>
-                </div>
-                <div className="bg-white rounded-lg shadow-md p-3 text-center">
-                  <div className="text-xl font-bold text-slate-700">{stats.avgPM25.toFixed(1)}</div>
-                  <div className="text-xs text-gray-600">PM2.5</div>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Center - Tableau Dashboard (Map) */}
@@ -356,7 +339,7 @@ const Dashboard: React.FC = () => {
                   <div className="flex-1 overflow-hidden min-h-0 px-2 pb-2">
                     <iframe
                       key="today-view"
-                      src="https://tableau.alleghenycounty.us/t/PublicSite/views/AlleghenyCountyAirQuality/Today?:embed=y&:showVizHome=no&:hideTabs=y&:toolbar=no&:device=phone&:display_count=no&:showShareOptions=false&:origin=vizql&:tabs=no"
+                      src="https://tableau.alleghenycounty.us/t/PublicSite/views/AlleghenyCountyAirQuality/Today?:embed=y&:showVizHome=no&:hideTabs=y&:toolbar=no&:device=phone&:display_count=no&:showShareOptions=false&:origin=vizql&:tabs=no&:showAppBanner=false&:loadOrderID=0"
                       className="w-full h-full border-0"
                       title="Allegheny County Air Quality Dashboard"
                       allowFullScreen
@@ -376,7 +359,7 @@ const Dashboard: React.FC = () => {
                   <div className="flex-1 overflow-hidden min-h-0 px-2 pb-2">
                     <iframe
                       key="overtime-view"
-                      src="https://tableau.alleghenycounty.us/t/PublicSite/views/AlleghenyCountyAirQuality/OverTime?:embed=y&:showVizHome=no&:hideTabs=y&:toolbar=no&:device=phone&:display_count=no&:showShareOptions=false&:origin=vizql&:tabs=no"
+                      src="https://tableau.alleghenycounty.us/t/PublicSite/views/AlleghenyCountyAirQuality/OverTime?:embed=y&:showVizHome=no&:hideTabs=y&:toolbar=no&:device=phone&:display_count=no&:showShareOptions=false&:origin=vizql&:tabs=no&:showAppBanner=false&:loadOrderID=0"
                       className="w-full h-full border-0"
                       title="Allegheny County Air Quality Trends"
                       allowFullScreen
@@ -433,6 +416,23 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
 
+          {/* Stats Cards - Mobile only, shown at bottom */}
+          {stats && (
+            <div className="lg:hidden grid grid-cols-3 gap-2 order-4 col-span-1">
+              <div className="bg-white rounded-lg shadow-md p-3 text-center">
+                <div className="text-xl font-bold text-slate-700">{stats.sensorCount}</div>
+                <div className="text-xs text-gray-600">Active Sensors</div>
+              </div>
+              <div className="bg-white rounded-lg shadow-md p-3 text-center">
+                <div className="text-xl font-bold text-slate-700">{stats.reportCount}</div>
+                <div className="text-xs text-gray-600">Health Reports</div>
+              </div>
+              <div className="bg-white rounded-lg shadow-md p-3 text-center">
+                <div className="text-xl font-bold text-slate-700">{stats.avgPM25.toFixed(1)}</div>
+                <div className="text-xs text-gray-600">Avg PM2.5</div>
+              </div>
+            </div>
+          )}
 
         </div>
       </div>

@@ -260,20 +260,35 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
         });
         
         console.log('Title V Facilities Response:', resp.data);
+        console.log('Title V Facilities Raw:', JSON.stringify(resp.data.facilities, null, 2));
         
         if (resp.data.success && resp.data.facilities && Array.isArray(resp.data.facilities)) {
           // Filter out facilities with invalid locations
-          const validFacilities = resp.data.facilities.filter((facility: TitleVFacility) => {
-            const hasLocation = facility.location && 
-                   typeof facility.location.lat === 'number' && 
-                   typeof facility.location.lng === 'number' &&
-                   !isNaN(facility.location.lat) && 
-                   !isNaN(facility.location.lng) &&
-                   facility.location.lat !== 0 && 
-                   facility.location.lng !== 0;
+          const validFacilities = resp.data.facilities.filter((facility: any) => {
+            // Check if location exists and is valid
+            const location = facility.location;
+            if (!location) {
+              console.warn('Facility missing location:', facility.facilityId || facility.id || facility.name);
+              return false;
+            }
+            
+            // Handle both number and string types (Firestore might return strings)
+            const lat = typeof location.lat === 'string' ? parseFloat(location.lat) : location.lat;
+            const lng = typeof location.lng === 'string' ? parseFloat(location.lng) : location.lng;
+            
+            const hasLocation = typeof lat === 'number' && 
+                   typeof lng === 'number' &&
+                   !isNaN(lat) && 
+                   !isNaN(lng) &&
+                   lat !== 0 && 
+                   lng !== 0;
             
             if (!hasLocation) {
-              console.warn('Invalid facility location:', facility.facilityId || facility.name, facility.location);
+              console.warn('Invalid facility location:', facility.facilityId || facility.id || facility.name, { lat, lng, original: location });
+            } else {
+              // Normalize location to numbers
+              facility.location.lat = lat;
+              facility.location.lng = lng;
             }
             return hasLocation;
           });
@@ -326,6 +341,14 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
 
       setLocationError(null);
       
+      // Check if we're on HTTPS or localhost (required for geolocation)
+      const isSecure = window.location.protocol === 'https:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      if (!isSecure) {
+        setLocationError('Geolocation requires HTTPS. Please access the site via HTTPS.');
+        setShowMyLocation(false);
+        return;
+      }
+      
       // Use getCurrentPosition for one-time location
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -336,6 +359,7 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
               lng: position.coords.longitude,
             });
             setLocationError(null);
+            console.log('My Location updated:', position.coords.latitude, position.coords.longitude);
           }
         },
         (error) => {
@@ -351,13 +375,14 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
               errorMessage = 'Location request timed out.';
               break;
           }
+          console.error('Geolocation error:', error);
           setLocationError(errorMessage);
           setShowMyLocation(false);
           setUserLocation(null);
         },
         {
           enableHighAccuracy: true,
-          timeout: 10000,
+          timeout: 15000, // Increased timeout for production
           maximumAge: 60000, // Accept cached position up to 1 minute old
         }
       );

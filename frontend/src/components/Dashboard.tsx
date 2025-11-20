@@ -282,7 +282,8 @@ const Dashboard: React.FC = () => {
                   </div>
                   <div className="flex-1 overflow-hidden min-h-0 px-2 pb-2">
                     <iframe
-                      src="https://tableau.alleghenycounty.us/t/PublicSite/views/AlleghenyCountyAirQuality/Today?:embed=y&:showVizHome=no&:hideTabs=y&:toolbar=no&:device=phone&:display_count=no&:showShareOptions=false"
+                      key="today-view"
+                      src="https://tableau.alleghenycounty.us/t/PublicSite/views/AlleghenyCountyAirQuality/Today?:embed=y&:showVizHome=no&:hideTabs=y&:toolbar=no&:device=phone&:display_count=no&:showShareOptions=false&:origin=vizql"
                       className="w-full h-full border-0"
                       title="Allegheny County Air Quality Dashboard"
                       allowFullScreen
@@ -301,7 +302,8 @@ const Dashboard: React.FC = () => {
                   </div>
                   <div className="flex-1 overflow-hidden min-h-0 px-2 pb-2">
                     <iframe
-                      src="https://tableau.alleghenycounty.us/t/PublicSite/views/AlleghenyCountyAirQuality/OverTime?:embed=y&:showVizHome=no&:hideTabs=y&:toolbar=no&:device=phone&:display_count=no&:showShareOptions=false"
+                      key="overtime-view"
+                      src="https://tableau.alleghenycounty.us/t/PublicSite/views/AlleghenyCountyAirQuality/OverTime?:embed=y&:showVizHome=no&:hideTabs=y&:toolbar=no&:device=phone&:display_count=no&:showShareOptions=false&:origin=vizql"
                       className="w-full h-full border-0"
                       title="Allegheny County Air Quality Trends"
                       allowFullScreen

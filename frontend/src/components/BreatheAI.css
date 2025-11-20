@@ -64,7 +64,7 @@
   gap: 15px;
   min-height: 400px;
   max-height: 600px;
-  background: #f8fafc;
+  background: #cbd5e1 !important;
   border-radius: 12px;
 }
 
@@ -240,65 +240,14 @@
   border-top: none;
 }
 
+/* Ensure Tailwind classes work - don't override them */
 .input-form input {
-  flex: 1;
-  padding: 12px 16px;
-  border: none;
-  border-radius: 25px;
-  background: #fff !important;
-  color: #222 !important;
-  font-size: 1rem;
-  outline: none;
-  transition: all 0.3s ease;
-}
-
-.input-form input:focus {
-  background: white;
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
-}
-
-.input-form input:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.input-form input::placeholder {
-  color: #888 !important;
+  /* Tailwind classes handle all styling */
 }
 
 .input-form button {
-  padding: 0;
-  background: transparent;
-  color: transparent;
-  border: none;
-  border-radius: 0;
-  font-size: 0;
-  font-weight: normal;
-  cursor: pointer;
-  transition: none;
-  min-width: 0;
-}
-
-.input-form button:hover:not(:disabled) {
-  background: transparent;
-  transform: none;
-  box-shadow: none;
-}
-
-.input-form button:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.input-form button:disabled {
-  background: #999;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-.input-form button:focus {
-  outline: 2px solid rgba(255, 255, 255, 0.5);
-  outline-offset: 2px;
+  /* Tailwind classes handle all styling - no CSS overrides */
+  all: unset;
 }
 
 /* Accessibility Enhancements */

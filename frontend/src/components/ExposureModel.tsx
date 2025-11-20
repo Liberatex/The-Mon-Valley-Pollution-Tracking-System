@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { shouldUseEmulator } from '../utils/env';
 import { FadeInSection } from './ui/FadeInSection';
-import { FileText, AlertTriangle, MapPin, ArrowRight, Navigation, CheckCircle2 } from 'lucide-react';
+import { FileText, AlertTriangle, MapPin, ArrowRight, Navigation } from 'lucide-react';
 
 interface TitleVFacility {
   facilityId: string;
@@ -556,36 +556,33 @@ const ExposureModel: React.FC<ExposureModelProps> = ({ onNavigate }) => {
                   </button>
                 </div>
               </FadeInSection>
-          </div>
-        </>
-      )}
+            </>
+          )}
 
-              {/* How It Works Section */}
-              <FadeInSection delay={0.6}>
-                <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 sm:p-8">
-                  <h4 className="text-xl sm:text-2xl font-bold text-slate-800 mb-6">How Exposure Risk is Calculated</h4>
-                  <div className="space-y-4 text-gray-700">
-                    <p>
-                      <strong className="text-slate-700">Formula:</strong> Exposure Score = PM2.5 Concentration (μg/m³) ÷ Distance from Facility (miles)
-                    </p>
-                    <p>
-                      <strong className="text-slate-700">Interpretation:</strong>
-                    </p>
-                    <ul className="list-disc list-inside space-y-2 ml-4">
-                      <li><strong className="text-red-600">Very High (≥50):</strong> Immediate health risk, PM2.5 concentration very high relative to distance</li>
-                      <li><strong className="text-orange-600">High (20-49):</strong> Elevated risk, significant exposure for nearby residents</li>
-                      <li><strong className="text-yellow-600">Moderate (10-19):</strong> Moderate exposure, monitor symptoms</li>
-                      <li><strong className="text-green-600">Low (&lt;10):</strong> Lower exposure, continue normal activities with awareness</li>
-                    </ul>
-                    <p className="mt-4 text-gray-600">
-                      This model helps identify which residents are at highest risk based on their proximity to polluting facilities
-                      and current air quality conditions.
-                    </p>
-                  </div>
-                </div>
-              </FadeInSection>
+          {/* How It Works Section */}
+          <FadeInSection delay={0.6}>
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 sm:p-8">
+              <h4 className="text-xl sm:text-2xl font-bold text-slate-800 mb-6">How Exposure Risk is Calculated</h4>
+              <div className="space-y-4 text-gray-700">
+                <p>
+                  <strong className="text-slate-700">Formula:</strong> Exposure Score = PM2.5 Concentration (μg/m³) ÷ Distance from Facility (miles)
+                </p>
+                <p>
+                  <strong className="text-slate-700">Interpretation:</strong>
+                </p>
+                <ul className="list-disc list-inside space-y-2 ml-4">
+                  <li><strong className="text-red-600">Very High (≥50):</strong> Immediate health risk, PM2.5 concentration very high relative to distance</li>
+                  <li><strong className="text-orange-600">High (20-49):</strong> Elevated risk, significant exposure for nearby residents</li>
+                  <li><strong className="text-yellow-600">Moderate (10-19):</strong> Moderate exposure, monitor symptoms</li>
+                  <li><strong className="text-green-600">Low (&lt;10):</strong> Lower exposure, continue normal activities with awareness</li>
+                </ul>
+                <p className="mt-4 text-gray-600">
+                  This model helps identify which residents are at highest risk based on their proximity to polluting facilities
+                  and current air quality conditions.
+                </p>
+              </div>
             </div>
-          </div>
+          </FadeInSection>
         </div>
       </div>
     </div>

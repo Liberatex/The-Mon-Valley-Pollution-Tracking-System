@@ -146,7 +146,7 @@ const Dashboard: React.FC = () => {
   const currentPollutant = pollutantInfo[selectedPollutant];
 
   return (
-    <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
+    <div className="min-h-screen bg-gray-50 flex flex-col lg:h-screen lg:overflow-hidden">
       <div className="flex-shrink-0 py-2 px-2 sm:px-4">
         <h1 className="text-lg sm:text-xl lg:text-2xl text-center text-slate-800 font-bold tracking-tight">
         Community Health Dashboard
@@ -154,8 +154,8 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Main Grid Layout - 3 columns on desktop, stacked on mobile */}
-      <div className="flex-1 overflow-hidden max-w-[1920px] w-full mx-auto px-2 sm:px-4 pb-2">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-3 h-full">
+      <div className="flex-1 overflow-y-auto lg:overflow-hidden max-w-[1920px] w-full mx-auto px-2 sm:px-4 pb-2">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-3 lg:h-full">
           
           {/* Left Sidebar - Pollutant Selection & Info */}
           <div className="lg:col-span-3 flex flex-col gap-3 sm:gap-4">
@@ -234,7 +234,7 @@ const Dashboard: React.FC = () => {
           </div>
 
           {/* Center - Tableau Dashboard (Map) */}
-          <div className="lg:col-span-6 flex flex-col bg-white rounded-lg shadow-md overflow-hidden h-full">
+          <div className="lg:col-span-6 flex flex-col bg-white rounded-lg shadow-md overflow-hidden lg:h-full min-h-[400px]">
             {/* Tab Navigation */}
             <div className="flex-shrink-0 border-b border-gray-200 bg-white">
               <div className="flex">
@@ -283,7 +283,7 @@ const Dashboard: React.FC = () => {
                   <div className="flex-1 overflow-hidden min-h-0 px-2 pb-2">
                     <iframe
                       key="today-view"
-                      src="https://tableau.alleghenycounty.us/t/PublicSite/views/AlleghenyCountyAirQuality/Today?:embed=y&:showVizHome=no&:hideTabs=y&:toolbar=no&:device=phone&:display_count=no&:showShareOptions=false&:origin=vizql"
+                      src="https://tableau.alleghenycounty.us/t/PublicSite/views/AlleghenyCountyAirQuality/Today?:embed=y&:showVizHome=no&:hideTabs=y&:toolbar=no&:device=phone&:display_count=no&:showShareOptions=false&:origin=vizql&:tabs=no"
                       className="w-full h-full border-0"
                       title="Allegheny County Air Quality Dashboard"
                       allowFullScreen
@@ -303,7 +303,7 @@ const Dashboard: React.FC = () => {
                   <div className="flex-1 overflow-hidden min-h-0 px-2 pb-2">
                     <iframe
                       key="overtime-view"
-                      src="https://tableau.alleghenycounty.us/t/PublicSite/views/AlleghenyCountyAirQuality/OverTime?:embed=y&:showVizHome=no&:hideTabs=y&:toolbar=no&:device=phone&:display_count=no&:showShareOptions=false&:origin=vizql"
+                      src="https://tableau.alleghenycounty.us/t/PublicSite/views/AlleghenyCountyAirQuality/OverTime?:embed=y&:showVizHome=no&:hideTabs=y&:toolbar=no&:device=phone&:display_count=no&:showShareOptions=false&:origin=vizql&:tabs=no"
                       className="w-full h-full border-0"
                       title="Allegheny County Air Quality Trends"
                       allowFullScreen

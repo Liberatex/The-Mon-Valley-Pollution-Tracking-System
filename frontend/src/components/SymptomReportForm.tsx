@@ -169,7 +169,7 @@ const SymptomReportForm: React.FC<SymptomReportFormProps> = ({ onSuccess }) => {
   const progress = (step / 4) * 100;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 overflow-y-auto">
       {/* Header Section - Full Width */}
       <FadeInSection delay={0}>
         <div className="bg-gradient-to-br from-slate-800 to-slate-600 text-white w-screen text-center py-12 sm:py-16 lg:py-24 px-4 sm:px-6 lg:px-8" style={{ marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
@@ -185,7 +185,7 @@ const SymptomReportForm: React.FC<SymptomReportFormProps> = ({ onSuccess }) => {
       </FadeInSection>
 
       {/* Content Section with Container */}
-      <div className="py-8 sm:py-12 lg:py-16 px-4 sm:px-6 lg:px-8">
+      <div className="py-8 sm:py-12 lg:py-16 px-4 sm:px-6 lg:px-8 min-h-screen">
         <div className="max-w-3xl mx-auto">
 
         {/* Information Section */}

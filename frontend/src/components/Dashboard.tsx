@@ -149,8 +149,8 @@ const Dashboard: React.FC = () => {
     <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
       <div className="flex-shrink-0 py-2 px-2 sm:px-4">
         <h1 className="text-lg sm:text-xl lg:text-2xl text-center text-slate-800 font-bold tracking-tight">
-          Community Health Dashboard
-        </h1>
+        Community Health Dashboard
+      </h1>
       </div>
 
       {/* Main Grid Layout - 3 columns on desktop, stacked on mobile */}
@@ -200,7 +200,7 @@ const Dashboard: React.FC = () => {
                   <span className="text-xs sm:text-sm text-gray-700">Sulfur Dioxide (SO2)</span>
                 </label>
               </div>
-            </div>
+        </div>
 
             {/* Pollutant Info - Dynamic based on selection */}
             <div className="bg-white rounded-lg shadow-md p-3 sm:p-4 flex-1 overflow-y-auto">
@@ -260,7 +260,8 @@ const Dashboard: React.FC = () => {
                 </button>
                 <button
                   onClick={() => setActiveTab('faq')}
-                  className={`flex-1 px-3 py-2 text-xs sm:text-sm font-semibold transition-colors ${
+                  disabled={false}
+                  className={`flex-1 px-3 py-2 text-xs sm:text-sm font-semibold transition-colors cursor-pointer ${
                     activeTab === 'faq'
                       ? 'text-teal-700 bg-teal-50 border-b-2 border-teal-700'
                       : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
@@ -281,10 +282,11 @@ const Dashboard: React.FC = () => {
                   </div>
                   <div className="flex-1 overflow-hidden min-h-0 px-2 pb-2">
                     <iframe
-                      src="https://tableau.alleghenycounty.us/t/PublicSite/views/AlleghenyCountyAirQuality/Today?:embed=y&:showVizHome=no&:device=phone"
+                      src="https://tableau.alleghenycounty.us/t/PublicSite/views/AlleghenyCountyAirQuality/Today?:embed=y&:showVizHome=no&:hideTabs=true&:toolbar=bottom&:device=phone"
                       className="w-full h-full border-0"
                       title="Allegheny County Air Quality Dashboard"
                       allowFullScreen
+                      style={{ display: 'block' }}
                     />
                   </div>
                 </>
@@ -298,10 +300,11 @@ const Dashboard: React.FC = () => {
                   </div>
                   <div className="flex-1 overflow-hidden min-h-0 px-2 pb-2">
                     <iframe
-                      src="https://tableau.alleghenycounty.us/t/PublicSite/views/AlleghenyCountyAirQuality/OverTime?:embed=y&:showVizHome=no&:device=phone"
+                      src="https://tableau.alleghenycounty.us/t/PublicSite/views/AlleghenyCountyAirQuality/OverTime?:embed=y&:showVizHome=no&:hideTabs=true&:toolbar=bottom&:device=phone"
                       className="w-full h-full border-0"
                       title="Allegheny County Air Quality Trends"
                       allowFullScreen
+                      style={{ display: 'block' }}
                     />
                   </div>
                 </>

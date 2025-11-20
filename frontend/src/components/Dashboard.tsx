@@ -21,6 +21,7 @@ const Dashboard: React.FC = () => {
   const [pm25History, setPm25History] = useState<AQIDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPollutant, setSelectedPollutant] = useState<'pm25' | 'ozone' | 'so2'>('pm25');
+  const [activeTab, setActiveTab] = useState<'today' | 'overtime' | 'faq'>('today');
 
   useEffect(() => {
     async function fetchData() {
@@ -148,8 +149,8 @@ const Dashboard: React.FC = () => {
     <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
       <div className="flex-shrink-0 py-2 sm:py-3 px-2 sm:px-4">
         <h1 className="text-lg sm:text-xl lg:text-2xl text-center text-slate-800 font-bold tracking-tight">
-          Community Health Dashboard
-        </h1>
+        Community Health Dashboard
+      </h1>
       </div>
 
       {/* Main Grid Layout - 3 columns on desktop, stacked on mobile */}
@@ -233,30 +234,134 @@ const Dashboard: React.FC = () => {
           </div>
 
           {/* Center - Tableau Dashboard (Map) */}
-          <div className="lg:col-span-6 flex flex-col bg-white rounded-lg shadow-md p-2 sm:p-3 overflow-hidden h-full">
-            <div className="mb-2 flex-shrink-0">
-              <h3 className="text-sm sm:text-base font-semibold text-slate-800">{currentPollutant.name} Monitor Locations</h3>
-              <p className="text-xs text-gray-600">Click location on map to see hourly data for that monitor</p>
-            </div>
-            <div className="flex-1 overflow-hidden min-h-0">
-              <div 
-                className="w-full h-full overflow-auto"
-                style={{
-                  WebkitOverflowScrolling: 'touch',
-                  touchAction: 'pan-x pan-y'
-                }}
-              >
-                <div 
-                  className="w-full h-full"
-                  style={{
-                    minHeight: '100%',
-                    position: 'relative'
-                  }}
-                  dangerouslySetInnerHTML={{
-                    __html: `<tableau-viz id='tableau-viz' src='https://tableau.alleghenycounty.us/t/PublicSite/views/AlleghenyCountyAirQuality/Today' width='100%' height='100%' hide-tabs toolbar='bottom' device='phone' ></tableau-viz>`
-                  }}
-                />
+          <div className="lg:col-span-6 flex flex-col bg-white rounded-lg shadow-md overflow-hidden h-full">
+            {/* Tab Navigation */}
+            <div className="flex-shrink-0 border-b border-gray-200 bg-white">
+              <div className="flex">
+                <button
+                  onClick={() => setActiveTab('today')}
+                  className={`flex-1 px-4 py-3 text-sm sm:text-base font-semibold transition-colors ${
+                    activeTab === 'today'
+                      ? 'text-teal-700 bg-teal-50 border-b-2 border-teal-700'
+                      : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                  }`}
+                >
+                  Today
+                </button>
+                <button
+                  onClick={() => setActiveTab('overtime')}
+                  className={`flex-1 px-4 py-3 text-sm sm:text-base font-semibold transition-colors ${
+                    activeTab === 'overtime'
+                      ? 'text-teal-700 bg-teal-50 border-b-2 border-teal-700'
+                      : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                  }`}
+                >
+                  Over Time
+                </button>
+                <button
+                  onClick={() => setActiveTab('faq')}
+                  className={`flex-1 px-4 py-3 text-sm sm:text-base font-semibold transition-colors ${
+                    activeTab === 'faq'
+                      ? 'text-teal-700 bg-teal-50 border-b-2 border-teal-700'
+                      : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                  }`}
+                >
+                  FAQ
+                </button>
               </div>
+            </div>
+
+            {/* Tab Content */}
+            <div className="flex-1 overflow-hidden min-h-0 flex flex-col p-2 sm:p-3">
+              {activeTab === 'today' && (
+                <>
+                  <div className="mb-2 flex-shrink-0">
+                    <h3 className="text-sm sm:text-base font-semibold text-slate-800">{currentPollutant.name} Monitor Locations</h3>
+                    <p className="text-xs text-gray-600">Click location on map to see hourly data for that monitor</p>
+                  </div>
+                  <div className="flex-1 overflow-hidden min-h-0">
+                    <div 
+                      className="w-full h-full overflow-auto"
+                      style={{
+                        WebkitOverflowScrolling: 'touch',
+                        touchAction: 'pan-x pan-y'
+                      }}
+                    >
+                      <div 
+                        className="w-full h-full"
+                        style={{
+                          minHeight: '100%',
+                          position: 'relative'
+                        }}
+                        dangerouslySetInnerHTML={{
+                          __html: `<tableau-viz id='tableau-viz-today' src='https://tableau.alleghenycounty.us/t/PublicSite/views/AlleghenyCountyAirQuality/Today' width='100%' height='100%' hide-tabs toolbar='bottom' device='phone' ></tableau-viz>`
+                        }}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {activeTab === 'overtime' && (
+                <>
+                  <div className="mb-2 flex-shrink-0">
+                    <h3 className="text-sm sm:text-base font-semibold text-slate-800">{currentPollutant.name} Trends Over Time</h3>
+                    <p className="text-xs text-gray-600">View historical data and trends for {currentPollutant.name}</p>
+                  </div>
+                  <div className="flex-1 overflow-hidden min-h-0">
+                    <div 
+                      className="w-full h-full overflow-auto"
+                      style={{
+                        WebkitOverflowScrolling: 'touch',
+                        touchAction: 'pan-x pan-y'
+                      }}
+                    >
+                      <div 
+                        className="w-full h-full"
+                        style={{
+                          minHeight: '100%',
+                          position: 'relative'
+                        }}
+                        dangerouslySetInnerHTML={{
+                          __html: `<tableau-viz id='tableau-viz-overtime' src='https://tableau.alleghenycounty.us/t/PublicSite/views/AlleghenyCountyAirQuality/OverTime' width='100%' height='100%' hide-tabs toolbar='bottom' device='phone' ></tableau-viz>`
+                        }}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {activeTab === 'faq' && (
+                <div className="flex-1 overflow-y-auto">
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="text-sm sm:text-base font-semibold text-slate-800 mb-2">Frequently Asked Questions</h3>
+                      <div className="space-y-3 text-xs sm:text-sm text-gray-700">
+                        <div>
+                          <p className="font-semibold mb-1">What is the Air Quality Index (AQI)?</p>
+                          <p>The AQI is a scale used to report daily air quality. It tells you how clean or polluted your air is, and what associated health effects might be a concern for you.</p>
+                        </div>
+                        <div>
+                          <p className="font-semibold mb-1">How is AQI calculated?</p>
+                          <p>AQI is calculated based on the highest value of five major air pollutants regulated by the Clean Air Act: ground-level ozone, particle pollution (PM2.5 and PM10), carbon monoxide, sulfur dioxide, and nitrogen dioxide.</p>
+                        </div>
+                        <div>
+                          <p className="font-semibold mb-1">What should I do when air quality is unhealthy?</p>
+                          <p>When air quality is unhealthy, sensitive groups should reduce prolonged or heavy exertion outdoors. Everyone should consider reducing outdoor activities, especially during peak pollution hours.</p>
+                        </div>
+                        <div>
+                          <p className="font-semibold mb-1">Where does this data come from?</p>
+                          <p>This data comes from official monitoring stations operated by the Allegheny County Health Department (ACHD) and is updated regularly throughout the day.</p>
+                        </div>
+                        <div>
+                          <p className="font-semibold mb-1">How often is the data updated?</p>
+                          <p>Air quality data is typically updated hourly. The timestamp shown indicates when the most recent reading was taken.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -309,7 +414,7 @@ const Dashboard: React.FC = () => {
                 <div className="flex items-center gap-2 p-1 rounded">
                   <div className="w-4 h-4 bg-red-800 rounded flex-shrink-0"></div>
                   <span className="text-xs text-gray-700">Hazardous</span>
-                </div>
+              </div>
               </div>
             </div>
 
@@ -327,7 +432,7 @@ const Dashboard: React.FC = () => {
                 <div className="bg-white rounded-lg shadow-md p-3 text-center">
                   <div className="text-2xl font-bold text-slate-700">{stats.avgPM25.toFixed(1)}</div>
                   <div className="text-xs text-gray-600">Avg PM2.5 (μg/m³)</div>
-                </div>
+              </div>
               </div>
             )}
           </div>

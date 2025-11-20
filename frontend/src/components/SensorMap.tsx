@@ -336,13 +336,6 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
     }
 
     if (showMyLocation) {
-      // Check if permission was previously denied
-      if (permissionDenied) {
-        setLocationError('Location access was denied. Please enable location permissions in your browser settings and refresh the page.');
-        setShowMyLocation(false);
-        return;
-      }
-
       // Check if geolocation is available
       if (!isGeolocationAvailable()) {
         setLocationError('Geolocation is not available. Please use HTTPS or enable location services.');
@@ -353,8 +346,10 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
       // Mark that we're requesting location
       isRequestingLocation.current = true;
       setLocationError(null);
+      // Reset permission denied state to allow retry
+      setPermissionDenied(false);
 
-      // Use shared geolocation utility
+      // Use shared geolocation utility - always allow browser to show prompt
       getCurrentLocation(
         (result) => {
           // Only update if still enabled
@@ -373,12 +368,16 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
           console.error('Geolocation error:', error);
           setLocationError(error.message);
           
-          // If permission denied, mark it so we don't retry
+          // If permission denied, mark it but don't prevent future attempts
+          // User might change their mind and we want to allow retry
           if (error.type === 'permission_denied') {
             setPermissionDenied(true);
+            // Don't auto-disable - let user see the error and try again if they fix permissions
+          } else {
+            // For other errors, disable the feature
+            setShowMyLocation(false);
           }
           
-          setShowMyLocation(false);
           setUserLocation(null);
           isRequestingLocation.current = false;
         }
@@ -393,7 +392,7 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
       setLocationError(null);
       isRequestingLocation.current = false;
     }
-  }, [showMyLocation, permissionDenied]);
+  }, [showMyLocation]);
 
 
   if (loading) return (

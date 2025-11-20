@@ -18,16 +18,34 @@ export type GeolocationCallback = (result: GeolocationResult) => void;
 export type GeolocationErrorCallback = (error: GeolocationError) => void;
 
 /**
+ * Check geolocation permission status using Permissions API if available
+ */
+async function checkPermissionStatus(): Promise<'granted' | 'denied' | 'prompt' | 'unknown'> {
+  // Use Permissions API if available (Chrome, Edge, etc.)
+  if ('permissions' in navigator && 'query' in navigator.permissions) {
+    try {
+      const result = await navigator.permissions.query({ name: 'geolocation' as PermissionName });
+      return result.state;
+    } catch (e) {
+      // Permissions API not fully supported or geolocation not in spec
+      return 'unknown';
+    }
+  }
+  return 'unknown';
+}
+
+/**
  * Get user's current location with proper error handling
+ * Always allows browser to show permission prompt
  * @param onSuccess Callback when location is successfully retrieved
  * @param onError Callback when location retrieval fails
  * @param options Optional geolocation options
  */
-export function getCurrentLocation(
+export async function getCurrentLocation(
   onSuccess: GeolocationCallback,
   onError: GeolocationErrorCallback,
   options?: PositionOptions
-): void {
+): Promise<void> {
   // Check if geolocation is supported
   if (!navigator.geolocation) {
     onError({
@@ -52,16 +70,24 @@ export function getCurrentLocation(
     return;
   }
 
-  // Default options
+  // Check permission status (but don't block - let browser show prompt)
+  const permissionStatus = await checkPermissionStatus();
+  if (permissionStatus === 'denied') {
+    // Permission was previously denied, but we'll still try to trigger the prompt
+    // The browser might allow the user to change their mind
+    console.warn('Geolocation permission was previously denied, but attempting request anyway');
+  }
+
+  // Default options - use shorter timeout and fresher data for better UX
   const defaultOptions: PositionOptions = {
-    enableHighAccuracy: true,
-    timeout: 15000,
-    maximumAge: 60000, // Accept cached position up to 1 minute old
+    enableHighAccuracy: false, // Changed to false - faster and works better on mobile
+    timeout: 10000, // Reduced timeout for faster feedback
+    maximumAge: 0, // Always get fresh location to trigger permission prompt if needed
   };
 
   const finalOptions = { ...defaultOptions, ...options };
 
-  // Request location
+  // Request location - this will trigger browser permission prompt if needed
   navigator.geolocation.getCurrentPosition(
     (position) => {
       onSuccess({
@@ -76,11 +102,12 @@ export function getCurrentLocation(
       switch (error.code) {
         case error.PERMISSION_DENIED:
           errorType = 'permission_denied';
-          errorMessage = 'Location access denied. Please enable location permissions in your browser settings and refresh the page.';
+          // More helpful message with instructions
+          errorMessage = 'Location access denied. Please click the lock icon in your browser\'s address bar, enable location permissions, and try again.';
           break;
         case error.POSITION_UNAVAILABLE:
           errorType = 'position_unavailable';
-          errorMessage = 'Location information is unavailable.';
+          errorMessage = 'Location information is unavailable. Please check your device\'s location settings.';
           break;
         case error.TIMEOUT:
           errorType = 'timeout';

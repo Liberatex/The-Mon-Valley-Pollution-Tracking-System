@@ -185,21 +185,17 @@ const ExposureModel: React.FC<ExposureModelProps> = ({ onNavigate }) => {
   };
 
   // Handle geolocation
-  const handleUseGeolocation = () => {
+  const handleUseGeolocation = async () => {
     // Prevent multiple simultaneous requests
     if (isRequestingLocation.current) {
-      return;
-    }
-
-    // Check if permission was previously denied
-    if (permissionDenied) {
-      setLocationError('Location access was denied. Please enable location permissions in your browser settings and refresh the page.');
       return;
     }
 
     setGettingLocation(true);
     setLocationError(null);
     setLocationMethod('geolocation');
+    // Reset permission denied state to allow retry
+    setPermissionDenied(false);
     
     // Check if geolocation is available
     if (!isGeolocationAvailable()) {
@@ -211,8 +207,8 @@ const ExposureModel: React.FC<ExposureModelProps> = ({ onNavigate }) => {
     // Mark that we're requesting location
     isRequestingLocation.current = true;
 
-    // Use shared geolocation utility
-    getCurrentLocation(
+    // Use shared geolocation utility - always allow browser to show prompt
+    await getCurrentLocation(
       (result) => {
         setUserLocation({ lat: result.lat, lng: result.lng });
         setLocationError(null);
@@ -224,7 +220,8 @@ const ExposureModel: React.FC<ExposureModelProps> = ({ onNavigate }) => {
         console.error('Geolocation error:', error);
         setLocationError(error.message || 'Could not get your location. Please try entering your address manually.');
         
-        // If permission denied, mark it so we don't retry
+        // If permission denied, mark it but don't prevent future attempts
+        // User might change permissions and want to try again
         if (error.type === 'permission_denied') {
           setPermissionDenied(true);
         }

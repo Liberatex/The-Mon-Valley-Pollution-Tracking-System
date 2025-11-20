@@ -150,7 +150,6 @@ const Dashboard: React.FC = () => {
                 <strong>Mobile Tip:</strong> Scroll horizontally within the dashboard to access all controls and selection options. Use pinch-to-zoom if needed.
               </p>
             </div>
-          </div>
         </div>
         </FadeInSection>
 

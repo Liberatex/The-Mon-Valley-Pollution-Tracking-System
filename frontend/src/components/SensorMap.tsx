@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import axios from 'axios';
@@ -117,6 +117,7 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
   const [showMyLocation, setShowMyLocation] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const geolocationWatchId = useRef<number | null>(null);
 
   useEffect(() => {
     if (propSensors && propSensors.length > 0) {
@@ -258,12 +259,27 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
           },
         });
         
+        console.log('Title V Facilities Response:', resp.data);
+        
         if (resp.data.success && resp.data.facilities && Array.isArray(resp.data.facilities)) {
-          setFacilities(resp.data.facilities);
+          // Filter out facilities with invalid locations
+          const validFacilities = resp.data.facilities.filter((facility: TitleVFacility) => {
+            return facility.location && 
+                   typeof facility.location.lat === 'number' && 
+                   typeof facility.location.lng === 'number' &&
+                   !isNaN(facility.location.lat) && 
+                   !isNaN(facility.location.lng) &&
+                   facility.location.lat !== 0 && 
+                   facility.location.lng !== 0;
+          });
+          console.log('Valid Title V Facilities:', validFacilities.length);
+          setFacilities(validFacilities);
         } else {
+          console.warn('Title V Facilities: Invalid response format', resp.data);
           setFacilities([]);
         }
       } catch (err: any) {
+        console.error('Title V Facilities fetch error:', err);
         setFacilities([]);
       }
     };
@@ -277,6 +293,16 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
 
   // Handle "My Location" toggle
   useEffect(() => {
+    // Cleanup function to clear any existing watch
+    return () => {
+      if (geolocationWatchId.current !== null && navigator.geolocation) {
+        navigator.geolocation.clearWatch(geolocationWatchId.current);
+        geolocationWatchId.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     if (showMyLocation) {
       if (!navigator.geolocation) {
         setLocationError('Geolocation is not supported by your browser');
@@ -284,14 +310,25 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
         return;
       }
 
+      // Clear any existing watch
+      if (geolocationWatchId.current !== null) {
+        navigator.geolocation.clearWatch(geolocationWatchId.current);
+        geolocationWatchId.current = null;
+      }
+
       setLocationError(null);
+      
+      // Use getCurrentPosition for one-time location
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setUserLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          });
-          setLocationError(null);
+          // Only update if still enabled
+          if (showMyLocation) {
+            setUserLocation({
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            });
+            setLocationError(null);
+          }
         },
         (error) => {
           let errorMessage = 'Unable to retrieve your location';
@@ -313,10 +350,15 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
         {
           enableHighAccuracy: true,
           timeout: 10000,
-          maximumAge: 0,
+          maximumAge: 60000, // Accept cached position up to 1 minute old
         }
       );
     } else {
+      // Clear watch when disabled
+      if (geolocationWatchId.current !== null && navigator.geolocation) {
+        navigator.geolocation.clearWatch(geolocationWatchId.current);
+        geolocationWatchId.current = null;
+      }
       setUserLocation(null);
       setLocationError(null);
     }
@@ -514,7 +556,13 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
           {/* Title V Facilities */}
           {showFacilities && facilities.length > 0 && facilities.map((facility) => {
             // Ensure location exists and is valid
-            if (!facility.location || facility.location.lat == null || facility.location.lng == null) {
+            if (!facility.location || 
+                typeof facility.location.lat !== 'number' || 
+                typeof facility.location.lng !== 'number' ||
+                isNaN(facility.location.lat) || 
+                isNaN(facility.location.lng) ||
+                facility.location.lat === 0 || 
+                facility.location.lng === 0) {
               return null;
             }
             

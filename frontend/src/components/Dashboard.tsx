@@ -105,146 +105,186 @@ const Dashboard: React.FC = () => {
   // AQI level calculation (kept for potential future use)
   // const aqiLevel = aqi && aqi > 0 ? (aqi <= 50 ? 'Good' : aqi <= 100 ? 'Moderate' : aqi <= 150 ? 'Unhealthy for Sensitive' : 'Unhealthy') : 'Unknown';
 
+  // Get AQI level and color
+  const getAQILevel = (aqi: number) => {
+    if (aqi <= 50) return { level: 'Good', color: 'bg-green-500', textColor: 'text-green-700' };
+    if (aqi <= 100) return { level: 'Moderate', color: 'bg-yellow-400', textColor: 'text-yellow-700' };
+    if (aqi <= 150) return { level: 'Unhealthy for Sensitive Groups', color: 'bg-orange-500', textColor: 'text-orange-700' };
+    if (aqi <= 200) return { level: 'Unhealthy', color: 'bg-red-500', textColor: 'text-red-700' };
+    if (aqi <= 300) return { level: 'Very Unhealthy', color: 'bg-purple-500', textColor: 'text-purple-700' };
+    return { level: 'Hazardous', color: 'bg-red-800', textColor: 'text-red-900' };
+  };
+
+  // Mock AQI for display (replace with real data when available)
+  const currentAQI = 65;
+  const aqiInfo = getAQILevel(currentAQI);
+
   return (
-    <div className="min-h-screen bg-gray-50 py-8 sm:py-12 lg:py-16 px-4 sm:px-6 lg:px-8">
-      <h1 className="text-2xl sm:text-3xl lg:text-4xl text-center text-slate-800 mb-8 sm:mb-12 font-bold tracking-tight">
+    <div className="min-h-screen bg-gray-50 py-4 sm:py-6 px-2 sm:px-4">
+      <h1 className="text-xl sm:text-2xl lg:text-3xl text-center text-slate-800 mb-4 sm:mb-6 font-bold tracking-tight">
         Community Health Dashboard
       </h1>
 
-      <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8 lg:space-y-12">
-        
-        {/* ACHD Official Air Quality Dashboard */}
-        <FadeInSection delay={0}>
-        <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8">
-          <h3 className="text-lg sm:text-xl lg:text-2xl mb-3 sm:mb-4 text-slate-800 font-semibold">
-            Official ACHD Air Quality Dashboard
-          </h3>
-          <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">
-            Live data from Allegheny County Health Department's official monitoring stations
-          </p>
+      {/* Main Grid Layout - 3 columns on desktop, stacked on mobile */}
+      <div className="max-w-[1920px] mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 h-[calc(100vh-120px)] lg:h-[calc(100vh-100px)]">
           
-          {/* Tableau embedded dashboard */}
-          <div className="w-full flex justify-center">
-            <div 
-              className="w-full max-w-4xl min-h-[400px] sm:min-h-[500px] lg:min-h-[600px] overflow-x-auto overflow-y-visible"
-              style={{
-                WebkitOverflowScrolling: 'touch',
-                touchAction: 'pan-x pan-y'
-              }}
-            >
-              <div 
-                className="w-full"
-                style={{
-                  minWidth: '100%',
-                  minHeight: '777px',
-                  position: 'relative'
-                }}
-                dangerouslySetInnerHTML={{
-                  __html: `<tableau-viz id='tableau-viz' src='https://tableau.alleghenycounty.us/t/PublicSite/views/AlleghenyCountyAirQuality/Today' width='100%' height='777' hide-tabs toolbar='bottom' device='phone' ></tableau-viz>`
-                }}
-              />
+          {/* Left Sidebar - Pollutant Selection & Info */}
+          <div className="lg:col-span-3 flex flex-col gap-3 sm:gap-4">
+            {/* Pollutant Selection */}
+            <div className="bg-white rounded-lg shadow-md p-3 sm:p-4 flex-shrink-0">
+              <h3 className="text-sm sm:text-base font-semibold text-slate-800 mb-3 flex items-center gap-1">
+                SELECT POLLUTANT
+                <span className="text-xs text-gray-400">?</span>
+              </h3>
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="pollutant" value="pm25" defaultChecked className="w-4 h-4 text-slate-600" />
+                  <span className="text-xs sm:text-sm text-gray-700">Fine Particulate Matter (PM2.5)</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="pollutant" value="ozone" className="w-4 h-4 text-slate-600" />
+                  <span className="text-xs sm:text-sm text-gray-700">Ozone</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="pollutant" value="so2" className="w-4 h-4 text-slate-600" />
+                  <span className="text-xs sm:text-sm text-gray-700">Sulfur Dioxide (SO2)</span>
+                </label>
+              </div>
             </div>
-          </div>
-            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-xs sm:text-sm text-blue-800">
-                <strong>Mobile Tip:</strong> Scroll horizontally within the dashboard to access all controls and selection options. Use pinch-to-zoom if needed.
+
+            {/* PM2.5 Info */}
+            <div className="bg-white rounded-lg shadow-md p-3 sm:p-4 flex-1 overflow-y-auto">
+              <h3 className="text-sm sm:text-base font-semibold text-slate-800 mb-2">What is PM2.5?</h3>
+              <p className="text-xs sm:text-sm text-gray-700 mb-3 leading-relaxed">
+                Fine particulate matter (PM2.5) consists of a mixture of solids and liquid droplets so small they are only visible with an electron microscope. These particles can be inhaled and may contain hundreds of different chemicals - some are released into the air directly, while others form when they react with other pollutants in the atmosphere.
               </p>
+              <div className="text-xs sm:text-sm text-gray-700 space-y-1">
+                <p><strong>Causes:</strong> power plants, motor vehicles, forest fires, and industrial processes</p>
+                <p><strong>Sensitive groups:</strong> children, older adults, people with heart disease, and people with lung disease</p>
+              </div>
             </div>
+
+            {/* Stats Cards - Mobile only */}
+            {stats && (
+              <div className="lg:hidden grid grid-cols-3 gap-2">
+                <div className="bg-white rounded-lg shadow-md p-3 text-center">
+                  <div className="text-xl font-bold text-slate-700">{stats.sensorCount}</div>
+                  <div className="text-xs text-gray-600">Sensors</div>
+                </div>
+                <div className="bg-white rounded-lg shadow-md p-3 text-center">
+                  <div className="text-xl font-bold text-slate-700">{stats.reportCount}</div>
+                  <div className="text-xs text-gray-600">Reports</div>
+                </div>
+                <div className="bg-white rounded-lg shadow-md p-3 text-center">
+                  <div className="text-xl font-bold text-slate-700">{stats.avgPM25.toFixed(1)}</div>
+                  <div className="text-xs text-gray-600">PM2.5</div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Center - Tableau Dashboard (Map) */}
+          <div className="lg:col-span-6 flex flex-col bg-white rounded-lg shadow-md p-2 sm:p-3 overflow-hidden">
+            <div className="mb-2">
+              <h3 className="text-sm sm:text-base font-semibold text-slate-800">PM2.5 Monitor Locations</h3>
+              <p className="text-xs text-gray-600">Click location on map to see hourly data for that monitor</p>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <div 
+                className="w-full h-full overflow-auto"
+                style={{
+                  WebkitOverflowScrolling: 'touch',
+                  touchAction: 'pan-x pan-y'
+                }}
+              >
+                <div 
+                  className="w-full"
+                  style={{
+                    minHeight: '100%',
+                    position: 'relative'
+                  }}
+                  dangerouslySetInnerHTML={{
+                    __html: `<tableau-viz id='tableau-viz' src='https://tableau.alleghenycounty.us/t/PublicSite/views/AlleghenyCountyAirQuality/Today' width='100%' height='100%' hide-tabs toolbar='bottom' device='phone' ></tableau-viz>`
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Right Sidebar - AQI Data & Scale */}
+          <div className="lg:col-span-3 flex flex-col gap-3 sm:gap-4">
+            {/* Current AQI */}
+            <div className={`bg-white rounded-lg shadow-md p-3 sm:p-4 ${aqiInfo.color} bg-opacity-20 border-2 ${aqiInfo.color} border-opacity-50`}>
+              <h3 className="text-xs sm:text-sm font-semibold text-slate-800 mb-1 flex items-center gap-1">
+                Highest Most Recent
+                <span className="text-xs text-gray-400">?</span>
+              </h3>
+              <p className="text-xs text-gray-600 mb-2">PM2.5 AQI</p>
+              <div className={`text-3xl sm:text-4xl font-bold ${aqiInfo.textColor} mb-1`}>
+                {currentAQI}
+              </div>
+              <p className="text-xs text-gray-600">{dayjs().format('MM/DD/YYYY hh:mm A')} EST</p>
+              <p className="text-xs text-gray-600 mt-1">Occurred at: Avalon</p>
+            </div>
+
+            {/* AQI Scale */}
+            <div className="bg-white rounded-lg shadow-md p-3 sm:p-4 flex-1 overflow-y-auto">
+              <h3 className="text-sm sm:text-base font-semibold text-slate-800 mb-2 flex items-center gap-1">
+                Air Quality Index (AQI)
+                <span className="text-xs text-gray-400">?</span>
+              </h3>
+              <p className="text-xs text-gray-600 mb-3">
+                AQI: The site's current rolling 24-hour average air quality index for PM2.5.
+              </p>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 p-1 rounded">
+                  <div className="w-4 h-4 bg-green-500 rounded flex-shrink-0"></div>
+                  <span className="text-xs text-gray-700">Good</span>
+                </div>
+                <div className="flex items-center gap-2 p-1 rounded">
+                  <div className="w-4 h-4 bg-yellow-400 rounded flex-shrink-0"></div>
+                  <span className="text-xs text-gray-700">Moderate</span>
+                </div>
+                <div className="flex items-center gap-2 p-1 rounded">
+                  <div className="w-4 h-4 bg-orange-500 rounded flex-shrink-0"></div>
+                  <span className="text-xs text-gray-700">Unhealthy for Sensitive Groups</span>
+                </div>
+                <div className="flex items-center gap-2 p-1 rounded">
+                  <div className="w-4 h-4 bg-red-500 rounded flex-shrink-0"></div>
+                  <span className="text-xs text-gray-700">Unhealthy</span>
+                </div>
+                <div className="flex items-center gap-2 p-1 rounded">
+                  <div className="w-4 h-4 bg-purple-500 rounded flex-shrink-0"></div>
+                  <span className="text-xs text-gray-700">Very Unhealthy</span>
+                </div>
+                <div className="flex items-center gap-2 p-1 rounded">
+                  <div className="w-4 h-4 bg-red-800 rounded flex-shrink-0"></div>
+                  <span className="text-xs text-gray-700">Hazardous</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Stats Cards - Desktop only */}
+            {stats && (
+              <div className="hidden lg:grid grid-cols-1 gap-2">
+                <div className="bg-white rounded-lg shadow-md p-3 text-center">
+                  <div className="text-2xl font-bold text-slate-700">{stats.sensorCount}</div>
+                  <div className="text-xs text-gray-600">Active Sensors</div>
+                </div>
+                <div className="bg-white rounded-lg shadow-md p-3 text-center">
+                  <div className="text-2xl font-bold text-slate-700">{stats.reportCount}</div>
+                  <div className="text-xs text-gray-600">Health Reports</div>
+                </div>
+                <div className="bg-white rounded-lg shadow-md p-3 text-center">
+                  <div className="text-2xl font-bold text-slate-700">{stats.avgPM25.toFixed(1)}</div>
+                  <div className="text-xs text-gray-600">Avg PM2.5 (μg/m³)</div>
+                </div>
+              </div>
+            )}
+          </div>
+
         </div>
-        </FadeInSection>
-
-        {/* PM2.5 History Chart */}
-        {pm25History.length > 0 && (
-          <FadeInSection delay={0.2}>
-          <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8">
-            <h3 className="text-lg sm:text-xl lg:text-2xl mb-4 sm:mb-6 text-slate-800 font-semibold">
-              PM2.5 Trend (Last 7 Days)
-            </h3>
-            <div className="h-64 sm:h-80 lg:h-96 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={pm25History.map((d) => ({
-                    date: dayjs.unix(d.dt).format('MMM D'),
-                    pm25: Math.round(d.pm2_5 * 10) / 10
-                  }))}
-                  margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis 
-                    dataKey="date" 
-                    stroke="#64748b"
-                    style={{ fontSize: '12px' }}
-                  />
-                  <YAxis 
-                    stroke="#64748b"
-                    label={{ value: 'PM2.5 (μg/m³)', angle: -90, position: 'insideLeft', style: { fontSize: '12px' } }}
-                  />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'white', 
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '8px',
-                      padding: '8px'
-                    }}
-                  />
-                  <Legend />
-                  <Line 
-                    type="monotone" 
-                    dataKey="pm25" 
-                    stroke="#0891b2" 
-                    strokeWidth={2}
-                    fill="#0891b2"
-                    fillOpacity={0.1}
-                    name="PM2.5 (μg/m³)"
-                    dot={{ fill: '#0891b2', r: 4 }}
-                    activeDot={{ r: 6 }}
-                    animationDuration={1500}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-          </FadeInSection>
-        )}
-        
-        {/* Stats Cards */}
-        {stats && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            <FadeInSection delay={0.4}>
-            <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 text-center">
-              <div className="text-4xl sm:text-5xl lg:text-6xl font-bold text-primary-600 mb-2">
-                {stats.sensorCount}
-              </div>
-              <div className="text-base sm:text-lg text-gray-600">
-                Active Sensors
-              </div>
-            </div>
-            </FadeInSection>
-
-            <FadeInSection delay={0.6}>
-            <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 text-center">
-              <div className="text-4xl sm:text-5xl lg:text-6xl font-bold text-success-600 mb-2">
-                {stats.reportCount}
-              </div>
-              <div className="text-base sm:text-lg text-gray-600">
-                Health Reports
-              </div>
-            </div>
-            </FadeInSection>
-
-            <FadeInSection delay={0.8}>
-            <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 text-center">
-              <div className="text-4xl sm:text-5xl lg:text-6xl font-bold text-warning-600 mb-2">
-                {stats.avgPM25.toFixed(1)}
-              </div>
-              <div className="text-base sm:text-lg text-gray-600">
-                Avg PM2.5 (μg/m³)
-              </div>
-            </div>
-            </FadeInSection>
-          </div>
-        )}
-
       </div>
     </div>
   );

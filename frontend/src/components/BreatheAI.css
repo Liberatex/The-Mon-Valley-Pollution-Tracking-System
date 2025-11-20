@@ -64,6 +64,8 @@
   gap: 15px;
   min-height: 400px;
   max-height: 600px;
+  background: #f8fafc;
+  border-radius: 12px;
 }
 
 .messages-container::-webkit-scrollbar {

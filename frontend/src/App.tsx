@@ -76,7 +76,7 @@ function App() {
       case 'ai':
         return <Suspense fallback={<LoadingFallback />}><BreatheAI /></Suspense>;
       case 'exposure':
-        return <Suspense fallback={<LoadingFallback />}><ExposureModel /></Suspense>;
+        return <Suspense fallback={<LoadingFallback />}><ExposureModel onNavigate={handleNavClick} /></Suspense>;
       default:
         return <Suspense fallback={<LoadingFallback />}><HomePage /></Suspense>;
     }
@@ -86,7 +86,7 @@ function App() {
     <div className="App" lang="en">
       <header className="App-header">
         <div className="header-content">
-          <Logo />
+          <Logo onClick={() => handleNavClick('home')} />
           {/* Mobile Hamburger Button */}
           <button 
             className="mobile-menu-toggle"

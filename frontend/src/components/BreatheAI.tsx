@@ -198,19 +198,19 @@ const BreatheAI: React.FC = () => {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="input-form flex gap-3">
+            <form onSubmit={handleSubmit} className="input-form flex gap-3 mt-4">
               <input
                 type="text"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 placeholder="Type your message..."
                 disabled={isTyping}
-                className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-slate-600 transition-colors disabled:bg-gray-50 disabled:text-gray-500"
+                className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-slate-600 transition-colors disabled:bg-gray-100 disabled:text-gray-500 bg-white"
               />
               <button 
                 type="submit" 
                 disabled={isTyping || !inputValue.trim()}
-                className="px-6 py-3 bg-gradient-to-r from-slate-700 to-slate-600 text-white rounded-xl font-semibold hover:from-slate-600 hover:to-slate-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-8 py-3 bg-gradient-to-r from-slate-700 to-slate-600 text-white rounded-xl font-bold hover:from-slate-600 hover:to-slate-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-lg hover:shadow-xl"
               >
                 <Send className="w-5 h-5" />
                 Send

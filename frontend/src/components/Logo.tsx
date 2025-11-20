@@ -1,8 +1,19 @@
 import React from 'react';
 
-const Logo: React.FC = () => {
+interface LogoProps {
+  onClick?: () => void;
+}
+
+const Logo: React.FC<LogoProps> = ({ onClick }) => {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+    <div 
+      style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: onClick ? 'pointer' : 'default' }}
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={onClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } } : undefined}
+      aria-label={onClick ? 'Go to home page' : undefined}
+    >
       <div style={{ 
         width: '48px', 
         height: '48px', 

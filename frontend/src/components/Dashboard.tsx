@@ -124,9 +124,9 @@ const Dashboard: React.FC = () => {
           </p>
           
           {/* Tableau embedded dashboard */}
-          <div className="w-full">
+          <div className="w-full flex justify-center">
             <div 
-              className="w-full min-h-[400px] sm:min-h-[500px] lg:min-h-[600px] overflow-x-auto overflow-y-visible"
+              className="w-full max-w-4xl min-h-[400px] sm:min-h-[500px] lg:min-h-[600px] overflow-x-auto overflow-y-visible"
               style={{
                 WebkitOverflowScrolling: 'touch',
                 touchAction: 'pan-x pan-y'
@@ -144,6 +144,7 @@ const Dashboard: React.FC = () => {
                 }}
               />
             </div>
+          </div>
             <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-xs sm:text-sm text-blue-800">
                 <strong>Mobile Tip:</strong> Scroll horizontally within the dashboard to access all controls and selection options. Use pinch-to-zoom if needed.

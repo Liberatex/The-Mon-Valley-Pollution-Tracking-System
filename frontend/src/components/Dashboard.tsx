@@ -20,6 +20,7 @@ const Dashboard: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [pm25History, setPm25History] = useState<AQIDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedPollutant, setSelectedPollutant] = useState<'pm25' | 'ozone' | 'so2'>('pm25');
 
   useEffect(() => {
     async function fetchData() {
@@ -119,15 +120,41 @@ const Dashboard: React.FC = () => {
   const currentAQI = 65;
   const aqiInfo = getAQILevel(currentAQI);
 
+  // Pollutant definitions
+  const pollutantInfo = {
+    pm25: {
+      name: 'Fine Particulate Matter (PM2.5)',
+      description: 'Fine particulate matter (PM2.5) consists of a mixture of solids and liquid droplets so small they are only visible with an electron microscope. These particles can be inhaled and may contain hundreds of different chemicals - some are released into the air directly, while others form when they react with other pollutants in the atmosphere.',
+      causes: 'power plants, motor vehicles, forest fires, and industrial processes',
+      sensitiveGroups: 'children, older adults, people with heart disease, and people with lung disease'
+    },
+    ozone: {
+      name: 'Ozone',
+      description: 'Ozone (O3) is a gas composed of three oxygen atoms. While ozone high in the atmosphere protects us from harmful UV radiation, ground-level ozone is a harmful air pollutant. It forms when nitrogen oxides (NOx) and volatile organic compounds (VOCs) react in the presence of sunlight, particularly on hot, sunny days.',
+      causes: 'motor vehicle exhaust, industrial emissions, gasoline vapors, and chemical solvents',
+      sensitiveGroups: 'children, older adults, people with asthma, people with lung disease, and people who are active outdoors'
+    },
+    so2: {
+      name: 'Sulfur Dioxide (SO2)',
+      description: 'Sulfur dioxide (SO2) is a colorless gas with a pungent, irritating odor. It is produced primarily from the burning of fossil fuels containing sulfur, particularly coal and oil. SO2 can react with other compounds in the atmosphere to form fine particles that pose health risks.',
+      causes: 'coal-fired power plants, industrial facilities, oil refineries, and metal smelting operations',
+      sensitiveGroups: 'children, older adults, people with asthma, people with chronic obstructive pulmonary disease (COPD), and people with cardiovascular disease'
+    }
+  };
+
+  const currentPollutant = pollutantInfo[selectedPollutant];
+
   return (
-    <div className="min-h-screen bg-gray-50 py-4 sm:py-6 px-2 sm:px-4">
-      <h1 className="text-xl sm:text-2xl lg:text-3xl text-center text-slate-800 mb-4 sm:mb-6 font-bold tracking-tight">
-        Community Health Dashboard
-      </h1>
+    <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
+      <div className="flex-shrink-0 py-2 sm:py-3 px-2 sm:px-4">
+        <h1 className="text-lg sm:text-xl lg:text-2xl text-center text-slate-800 font-bold tracking-tight">
+          Community Health Dashboard
+        </h1>
+      </div>
 
       {/* Main Grid Layout - 3 columns on desktop, stacked on mobile */}
-      <div className="max-w-[1920px] mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 h-[calc(100vh-120px)] lg:h-[calc(100vh-100px)]">
+      <div className="flex-1 overflow-hidden max-w-[1920px] w-full mx-auto px-2 sm:px-4 pb-2 sm:pb-4">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-3 h-full">
           
           {/* Left Sidebar - Pollutant Selection & Info */}
           <div className="lg:col-span-3 flex flex-col gap-3 sm:gap-4">
@@ -139,29 +166,50 @@ const Dashboard: React.FC = () => {
               </h3>
               <div className="space-y-2">
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="radio" name="pollutant" value="pm25" defaultChecked className="w-4 h-4 text-slate-600" />
+                  <input 
+                    type="radio" 
+                    name="pollutant" 
+                    value="pm25" 
+                    checked={selectedPollutant === 'pm25'}
+                    onChange={() => setSelectedPollutant('pm25')}
+                    className="w-4 h-4 text-slate-600" 
+                  />
                   <span className="text-xs sm:text-sm text-gray-700">Fine Particulate Matter (PM2.5)</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="radio" name="pollutant" value="ozone" className="w-4 h-4 text-slate-600" />
+                  <input 
+                    type="radio" 
+                    name="pollutant" 
+                    value="ozone" 
+                    checked={selectedPollutant === 'ozone'}
+                    onChange={() => setSelectedPollutant('ozone')}
+                    className="w-4 h-4 text-slate-600" 
+                  />
                   <span className="text-xs sm:text-sm text-gray-700">Ozone</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="radio" name="pollutant" value="so2" className="w-4 h-4 text-slate-600" />
+                  <input 
+                    type="radio" 
+                    name="pollutant" 
+                    value="so2" 
+                    checked={selectedPollutant === 'so2'}
+                    onChange={() => setSelectedPollutant('so2')}
+                    className="w-4 h-4 text-slate-600" 
+                  />
                   <span className="text-xs sm:text-sm text-gray-700">Sulfur Dioxide (SO2)</span>
                 </label>
               </div>
             </div>
 
-            {/* PM2.5 Info */}
+            {/* Pollutant Info - Dynamic based on selection */}
             <div className="bg-white rounded-lg shadow-md p-3 sm:p-4 flex-1 overflow-y-auto">
-              <h3 className="text-sm sm:text-base font-semibold text-slate-800 mb-2">What is PM2.5?</h3>
+              <h3 className="text-sm sm:text-base font-semibold text-slate-800 mb-2">What is {currentPollutant.name}?</h3>
               <p className="text-xs sm:text-sm text-gray-700 mb-3 leading-relaxed">
-                Fine particulate matter (PM2.5) consists of a mixture of solids and liquid droplets so small they are only visible with an electron microscope. These particles can be inhaled and may contain hundreds of different chemicals - some are released into the air directly, while others form when they react with other pollutants in the atmosphere.
+                {currentPollutant.description}
               </p>
               <div className="text-xs sm:text-sm text-gray-700 space-y-1">
-                <p><strong>Causes:</strong> power plants, motor vehicles, forest fires, and industrial processes</p>
-                <p><strong>Sensitive groups:</strong> children, older adults, people with heart disease, and people with lung disease</p>
+                <p><strong>Causes:</strong> {currentPollutant.causes}</p>
+                <p><strong>Sensitive groups:</strong> {currentPollutant.sensitiveGroups}</p>
               </div>
             </div>
 
@@ -185,12 +233,12 @@ const Dashboard: React.FC = () => {
           </div>
 
           {/* Center - Tableau Dashboard (Map) */}
-          <div className="lg:col-span-6 flex flex-col bg-white rounded-lg shadow-md p-2 sm:p-3 overflow-hidden">
-            <div className="mb-2">
-              <h3 className="text-sm sm:text-base font-semibold text-slate-800">PM2.5 Monitor Locations</h3>
+          <div className="lg:col-span-6 flex flex-col bg-white rounded-lg shadow-md p-2 sm:p-3 overflow-hidden h-full">
+            <div className="mb-2 flex-shrink-0">
+              <h3 className="text-sm sm:text-base font-semibold text-slate-800">{currentPollutant.name} Monitor Locations</h3>
               <p className="text-xs text-gray-600">Click location on map to see hourly data for that monitor</p>
             </div>
-            <div className="flex-1 overflow-hidden">
+            <div className="flex-1 overflow-hidden min-h-0">
               <div 
                 className="w-full h-full overflow-auto"
                 style={{
@@ -199,7 +247,7 @@ const Dashboard: React.FC = () => {
                 }}
               >
                 <div 
-                  className="w-full"
+                  className="w-full h-full"
                   style={{
                     minHeight: '100%',
                     position: 'relative'
@@ -215,12 +263,12 @@ const Dashboard: React.FC = () => {
           {/* Right Sidebar - AQI Data & Scale */}
           <div className="lg:col-span-3 flex flex-col gap-3 sm:gap-4">
             {/* Current AQI */}
-            <div className={`bg-white rounded-lg shadow-md p-3 sm:p-4 ${aqiInfo.color} bg-opacity-20 border-2 ${aqiInfo.color} border-opacity-50`}>
+            <div className={`bg-white rounded-lg shadow-md p-3 sm:p-4 flex-shrink-0 ${aqiInfo.color} bg-opacity-20 border-2 ${aqiInfo.color} border-opacity-50`}>
               <h3 className="text-xs sm:text-sm font-semibold text-slate-800 mb-1 flex items-center gap-1">
                 Highest Most Recent
                 <span className="text-xs text-gray-400">?</span>
               </h3>
-              <p className="text-xs text-gray-600 mb-2">PM2.5 AQI</p>
+              <p className="text-xs text-gray-600 mb-2">{currentPollutant.name} AQI</p>
               <div className={`text-3xl sm:text-4xl font-bold ${aqiInfo.textColor} mb-1`}>
                 {currentAQI}
               </div>

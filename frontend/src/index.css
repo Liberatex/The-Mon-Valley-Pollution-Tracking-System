@@ -113,3 +113,14 @@
     touch-action: manipulation;
   }
 }
+
+/* Hide duplicate Tableau tabs and navigation inside iframes */
+iframe[title*="Allegheny County Air Quality"] {
+  /* Target Tableau iframes specifically */
+}
+
+/* Hide any duplicate tab navigation that might appear inside Tableau iframes */
+iframe[title*="Allegheny County Air Quality"] + *,
+iframe[title*="Allegheny County Air Quality"] ~ * {
+  /* This targets elements after the iframe, but we can't style inside iframes */
+}

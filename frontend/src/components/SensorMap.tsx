@@ -264,18 +264,26 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
         if (resp.data.success && resp.data.facilities && Array.isArray(resp.data.facilities)) {
           // Filter out facilities with invalid locations
           const validFacilities = resp.data.facilities.filter((facility: TitleVFacility) => {
-            return facility.location && 
+            const hasLocation = facility.location && 
                    typeof facility.location.lat === 'number' && 
                    typeof facility.location.lng === 'number' &&
                    !isNaN(facility.location.lat) && 
                    !isNaN(facility.location.lng) &&
                    facility.location.lat !== 0 && 
                    facility.location.lng !== 0;
+            
+            if (!hasLocation) {
+              console.warn('Invalid facility location:', facility.facilityId || facility.name, facility.location);
+            }
+            return hasLocation;
           });
-          console.log('Valid Title V Facilities:', validFacilities.length);
+          console.log(`Title V Facilities: ${resp.data.facilities.length} total, ${validFacilities.length} valid`);
           setFacilities(validFacilities);
+        } else if (resp.data.success && resp.data.count === 0) {
+          console.warn('Title V Facilities: No facilities found in database. Need to seed facilities first.');
+          setFacilities([]);
         } else {
-          console.warn('Title V Facilities: Invalid response format', resp.data);
+          console.error('Title V Facilities: Invalid response format', resp.data);
           setFacilities([]);
         }
       } catch (err: any) {

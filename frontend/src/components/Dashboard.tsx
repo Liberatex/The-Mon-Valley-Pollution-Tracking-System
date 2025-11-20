@@ -282,11 +282,12 @@ const Dashboard: React.FC = () => {
                   </div>
                   <div className="flex-1 overflow-hidden min-h-0 px-2 pb-2">
                     <iframe
-                      src="https://tableau.alleghenycounty.us/t/PublicSite/views/AlleghenyCountyAirQuality/Today?:embed=y&:showVizHome=no&:hideTabs=true&:toolbar=bottom&:device=phone"
+                      src="https://tableau.alleghenycounty.us/t/PublicSite/views/AlleghenyCountyAirQuality/Today?:embed=y&:showVizHome=no&:hideTabs=y&:toolbar=no&:device=phone&:display_count=no&:showShareOptions=false"
                       className="w-full h-full border-0"
                       title="Allegheny County Air Quality Dashboard"
                       allowFullScreen
                       style={{ display: 'block' }}
+                      sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
                     />
                   </div>
                 </>
@@ -300,41 +301,54 @@ const Dashboard: React.FC = () => {
                   </div>
                   <div className="flex-1 overflow-hidden min-h-0 px-2 pb-2">
                     <iframe
-                      src="https://tableau.alleghenycounty.us/t/PublicSite/views/AlleghenyCountyAirQuality/OverTime?:embed=y&:showVizHome=no&:hideTabs=true&:toolbar=bottom&:device=phone"
+                      src="https://tableau.alleghenycounty.us/t/PublicSite/views/AlleghenyCountyAirQuality/OverTime?:embed=y&:showVizHome=no&:hideTabs=y&:toolbar=no&:device=phone&:display_count=no&:showShareOptions=false"
                       className="w-full h-full border-0"
                       title="Allegheny County Air Quality Trends"
                       allowFullScreen
                       style={{ display: 'block' }}
+                      sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
                     />
                   </div>
                 </>
               )}
 
               {activeTab === 'faq' && (
-                <div className="flex-1 overflow-y-auto min-h-0 px-2 py-2">
-                  <div className="space-y-3">
+                <div className="flex-1 overflow-y-auto min-h-0 px-4 py-4">
+                  <div className="space-y-4">
                     <div>
-                      <h3 className="text-xs sm:text-sm font-semibold text-slate-800 mb-2">Frequently Asked Questions</h3>
-                      <div className="space-y-2 text-xs text-gray-700">
-                        <div>
-                          <p className="font-semibold mb-1">What is the Air Quality Index (AQI)?</p>
-                          <p>The AQI is a scale used to report daily air quality. It tells you how clean or polluted your air is, and what associated health effects might be a concern for you.</p>
+                      <h3 className="text-sm sm:text-base font-semibold text-slate-800 mb-3">Frequently Asked Questions</h3>
+                      <div className="space-y-4 text-xs sm:text-sm text-gray-700">
+                        <div className="pb-3 border-b border-gray-200">
+                          <p className="font-semibold mb-2 text-slate-800">What is the Air Quality Index (AQI)?</p>
+                          <p className="leading-relaxed">The AQI is a scale used to report daily air quality. It tells you how clean or polluted your air is, and what associated health effects might be a concern for you.</p>
+                        </div>
+                        <div className="pb-3 border-b border-gray-200">
+                          <p className="font-semibold mb-2 text-slate-800">How is AQI calculated?</p>
+                          <p className="leading-relaxed">AQI is calculated based on the highest value of five major air pollutants regulated by the Clean Air Act: ground-level ozone, particle pollution (PM2.5 and PM10), carbon monoxide, sulfur dioxide, and nitrogen dioxide.</p>
+                        </div>
+                        <div className="pb-3 border-b border-gray-200">
+                          <p className="font-semibold mb-2 text-slate-800">What should I do when air quality is unhealthy?</p>
+                          <p className="leading-relaxed">When air quality is unhealthy, sensitive groups should reduce prolonged or heavy exertion outdoors. Everyone should consider reducing outdoor activities, especially during peak pollution hours.</p>
+                        </div>
+                        <div className="pb-3 border-b border-gray-200">
+                          <p className="font-semibold mb-2 text-slate-800">Where does this data come from?</p>
+                          <p className="leading-relaxed">This data comes from official monitoring stations operated by the Allegheny County Health Department (ACHD) and is updated regularly throughout the day.</p>
+                        </div>
+                        <div className="pb-3 border-b border-gray-200">
+                          <p className="font-semibold mb-2 text-slate-800">How often is the data updated?</p>
+                          <p className="leading-relaxed">Air quality data is typically updated hourly. The timestamp shown indicates when the most recent reading was taken.</p>
                         </div>
                         <div>
-                          <p className="font-semibold mb-1">How is AQI calculated?</p>
-                          <p>AQI is calculated based on the highest value of five major air pollutants regulated by the Clean Air Act: ground-level ozone, particle pollution (PM2.5 and PM10), carbon monoxide, sulfur dioxide, and nitrogen dioxide.</p>
-                        </div>
-                        <div>
-                          <p className="font-semibold mb-1">What should I do when air quality is unhealthy?</p>
-                          <p>When air quality is unhealthy, sensitive groups should reduce prolonged or heavy exertion outdoors. Everyone should consider reducing outdoor activities, especially during peak pollution hours.</p>
-                        </div>
-                        <div>
-                          <p className="font-semibold mb-1">Where does this data come from?</p>
-                          <p>This data comes from official monitoring stations operated by the Allegheny County Health Department (ACHD) and is updated regularly throughout the day.</p>
-                        </div>
-                        <div>
-                          <p className="font-semibold mb-1">How often is the data updated?</p>
-                          <p>Air quality data is typically updated hourly. The timestamp shown indicates when the most recent reading was taken.</p>
+                          <p className="font-semibold mb-2 text-slate-800">What do the different AQI levels mean?</p>
+                          <p className="leading-relaxed mb-2">The AQI is divided into six categories:</p>
+                          <ul className="list-disc list-inside space-y-1 ml-2">
+                            <li><strong>Good (0-50):</strong> Air quality is satisfactory, and air pollution poses little or no risk.</li>
+                            <li><strong>Moderate (51-100):</strong> Air quality is acceptable; however, some pollutants may be a moderate health concern for a very small number of people.</li>
+                            <li><strong>Unhealthy for Sensitive Groups (101-150):</strong> Members of sensitive groups may experience health effects.</li>
+                            <li><strong>Unhealthy (151-200):</strong> Everyone may begin to experience health effects.</li>
+                            <li><strong>Very Unhealthy (201-300):</strong> Health alert: everyone may experience more serious health effects.</li>
+                            <li><strong>Hazardous (301+):</strong> Health warning of emergency conditions.</li>
+                          </ul>
                         </div>
                       </div>
                     </div>

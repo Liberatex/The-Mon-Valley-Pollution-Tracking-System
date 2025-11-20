@@ -571,12 +571,15 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
                 isNaN(facility.location.lng) ||
                 facility.location.lat === 0 || 
                 facility.location.lng === 0) {
+              console.warn('Skipping facility with invalid location:', facility.facilityId || facility.id || facility.name, facility.location);
               return null;
             }
             
+            const facilityKey = facility.facilityId || facility.id || `facility-${facility.name}`;
+            
             return (
           <Marker
-            key={facility.facilityId}
+            key={facilityKey}
             position={[facility.location.lat, facility.location.lng]}
             icon={L.divIcon({
               className: 'custom-titlev-marker',

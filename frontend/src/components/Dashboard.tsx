@@ -259,8 +259,9 @@ const Dashboard: React.FC = () => {
                   Over Time
                 </button>
                 <button
-                  onClick={() => setActiveTab('faq')}
-                  disabled={false}
+                  onClick={() => {
+                    setActiveTab('faq');
+                  }}
                   className={`flex-1 px-3 py-2 text-xs sm:text-sm font-semibold transition-colors cursor-pointer ${
                     activeTab === 'faq'
                       ? 'text-teal-700 bg-teal-50 border-b-2 border-teal-700'
@@ -272,8 +273,8 @@ const Dashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* Tab Content */}
-            <div className="flex-1 overflow-hidden min-h-0 flex flex-col">
+            {/* Tab Content - Key forces complete remount when switching tabs to prevent iframe persistence */}
+            <div key={activeTab} className="flex-1 overflow-hidden min-h-0 flex flex-col">
               {activeTab === 'today' && (
                 <>
                   <div className="px-2 pt-2 pb-1 flex-shrink-0">
@@ -315,7 +316,7 @@ const Dashboard: React.FC = () => {
               )}
 
               {activeTab === 'faq' && (
-                <div className="flex-1 overflow-y-auto min-h-0 px-4 py-4">
+                <div className="flex-1 overflow-y-auto min-h-0 px-4 py-4 bg-white">
                   <div className="space-y-4">
                     <div>
                       <h3 className="text-sm sm:text-base font-semibold text-slate-800 mb-3">Frequently Asked Questions</h3>

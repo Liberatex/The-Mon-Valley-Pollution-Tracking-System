@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import { shouldUseEmulator } from '../utils/env';
+import { getCurrentLocation, isGeolocationAvailable } from '../utils/geolocation';
 import { FadeInSection } from './ui/FadeInSection';
 import { FileText, AlertTriangle, MapPin, ArrowRight, Navigation } from 'lucide-react';
 
@@ -76,6 +77,8 @@ const ExposureModel: React.FC<ExposureModelProps> = ({ onNavigate }) => {
   const [locationMethod, setLocationMethod] = useState<'geolocation' | 'address' | 'coordinates' | null>(null);
   const [gettingLocation, setGettingLocation] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [permissionDenied, setPermissionDenied] = useState(false);
+  const isRequestingLocation = useRef<boolean>(false);
 
   // Load facilities on mount
   useEffect(() => {
@@ -183,28 +186,52 @@ const ExposureModel: React.FC<ExposureModelProps> = ({ onNavigate }) => {
 
   // Handle geolocation
   const handleUseGeolocation = () => {
+    // Prevent multiple simultaneous requests
+    if (isRequestingLocation.current) {
+      return;
+    }
+
+    // Check if permission was previously denied
+    if (permissionDenied) {
+      setLocationError('Location access was denied. Please enable location permissions in your browser settings and refresh the page.');
+      return;
+    }
+
     setGettingLocation(true);
     setLocationError(null);
     setLocationMethod('geolocation');
     
-    if (!navigator.geolocation) {
-      setLocationError('Geolocation is not supported by your browser.');
+    // Check if geolocation is available
+    if (!isGeolocationAvailable()) {
+      setLocationError('Geolocation is not available. Please use HTTPS or enable location services.');
       setGettingLocation(false);
       return;
     }
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        setUserLocation({ lat: latitude, lng: longitude });
+    // Mark that we're requesting location
+    isRequestingLocation.current = true;
+
+    // Use shared geolocation utility
+    getCurrentLocation(
+      (result) => {
+        setUserLocation({ lat: result.lat, lng: result.lng });
         setLocationError(null);
+        setPermissionDenied(false);
         setGettingLocation(false);
+        isRequestingLocation.current = false;
       },
-      (err) => {
-        setLocationError('Could not get your location. Please try entering your address manually.');
+      (error) => {
+        console.error('Geolocation error:', error);
+        setLocationError(error.message || 'Could not get your location. Please try entering your address manually.');
+        
+        // If permission denied, mark it so we don't retry
+        if (error.type === 'permission_denied') {
+          setPermissionDenied(true);
+        }
+        
         setGettingLocation(false);
-      },
-      { timeout: 10000, enableHighAccuracy: true }
+        isRequestingLocation.current = false;
+      }
     );
   };
 

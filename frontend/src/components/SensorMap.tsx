@@ -4,6 +4,7 @@ import L from 'leaflet';
 import axios from 'axios';
 import 'leaflet/dist/leaflet.css';
 import { shouldUseEmulator } from '../utils/env';
+import { getCurrentLocation, isGeolocationAvailable } from '../utils/geolocation';
 import { Info, AlertCircle, MapPin, Factory, Activity, Navigation } from 'lucide-react';
 
 // Fix Leaflet marker icon issue
@@ -117,7 +118,9 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
   const [showMyLocation, setShowMyLocation] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [permissionDenied, setPermissionDenied] = useState(false);
   const geolocationWatchId = useRef<number | null>(null);
+  const isRequestingLocation = useRef<boolean>(false);
 
   useEffect(() => {
     if (propSensors && propSensors.length > 0) {
@@ -322,68 +325,62 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
         navigator.geolocation.clearWatch(geolocationWatchId.current);
         geolocationWatchId.current = null;
       }
+      isRequestingLocation.current = false;
     };
   }, []);
 
   useEffect(() => {
+    // Prevent multiple simultaneous requests
+    if (isRequestingLocation.current) {
+      return;
+    }
+
     if (showMyLocation) {
-      if (!navigator.geolocation) {
-        setLocationError('Geolocation is not supported by your browser');
+      // Check if permission was previously denied
+      if (permissionDenied) {
+        setLocationError('Location access was denied. Please enable location permissions in your browser settings and refresh the page.');
         setShowMyLocation(false);
         return;
       }
 
-      // Clear any existing watch
-      if (geolocationWatchId.current !== null) {
-        navigator.geolocation.clearWatch(geolocationWatchId.current);
-        geolocationWatchId.current = null;
+      // Check if geolocation is available
+      if (!isGeolocationAvailable()) {
+        setLocationError('Geolocation is not available. Please use HTTPS or enable location services.');
+        setShowMyLocation(false);
+        return;
       }
 
+      // Mark that we're requesting location
+      isRequestingLocation.current = true;
       setLocationError(null);
-      
-      // Check if we're on HTTPS or localhost (required for geolocation)
-      const isSecure = window.location.protocol === 'https:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      if (!isSecure) {
-        setLocationError('Geolocation requires HTTPS. Please access the site via HTTPS.');
-        setShowMyLocation(false);
-        return;
-      }
-      
-      // Use getCurrentPosition for one-time location
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
+
+      // Use shared geolocation utility
+      getCurrentLocation(
+        (result) => {
           // Only update if still enabled
           if (showMyLocation) {
             setUserLocation({
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
+              lat: result.lat,
+              lng: result.lng,
             });
             setLocationError(null);
-            console.log('My Location updated:', position.coords.latitude, position.coords.longitude);
+            setPermissionDenied(false);
+            console.log('My Location updated:', result.lat, result.lng);
           }
+          isRequestingLocation.current = false;
         },
         (error) => {
-          let errorMessage = 'Unable to retrieve your location';
-          switch (error.code) {
-            case error.PERMISSION_DENIED:
-              errorMessage = 'Location access denied. Please enable location permissions in your browser settings.';
-              break;
-            case error.POSITION_UNAVAILABLE:
-              errorMessage = 'Location information is unavailable.';
-              break;
-            case error.TIMEOUT:
-              errorMessage = 'Location request timed out.';
-              break;
-          }
           console.error('Geolocation error:', error);
-          setLocationError(errorMessage);
+          setLocationError(error.message);
+          
+          // If permission denied, mark it so we don't retry
+          if (error.type === 'permission_denied') {
+            setPermissionDenied(true);
+          }
+          
           setShowMyLocation(false);
           setUserLocation(null);
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 15000, // Increased timeout for production
-          maximumAge: 60000, // Accept cached position up to 1 minute old
+          isRequestingLocation.current = false;
         }
       );
     } else {
@@ -394,8 +391,9 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
       }
       setUserLocation(null);
       setLocationError(null);
+      isRequestingLocation.current = false;
     }
-  }, [showMyLocation]);
+  }, [showMyLocation, permissionDenied]);
 
 
   if (loading) return (

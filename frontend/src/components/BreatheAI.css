@@ -240,15 +240,7 @@
   border-top: none;
 }
 
-/* Ensure Tailwind classes work - don't override them */
-.input-form input {
-  /* Tailwind classes handle all styling */
-}
-
-.input-form button {
-  /* Tailwind classes handle all styling - no CSS overrides */
-  all: unset;
-}
+/* Tailwind classes handle all input and button styling - no CSS overrides needed */
 
 /* Accessibility Enhancements */
 @media (prefers-reduced-motion: reduce) {

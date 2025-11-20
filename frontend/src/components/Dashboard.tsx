@@ -147,14 +147,14 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
-      <div className="flex-shrink-0 py-2 sm:py-3 px-2 sm:px-4">
+      <div className="flex-shrink-0 py-2 px-2 sm:px-4">
         <h1 className="text-lg sm:text-xl lg:text-2xl text-center text-slate-800 font-bold tracking-tight">
-        Community Health Dashboard
-      </h1>
+          Community Health Dashboard
+        </h1>
       </div>
 
       {/* Main Grid Layout - 3 columns on desktop, stacked on mobile */}
-      <div className="flex-1 overflow-hidden max-w-[1920px] w-full mx-auto px-2 sm:px-4 pb-2 sm:pb-4">
+      <div className="flex-1 overflow-hidden max-w-[1920px] w-full mx-auto px-2 sm:px-4 pb-2">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-3 h-full">
           
           {/* Left Sidebar - Pollutant Selection & Info */}
@@ -240,7 +240,7 @@ const Dashboard: React.FC = () => {
               <div className="flex">
                 <button
                   onClick={() => setActiveTab('today')}
-                  className={`flex-1 px-4 py-3 text-sm sm:text-base font-semibold transition-colors ${
+                  className={`flex-1 px-3 py-2 text-xs sm:text-sm font-semibold transition-colors ${
                     activeTab === 'today'
                       ? 'text-teal-700 bg-teal-50 border-b-2 border-teal-700'
                       : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
@@ -250,7 +250,7 @@ const Dashboard: React.FC = () => {
                 </button>
                 <button
                   onClick={() => setActiveTab('overtime')}
-                  className={`flex-1 px-4 py-3 text-sm sm:text-base font-semibold transition-colors ${
+                  className={`flex-1 px-3 py-2 text-xs sm:text-sm font-semibold transition-colors ${
                     activeTab === 'overtime'
                       ? 'text-teal-700 bg-teal-50 border-b-2 border-teal-700'
                       : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
@@ -260,7 +260,7 @@ const Dashboard: React.FC = () => {
                 </button>
                 <button
                   onClick={() => setActiveTab('faq')}
-                  className={`flex-1 px-4 py-3 text-sm sm:text-base font-semibold transition-colors ${
+                  className={`flex-1 px-3 py-2 text-xs sm:text-sm font-semibold transition-colors ${
                     activeTab === 'faq'
                       ? 'text-teal-700 bg-teal-50 border-b-2 border-teal-700'
                       : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
@@ -272,71 +272,47 @@ const Dashboard: React.FC = () => {
             </div>
 
             {/* Tab Content */}
-            <div className="flex-1 overflow-hidden min-h-0 flex flex-col p-2 sm:p-3">
+            <div className="flex-1 overflow-hidden min-h-0 flex flex-col p-2">
               {activeTab === 'today' && (
                 <>
-                  <div className="mb-2 flex-shrink-0">
-                    <h3 className="text-sm sm:text-base font-semibold text-slate-800">{currentPollutant.name} Monitor Locations</h3>
+                  <div className="mb-1 flex-shrink-0">
+                    <h3 className="text-xs sm:text-sm font-semibold text-slate-800">{currentPollutant.name} Monitor Locations</h3>
                     <p className="text-xs text-gray-600">Click location on map to see hourly data for that monitor</p>
                   </div>
                   <div className="flex-1 overflow-hidden min-h-0">
-                    <div 
-                      className="w-full h-full overflow-auto"
-                      style={{
-                        WebkitOverflowScrolling: 'touch',
-                        touchAction: 'pan-x pan-y'
-                      }}
-                    >
-                      <div 
-                        className="w-full h-full"
-                        style={{
-                          minHeight: '100%',
-                          position: 'relative'
-                        }}
-                        dangerouslySetInnerHTML={{
-                          __html: `<tableau-viz id='tableau-viz-today' src='https://tableau.alleghenycounty.us/t/PublicSite/views/AlleghenyCountyAirQuality/Today' width='100%' height='100%' hide-tabs toolbar='bottom' device='phone' ></tableau-viz>`
-                        }}
-                      />
-                    </div>
+                    <iframe
+                      src="https://tableau.alleghenycounty.us/t/PublicSite/views/AlleghenyCountyAirQuality/Today?:embed=y&:showVizHome=no&:device=phone"
+                      className="w-full h-full border-0"
+                      title="Allegheny County Air Quality Dashboard"
+                      style={{ minHeight: '100%' }}
+                    />
                   </div>
                 </>
               )}
 
               {activeTab === 'overtime' && (
                 <>
-                  <div className="mb-2 flex-shrink-0">
-                    <h3 className="text-sm sm:text-base font-semibold text-slate-800">{currentPollutant.name} Trends Over Time</h3>
+                  <div className="mb-1 flex-shrink-0">
+                    <h3 className="text-xs sm:text-sm font-semibold text-slate-800">{currentPollutant.name} Trends Over Time</h3>
                     <p className="text-xs text-gray-600">View historical data and trends for {currentPollutant.name}</p>
                   </div>
                   <div className="flex-1 overflow-hidden min-h-0">
-                    <div 
-                      className="w-full h-full overflow-auto"
-                      style={{
-                        WebkitOverflowScrolling: 'touch',
-                        touchAction: 'pan-x pan-y'
-                      }}
-                    >
-                      <div 
-                        className="w-full h-full"
-                        style={{
-                          minHeight: '100%',
-                          position: 'relative'
-                        }}
-                        dangerouslySetInnerHTML={{
-                          __html: `<tableau-viz id='tableau-viz-overtime' src='https://tableau.alleghenycounty.us/t/PublicSite/views/AlleghenyCountyAirQuality/OverTime' width='100%' height='100%' hide-tabs toolbar='bottom' device='phone' ></tableau-viz>`
-                        }}
-                      />
-                    </div>
+                    <iframe
+                      src="https://tableau.alleghenycounty.us/t/PublicSite/views/AlleghenyCountyAirQuality/OverTime?:embed=y&:showVizHome=no&:device=phone"
+                      className="w-full h-full border-0"
+                      title="Allegheny County Air Quality Trends"
+                      style={{ minHeight: '100%' }}
+                    />
                   </div>
                 </>
               )}
 
               {activeTab === 'faq' && (
-                <div className="flex-1 overflow-y-auto">
-                  <div className="space-y-4">
+                <div className="flex-1 overflow-y-auto min-h-0">
+                  <div className="space-y-3">
                     <div>
-                      <h3 className="text-sm sm:text-base font-semibold text-slate-800 mb-2">Frequently Asked Questions</h3>
-                      <div className="space-y-3 text-xs sm:text-sm text-gray-700">
+                      <h3 className="text-xs sm:text-sm font-semibold text-slate-800 mb-2">Frequently Asked Questions</h3>
+                      <div className="space-y-2 text-xs text-gray-700">
                         <div>
                           <p className="font-semibold mb-1">What is the Air Quality Index (AQI)?</p>
                           <p>The AQI is a scale used to report daily air quality. It tells you how clean or polluted your air is, and what associated health effects might be a concern for you.</p>

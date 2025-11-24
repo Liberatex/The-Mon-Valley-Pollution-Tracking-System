@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Bot, X, Minimize2, Maximize2 } from 'lucide-react';
+import { X, Minimize2 } from 'lucide-react';
 import { BreatheAIChat } from './BreatheAIChat';
+import { BreatheAILogo } from './BreatheAILogo';
 import './FloatingChatBubble.css';
 
 export const FloatingChatBubble: React.FC = () => {
@@ -48,14 +49,8 @@ export const FloatingChatBubble: React.FC = () => {
           aria-label="Open BreatheAI chat"
           aria-expanded={isOpen}
         >
-          {isMinimized ? (
-            <Bot className="w-6 h-6" />
-          ) : (
-            <>
-              <Bot className="w-6 h-6" />
-              <span className="floating-chat-badge">1</span>
-            </>
-          )}
+          <BreatheAILogo size="md" variant="icon-only" />
+          {!isMinimized && <span className="floating-chat-badge">1</span>}
         </button>
       )}
 
@@ -63,13 +58,7 @@ export const FloatingChatBubble: React.FC = () => {
       {isOpen && (
         <div className="floating-chat-window">
           <div className="floating-chat-header">
-            <div className="flex items-center gap-2">
-              <Bot className="w-5 h-5 text-white" />
-              <div>
-                <h3 className="font-semibold text-sm text-white">BreatheAI Assistant</h3>
-                <p className="text-xs text-white/80">Air Quality Health Assistant</p>
-              </div>
-            </div>
+            <BreatheAILogo size="md" variant="with-text" />
             <div className="flex items-center gap-2">
               <button
                 onClick={handleMinimize}

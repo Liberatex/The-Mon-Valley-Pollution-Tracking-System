@@ -1,8 +1,8 @@
 import React from 'react';
 import './BreatheAI.css';
 import { FadeInSection } from './ui/FadeInSection';
-import { Bot } from 'lucide-react';
 import { BreatheAIChat } from './BreatheAIChat';
+import { BreatheAILogo } from './BreatheAILogo';
 
 const BreatheAI: React.FC = () => {
 
@@ -13,7 +13,7 @@ const BreatheAI: React.FC = () => {
         <div className="bg-gradient-to-br from-slate-800 to-slate-600 text-white w-screen text-center py-12 sm:py-16 lg:py-24 px-4 sm:px-6 lg:px-8" style={{ marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
           <div className="max-w-7xl mx-auto">
             <div className="flex items-center justify-center gap-3 mb-4">
-              <Bot className="w-10 h-10 sm:w-12 sm:h-12" />
+              <BreatheAILogo size="lg" variant="icon-only" />
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight">
                 BreatheAI Assistant
               </h2>

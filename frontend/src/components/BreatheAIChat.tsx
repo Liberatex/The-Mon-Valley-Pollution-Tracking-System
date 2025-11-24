@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './BreatheAI.css';
 import axios from 'axios';
-import { Bot, Send, X } from 'lucide-react';
+import { Send, X } from 'lucide-react';
+import { BreatheAILogo } from './BreatheAILogo';
 
 export interface Message {
   id: string;
@@ -106,15 +107,12 @@ export const BreatheAIChat: React.FC<BreatheAIChatProps> = ({ compact = false, o
       {compact && (
         <div className="chat-header bg-gradient-to-r from-slate-700 to-slate-600 text-white px-4 py-3 rounded-t-xl flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Bot className="w-5 h-5" />
-            <div>
-              <h3 className="font-semibold text-sm">BreatheAI Assistant</h3>
-              <div className="flex items-center gap-1.5">
-                <div className={`w-1.5 h-1.5 rounded-full ${
-                  aiStatus === 'cloud' ? 'bg-green-400' : 'bg-yellow-400'
-                }`}></div>
-                <span className="text-xs opacity-90">Online</span>
-              </div>
+            <BreatheAILogo size="sm" variant="with-text" />
+            <div className="flex items-center gap-1.5 ml-2">
+              <div className={`w-1.5 h-1.5 rounded-full ${
+                aiStatus === 'cloud' ? 'bg-green-400' : 'bg-yellow-400'
+              }`}></div>
+              <span className="text-xs opacity-90">Online</span>
             </div>
           </div>
           {onClose && (

@@ -238,6 +238,9 @@
   padding: 0;
   background: transparent;
   border-top: none;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 /* Tailwind classes handle all input and button styling - no CSS overrides needed */
@@ -312,11 +315,22 @@
   
   .input-form {
     padding: 15px;
+    gap: 8px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
   
-  .input-form input,
-  .input-form button {
+  .input-form input {
     font-size: 0.9rem;
+    min-width: 0;
+    flex: 1;
+  }
+  
+  .input-form button {
+    font-size: 0.85rem;
+    padding: 8px 12px;
+    flex-shrink: 0;
   }
 }
 

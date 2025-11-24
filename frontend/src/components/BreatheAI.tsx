@@ -145,7 +145,7 @@ const BreatheAI: React.FC = () => {
       {/* Content Section with Container */}
       <div className="py-8 sm:py-12 lg:py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
-          <div className="breathe-ai-container bg-white rounded-2xl shadow-lg border border-gray-200 p-6 sm:p-8">
+          <div className="breathe-ai-container bg-white rounded-2xl shadow-lg border border-gray-200 p-4 sm:p-6 lg:p-8 w-full max-w-full overflow-x-hidden">
 
       <div className="messages-container">
         {messages.map((message) => (
@@ -198,22 +198,22 @@ const BreatheAI: React.FC = () => {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="input-form flex gap-3 mt-4">
+            <form onSubmit={handleSubmit} className="input-form flex gap-2 sm:gap-3 mt-4 w-full max-w-full">
               <input
                 type="text"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 placeholder="Type your message..."
                 disabled={isTyping}
-                className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-slate-600 transition-colors disabled:bg-gray-100 disabled:text-gray-500 bg-white"
+                className="flex-1 min-w-0 px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-slate-600 transition-colors disabled:bg-gray-100 disabled:text-gray-500 bg-white text-sm sm:text-base"
               />
               <button 
                 type="submit" 
                 disabled={isTyping || !inputValue.trim()}
-                className="px-8 py-3 bg-gradient-to-r from-slate-700 to-slate-600 text-white rounded-xl font-bold hover:from-slate-600 hover:to-slate-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-lg hover:shadow-xl"
+                className="px-4 sm:px-6 lg:px-8 py-2 sm:py-3 bg-gradient-to-r from-slate-700 to-slate-600 text-white rounded-xl font-bold hover:from-slate-600 hover:to-slate-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 sm:gap-2 shadow-lg hover:shadow-xl flex-shrink-0 text-sm sm:text-base"
               >
-                <Send className="w-5 h-5" />
-                Send
+                <Send className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="hidden sm:inline">Send</span>
               </button>
             </form>
           </div>

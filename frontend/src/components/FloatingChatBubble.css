@@ -1,0 +1,198 @@
+/* Floating Chat Button */
+.floating-chat-button {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #475569 0%, #334155 100%);
+  color: white;
+  border: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  transition: all 0.3s ease;
+  animation: float 3s ease-in-out infinite;
+}
+
+.floating-chat-button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2), 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.floating-chat-button:active {
+  transform: scale(0.95);
+}
+
+.floating-chat-button.minimized {
+  width: 50px;
+  height: 50px;
+  bottom: 20px;
+  right: 20px;
+}
+
+.floating-chat-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #ef4444;
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: bold;
+  border: 2px solid white;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Floating Chat Window */
+.floating-chat-window {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 380px;
+  max-width: calc(100vw - 40px);
+  height: 600px;
+  max-height: calc(100vh - 40px);
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 8px 16px rgba(0, 0, 0, 0.2);
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.floating-chat-header {
+  background: linear-gradient(135deg, #475569 0%, #334155 100%);
+  color: white;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 16px 16px 0 0;
+  flex-shrink: 0;
+}
+
+.floating-chat-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: white;
+}
+
+.floating-chat-content .breathe-ai-chat {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 0;
+}
+
+.floating-chat-content .breathe-ai-chat .chat-header {
+  display: none; /* Hide duplicate header */
+}
+
+.floating-chat-content .breathe-ai-chat .messages-container {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.floating-chat-content .breathe-ai-chat .input-form {
+  padding: 12px 16px;
+  border-top: 1px solid #e2e8f0;
+  background: white;
+  flex-shrink: 0;
+}
+
+/* Mobile Responsive */
+@media (max-width: 640px) {
+  .floating-chat-window {
+    width: calc(100vw - 20px);
+    height: calc(100vh - 20px);
+    max-height: calc(100vh - 20px);
+    bottom: 10px;
+    right: 10px;
+    border-radius: 16px;
+  }
+
+  .floating-chat-button {
+    bottom: 16px;
+    right: 16px;
+    width: 56px;
+    height: 56px;
+  }
+
+  .floating-chat-button.minimized {
+    width: 48px;
+    height: 48px;
+  }
+}
+
+/* Compact messages styling */
+.breathe-ai-chat.compact .messages-container.compact-messages {
+  padding: 12px;
+  min-height: 300px;
+}
+
+.breathe-ai-chat.compact .message {
+  max-width: 85%;
+}
+
+.breathe-ai-chat.compact .message-content {
+  padding: 10px 14px;
+  font-size: 14px;
+}
+
+.breathe-ai-chat.compact .message-time {
+  font-size: 0.65rem;
+}
+
+/* Ensure chat doesn't interfere with other elements */
+.floating-chat-button,
+.floating-chat-window {
+  pointer-events: auto;
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .floating-chat-button {
+    animation: none;
+  }
+  
+  .floating-chat-window {
+    animation: none;
+  }
+}
+

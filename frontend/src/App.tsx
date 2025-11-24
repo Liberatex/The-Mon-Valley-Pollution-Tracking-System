@@ -5,6 +5,7 @@ import './App.css';
 import Logo from './components/Logo';
 import { feedbackService, UserFeedback } from './services/feedbackService';
 import { PageTransition } from './components/ui/PageTransition';
+import { FloatingChatBubble } from './components/FloatingChatBubble';
 
 type View = 'home' | 'dashboard' | 'map' | 'symptoms' | 'ai' | 'exposure';
 
@@ -215,6 +216,9 @@ function App() {
           <a href="/contact" className="footer-link">Contact</a>
         </p>
       </footer>
+      
+      {/* Floating Chat Bubble - Available on all pages */}
+      <FloatingChatBubble />
     </div>
   );
 }

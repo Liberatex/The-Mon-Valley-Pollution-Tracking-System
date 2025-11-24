@@ -11,6 +11,20 @@
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
+.breathe-ai-chat {
+  display: flex;
+  flex-direction: column;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.breathe-ai-chat.compact {
+  height: 100%;
+}
+
+.breathe-ai-chat .chat-header {
+  flex-shrink: 0;
+}
+
 .ai-header {
   display: flex;
   align-items: center;

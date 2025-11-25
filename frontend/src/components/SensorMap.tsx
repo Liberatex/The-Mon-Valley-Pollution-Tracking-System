@@ -104,13 +104,14 @@ const MapController: React.FC<{ center: [number, number], zoom: number }> = ({ c
 };
 
 // Component to center map on user location
-const UserLocationController: React.FC<{ location: { lat: number; lng: number } | null }> = ({ location }) => {
+const UserLocationController: React.FC<{ location: { lat: number; lng: number } | null; enabled: boolean }> = ({ location, enabled }) => {
   const map = useMap();
   useEffect(() => {
-    if (location) {
-      map.setView([location.lat, location.lng], map.getZoom(), { animate: true });
+    if (enabled && location) {
+      console.log('📍 Centering map on user location:', location.lat, location.lng);
+      map.setView([location.lat, location.lng], Math.max(map.getZoom(), 13), { animate: true });
     }
-  }, [map, location]);
+  }, [map, location, enabled]);
   return null;
 };
 
@@ -335,47 +336,65 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
     };
   }, []);
 
-  // Handle "My Location" feature - simple direct request, let browser handle everything
+  // Handle "My Location" feature
   useEffect(() => {
-    if (showMyLocation && navigator.geolocation) {
-      // Use watchPosition to keep location updated
-      const watchId = navigator.geolocation.watchPosition(
-        (position) => {
-          console.log('Location received:', position.coords.latitude, position.coords.longitude);
-          const newLocation = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          };
-          setUserLocation(newLocation);
-          // Store watch ID for cleanup
-          geolocationWatchId.current = watchId;
-        },
-        (error) => {
-          console.log('Geolocation error:', error.code, error.message);
-          // Silently fail - don't show errors, just don't set location
-          setUserLocation(null);
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 15000,
-          maximumAge: 0
-        }
-      );
-      
-      // Cleanup function
-      return () => {
-        if (watchId !== null && navigator.geolocation) {
-          navigator.geolocation.clearWatch(watchId);
-        }
-      };
-    } else {
+    if (!showMyLocation) {
       // Clear watch when disabled
       if (geolocationWatchId.current !== null && navigator.geolocation) {
         navigator.geolocation.clearWatch(geolocationWatchId.current);
         geolocationWatchId.current = null;
       }
       setUserLocation(null);
+      return;
     }
+
+    if (!navigator.geolocation) {
+      console.warn('Geolocation is not supported by this browser');
+      return;
+    }
+
+    // Clear any existing watch first
+    if (geolocationWatchId.current !== null) {
+      navigator.geolocation.clearWatch(geolocationWatchId.current);
+      geolocationWatchId.current = null;
+    }
+
+    // Use watchPosition to keep location updated and trigger permission prompt
+    const watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        console.log('✅ Location received:', position.coords.latitude, position.coords.longitude);
+        const newLocation = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        };
+        setUserLocation(newLocation);
+        geolocationWatchId.current = watchId;
+      },
+      (error) => {
+        console.warn('⚠️ Geolocation error:', error.code, error.message);
+        // If permission denied, clear location but keep trying
+        if (error.code === error.PERMISSION_DENIED) {
+          setUserLocation(null);
+          // Don't clear watch - let user enable permission and it will work
+        } else {
+          setUserLocation(null);
+        }
+      },
+      {
+        enableHighAccuracy: false, // Faster, works better on mobile
+        timeout: 10000,
+        maximumAge: 60000 // Accept cached location up to 1 minute old
+      }
+    );
+    
+    geolocationWatchId.current = watchId;
+    
+    // Cleanup function
+    return () => {
+      if (watchId !== null && navigator.geolocation) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+    };
   }, [showMyLocation]);
 
 
@@ -477,7 +496,7 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
           className="shadow-lg"
         >
           <MapController center={[CLAIRTON_COORDS.lat, CLAIRTON_COORDS.lng]} zoom={MAP_ZOOM} />
-          <UserLocationController location={userLocation} />
+          <UserLocationController location={userLocation} enabled={showMyLocation} />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

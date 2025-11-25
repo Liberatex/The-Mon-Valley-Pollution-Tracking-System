@@ -47,16 +47,58 @@ const Dashboard: React.FC = () => {
           if (achdResponse?.data?.success && achdResponse.data.data?.length > 0) {
             const readings = achdResponse.data.data;
             
-            // Extract ACHD sites with locations
+            // Known ACHD station locations (Mon Valley)
+            const knownStations: { [key: string]: { lat: number; lng: number } } = {
+              'Liberty': { lat: 40.291, lng: -79.886 },
+              'Liberty 2': { lat: 40.291, lng: -79.886 },
+              'Clairton': { lat: 40.292, lng: -79.881 },
+              'Avalon': { lat: 40.501, lng: -80.067 },
+              'Harrison Township': { lat: 40.583, lng: -79.717 }
+            };
+            
+            // Extract ACHD sites - match location names to known stations
             const sites: ACHDSite[] = readings
-              .filter((reading: any) => reading.latitude && reading.longitude)
-              .map((reading: any) => ({
-                site_name: reading.site_name || reading.location || 'Unknown',
-                latitude: parseFloat(reading.latitude),
-                longitude: parseFloat(reading.longitude),
-                pm25: reading.pm25 || reading.pm2_5,
-                aqi: reading.aqi || reading.pm25_aqi
-              }));
+              .map((reading: any) => {
+                const locationName = reading.location || reading.site_name || 'Unknown';
+                // Try to match location name to known stations
+                let matchedStation = null;
+                for (const [key, coords] of Object.entries(knownStations)) {
+                  if (locationName.includes(key) || key.includes(locationName)) {
+                    matchedStation = coords;
+                    break;
+                  }
+                }
+                
+                // Calculate AQI from PM2.5 if not provided
+                const pm25 = reading.pm25 || reading.pm2_5;
+                let aqi = reading.aqi;
+                if (!aqi && pm25) {
+                  // EPA AQI calculation for PM2.5
+                  if (pm25 <= 12) {
+                    aqi = Math.round(((pm25 / 12) * 50));
+                  } else if (pm25 <= 35.4) {
+                    aqi = Math.round((((pm25 - 12) / (35.4 - 12)) * 49) + 51);
+                  } else if (pm25 <= 55.4) {
+                    aqi = Math.round((((pm25 - 35.4) / (55.4 - 35.4)) * 49) + 101);
+                  } else if (pm25 <= 150.4) {
+                    aqi = Math.round((((pm25 - 55.4) / (150.4 - 55.4)) * 99) + 151);
+                  } else if (pm25 <= 250.4) {
+                    aqi = Math.round((((pm25 - 150.4) / (250.4 - 150.4)) * 99) + 201);
+                  } else {
+                    aqi = Math.round((((pm25 - 250.4) / (350.4 - 250.4)) * 99) + 301);
+                  }
+                }
+                
+                return {
+                  site_name: locationName,
+                  latitude: matchedStation?.lat || 0,
+                  longitude: matchedStation?.lng || 0,
+                  pm25: pm25,
+                  aqi: aqi || 0
+                };
+              })
+              .filter((site: ACHDSite) => site.site_name !== 'Unknown' && (site.pm25 || site.aqi));
+            
             setAchdSites(sites);
             
             // Find the highest AQI reading
@@ -64,19 +106,38 @@ const Dashboard: React.FC = () => {
             let highestAQI = 0;
             
             readings.forEach((reading: any) => {
-              const aqi = reading.aqi || reading.pm25_aqi || 0;
-              if (aqi > highestAQI) {
-                highestAQI = aqi;
+              let aqi = reading.aqi;
+              if (!aqi && reading.pm25) {
+                // Calculate AQI from PM2.5
+                const pm25 = reading.pm25;
+                if (pm25 <= 12) {
+                  aqi = Math.round(((pm25 / 12) * 50));
+                } else if (pm25 <= 35.4) {
+                  aqi = Math.round((((pm25 - 12) / (35.4 - 12)) * 49) + 51);
+                } else if (pm25 <= 55.4) {
+                  aqi = Math.round((((pm25 - 35.4) / (55.4 - 35.4)) * 49) + 101);
+                } else if (pm25 <= 150.4) {
+                  aqi = Math.round((((pm25 - 55.4) / (150.4 - 55.4)) * 99) + 151);
+                } else if (pm25 <= 250.4) {
+                  aqi = Math.round((((pm25 - 150.4) / (250.4 - 150.4)) * 99) + 201);
+                } else {
+                  aqi = Math.round((((pm25 - 250.4) / (350.4 - 250.4)) * 99) + 301);
+                }
+              }
+              
+              const finalAQI = aqi || 0;
+              if (finalAQI > highestAQI) {
+                highestAQI = finalAQI;
                 highestReading = reading;
               }
             });
             
-            if (highestAQI > 0) {
+            if (highestAQI > 0 || highestReading.pm25) {
               setCurrentAQIData({
-                aqi: highestAQI,
+                aqi: highestAQI || (highestReading.pm25 ? Math.round(((highestReading.pm25 / 12) * 50)) : 0),
                 pm25: highestReading.pm25 || highestReading.pm2_5 || 0,
-                location: highestReading.site_name || highestReading.location || 'Unknown',
-                timestamp: highestReading.date || highestReading.timestamp || new Date().toISOString()
+                location: highestReading.location || highestReading.site_name || 'Mon Valley',
+                timestamp: highestReading.timestamp || highestReading.date || new Date().toISOString()
               });
             }
           }
@@ -372,8 +433,10 @@ const Dashboard: React.FC = () => {
                     <p className="text-xs text-gray-600 mb-2">ACHD monitoring stations with current readings</p>
                     
                     {/* Compact Sites List */}
-                    {achdSites.length > 0 ? (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-32 overflow-y-auto">
+                    {loading ? (
+                      <p className="text-xs text-gray-500">Loading monitoring station data...</p>
+                    ) : achdSites.length > 0 ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto">
                         {achdSites.map((site, index) => {
                           const siteAQI = site.aqi || 0;
                           const siteAQIInfo = getAQILevel(siteAQI);
@@ -382,12 +445,14 @@ const Dashboard: React.FC = () => {
                               <div className="flex items-center justify-between">
                                 <div className="flex-1 min-w-0">
                                   <p className="text-xs font-medium text-slate-700 truncate">{site.site_name}</p>
-                                  {site.pm25 !== undefined && (
+                                  {site.pm25 !== undefined && site.pm25 !== null && !isNaN(site.pm25) ? (
                                     <p className="text-xs text-gray-600">PM2.5: {site.pm25.toFixed(1)} μg/m³</p>
+                                  ) : (
+                                    <p className="text-xs text-gray-500">No PM2.5 data</p>
                                   )}
                                 </div>
                                 {siteAQI > 0 && (
-                                  <div className={`px-2 py-1 rounded text-xs font-semibold ${siteAQIInfo.color} text-white ml-2`}>
+                                  <div className={`px-2 py-1 rounded text-xs font-semibold ${siteAQIInfo.color} text-white ml-2 flex-shrink-0`}>
                                     {siteAQI}
                                   </div>
                                 )}
@@ -397,7 +462,7 @@ const Dashboard: React.FC = () => {
                         })}
                       </div>
                     ) : (
-                      <p className="text-xs text-gray-500">Loading monitoring station data...</p>
+                      <p className="text-xs text-gray-500">No monitoring station data available</p>
                     )}
                   </div>
                   

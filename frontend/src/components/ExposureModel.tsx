@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import { shouldUseEmulator } from '../utils/env';
-import { getCurrentLocation, isGeolocationAvailable } from '../utils/geolocation';
 import { FadeInSection } from './ui/FadeInSection';
 import { FileText, AlertTriangle, MapPin, ArrowRight, Navigation } from 'lucide-react';
 

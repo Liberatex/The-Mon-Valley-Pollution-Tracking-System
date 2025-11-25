@@ -4,7 +4,6 @@ import L from 'leaflet';
 import axios from 'axios';
 import 'leaflet/dist/leaflet.css';
 import { shouldUseEmulator } from '../utils/env';
-import { getCurrentLocation, isGeolocationAvailable } from '../utils/geolocation';
 import { Info, AlertCircle, MapPin, Factory, Activity, Navigation } from 'lucide-react';
 
 // Fix Leaflet marker icon issue
@@ -118,10 +117,7 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
   const [showMyLocation, setShowMyLocation] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
-  const [permissionDenied, setPermissionDenied] = useState(false);
-  const [userAttemptedLocation, setUserAttemptedLocation] = useState(false);
   const geolocationWatchId = useRef<number | null>(null);
-  const isRequestingLocation = useRef<boolean>(false);
 
   useEffect(() => {
     if (propSensors && propSensors.length > 0) {
@@ -326,82 +322,58 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
         navigator.geolocation.clearWatch(geolocationWatchId.current);
         geolocationWatchId.current = null;
       }
-      isRequestingLocation.current = false;
     };
   }, []);
 
+  // Handle "My Location" feature - simplified to just work
   useEffect(() => {
-    // Prevent multiple simultaneous requests
-    if (isRequestingLocation.current) {
-      return;
-    }
-
     if (showMyLocation) {
-      // Check if geolocation is available
-      if (!isGeolocationAvailable()) {
-        setLocationError('Geolocation is not available. Please use HTTPS or enable location services.');
+      // Simple direct geolocation request
+      if (!navigator.geolocation) {
+        setLocationError('Geolocation is not supported by your browser.');
         setShowMyLocation(false);
         return;
       }
 
-      // Mark that we're requesting location
-      isRequestingLocation.current = true;
       setLocationError(null);
-      // Reset permission denied state to allow retry
-      setPermissionDenied(false);
 
-      // Use shared geolocation utility - always allow browser to show prompt
-      getCurrentLocation(
-        (result) => {
-          // Only update if still enabled
-          if (showMyLocation) {
-            setUserLocation({
-              lat: result.lat,
-              lng: result.lng,
-            });
-            setLocationError(null);
-            setPermissionDenied(false);
-            console.log('My Location updated:', result.lat, result.lng);
-          }
-          isRequestingLocation.current = false;
+      // Direct geolocation request - let browser handle permission prompt
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+          setLocationError(null);
+          console.log('My Location updated:', position.coords.latitude, position.coords.longitude);
         },
         (error) => {
-          // Only log errors, don't spam console
-          if (error.type !== 'permission_denied') {
-            console.error('Geolocation error:', error);
+          console.error('Geolocation error:', error);
+          let errorMessage = 'Unable to retrieve your location';
+          
+          if (error.code === error.PERMISSION_DENIED) {
+            errorMessage = 'Location access denied. Please enable location permissions in your browser settings.';
+          } else if (error.code === error.POSITION_UNAVAILABLE) {
+            errorMessage = 'Location information is unavailable.';
+          } else if (error.code === error.TIMEOUT) {
+            errorMessage = 'Location request timed out.';
           }
           
-          // Only show error if user actively tried to enable location
-          if (userAttemptedLocation) {
-            setLocationError(error.message);
-          }
-          
-          // If permission denied, mark it but don't prevent future attempts
-          // User might change their mind and we want to allow retry
-          if (error.type === 'permission_denied') {
-            setPermissionDenied(true);
-            // Don't auto-disable - let user see the error and try again if they fix permissions
-          } else {
-            // For other errors, disable the feature
-            setShowMyLocation(false);
-          }
-          
+          setLocationError(errorMessage);
           setUserLocation(null);
-          isRequestingLocation.current = false;
+        },
+        {
+          enableHighAccuracy: false,
+          timeout: 10000,
+          maximumAge: 0
         }
       );
     } else {
-      // Clear watch when disabled
-      if (geolocationWatchId.current !== null && navigator.geolocation) {
-        navigator.geolocation.clearWatch(geolocationWatchId.current);
-        geolocationWatchId.current = null;
-      }
+      // Clear location when disabled
       setUserLocation(null);
       setLocationError(null);
-      setUserAttemptedLocation(false);
-      isRequestingLocation.current = false;
     }
-  }, [showMyLocation, userAttemptedLocation]);
+  }, [showMyLocation]);
 
 
   if (loading) return (
@@ -463,15 +435,7 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
             <input 
               type="checkbox" 
               checked={showMyLocation} 
-              onChange={(e) => {
-                setShowMyLocation(e.target.checked);
-                if (e.target.checked) {
-                  setUserAttemptedLocation(true);
-                } else {
-                  setLocationError(null);
-                  setUserAttemptedLocation(false);
-                }
-              }}
+              onChange={(e) => setShowMyLocation(e.target.checked)}
               className="cursor-pointer"
             />
             <span className="text-sm sm:text-base font-medium">
@@ -500,34 +464,17 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
         </div>
       )}
 
-      {/* Location Error Alert - Only show if user actively tried */}
-      {locationError && userAttemptedLocation && (
+      {/* Location Error Alert - Only show if there's an error and location is enabled */}
+      {locationError && showMyLocation && (
         <div className="mx-4 sm:mx-6 lg:mx-8 mb-4 p-3 sm:p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
           <div className="flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
               <h3 className="font-semibold text-yellow-800 mb-1 text-sm sm:text-base">Location Access</h3>
-              <p className="text-xs sm:text-sm text-yellow-700 mb-2">{locationError}</p>
-              <button
-                onClick={() => {
-                  setLocationError(null);
-                  setUserAttemptedLocation(false);
-                  // Retry location request
-                  if (showMyLocation) {
-                    setShowMyLocation(false);
-                    setTimeout(() => setShowMyLocation(true), 100);
-                  }
-                }}
-                className="text-xs sm:text-sm text-yellow-800 underline hover:text-yellow-900"
-              >
-                Try again
-              </button>
+              <p className="text-xs sm:text-sm text-yellow-700">{locationError}</p>
             </div>
             <button
-              onClick={() => {
-                setLocationError(null);
-                setUserAttemptedLocation(false);
-              }}
+              onClick={() => setLocationError(null)}
               className="text-yellow-600 hover:text-yellow-800 flex-shrink-0"
               aria-label="Dismiss"
             >

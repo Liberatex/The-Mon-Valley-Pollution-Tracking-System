@@ -8,11 +8,19 @@ interface AQIDataPoint {
   pm2_5: number;
 }
 
+interface AQIData {
+  aqi: number;
+  pm25: number;
+  location: string;
+  timestamp: string;
+}
+
 const Dashboard: React.FC = () => {
   const [pm25History, setPm25History] = useState<AQIDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPollutant, setSelectedPollutant] = useState<'pm25' | 'ozone' | 'so2'>('pm25');
   const [activeTab, setActiveTab] = useState<'today' | 'overtime' | 'faq'>('today');
+  const [currentAQIData, setCurrentAQIData] = useState<AQIData | null>(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -28,9 +36,27 @@ const Dashboard: React.FC = () => {
           console.log('ACHD Response:', achdResponse.data);
           
           if (achdResponse?.data?.success && achdResponse.data.data?.length > 0) {
-            const reading = achdResponse.data.data[0];
-            console.log('ACHD reading:', reading);
-            // AQI data available for future use
+            const readings = achdResponse.data.data;
+            // Find the highest AQI reading
+            let highestReading = readings[0];
+            let highestAQI = 0;
+            
+            readings.forEach((reading: any) => {
+              const aqi = reading.aqi || reading.pm25_aqi || 0;
+              if (aqi > highestAQI) {
+                highestAQI = aqi;
+                highestReading = reading;
+              }
+            });
+            
+            if (highestAQI > 0) {
+              setCurrentAQIData({
+                aqi: highestAQI,
+                pm25: highestReading.pm25 || highestReading.pm2_5 || 0,
+                location: highestReading.site_name || highestReading.location || 'Unknown',
+                timestamp: highestReading.date || highestReading.timestamp || new Date().toISOString()
+              });
+            }
           }
         } catch (err: any) {
           console.error('ACHD fetch failed:', err.message);
@@ -91,6 +117,18 @@ const Dashboard: React.FC = () => {
       </div>
     );
   }
+
+  // Get AQI level and color for display
+  const getAQILevel = (aqi: number) => {
+    if (aqi <= 50) return { level: 'Good', color: 'bg-green-500', textColor: 'text-green-700', bgColor: 'bg-green-50', borderColor: 'border-green-500' };
+    if (aqi <= 100) return { level: 'Moderate', color: 'bg-yellow-400', textColor: 'text-yellow-700', bgColor: 'bg-yellow-50', borderColor: 'border-yellow-400' };
+    if (aqi <= 150) return { level: 'Unhealthy for Sensitive Groups', color: 'bg-orange-500', textColor: 'text-orange-700', bgColor: 'bg-orange-50', borderColor: 'border-orange-500' };
+    if (aqi <= 200) return { level: 'Unhealthy', color: 'bg-red-500', textColor: 'text-red-700', bgColor: 'bg-red-50', borderColor: 'border-red-500' };
+    if (aqi <= 300) return { level: 'Very Unhealthy', color: 'bg-purple-500', textColor: 'text-purple-700', bgColor: 'bg-purple-50', borderColor: 'border-purple-500' };
+    return { level: 'Hazardous', color: 'bg-red-800', textColor: 'text-red-900', bgColor: 'bg-red-100', borderColor: 'border-red-800' };
+  };
+
+  const aqiInfo = currentAQIData ? getAQILevel(currentAQIData.aqi) : null;
 
 
   // Pollutant definitions
@@ -272,6 +310,38 @@ const Dashboard: React.FC = () => {
             <div key={activeTab} className="flex-1 overflow-hidden min-h-0 flex flex-col">
               {activeTab === 'today' && (
                 <>
+                  {/* Highest Most Recent PM2.5 AQI Section */}
+                  {currentAQIData && aqiInfo && (
+                    <div className={`px-2 pt-2 pb-2 flex-shrink-0 ${aqiInfo.bgColor} ${aqiInfo.borderColor} border-2 rounded-lg mb-2`}>
+                      <h3 className="text-xs sm:text-sm font-semibold text-slate-800 mb-1">
+                        Highest Most Recent {currentPollutant.name} AQI
+                      </h3>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className={`text-2xl sm:text-3xl font-bold ${aqiInfo.textColor} mb-1`}>
+                            {currentAQIData.aqi}
+                          </div>
+                          <div className="text-xs text-gray-600">
+                            {new Date(currentAQIData.timestamp).toLocaleString('en-US', { 
+                              month: '2-digit', 
+                              day: '2-digit', 
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              hour12: true 
+                            })} EST
+                          </div>
+                          <div className="text-xs text-gray-600 mt-1">
+                            Occurred at: {currentAQIData.location}
+                          </div>
+                        </div>
+                        <div className={`px-3 py-2 rounded-lg ${aqiInfo.color} text-white text-xs font-semibold`}>
+                          {aqiInfo.level}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
                   <div className="px-2 pt-2 pb-1 flex-shrink-0">
                     <h3 className="text-xs sm:text-sm font-semibold text-slate-800">{currentPollutant.name} Monitor Locations</h3>
                     <p className="text-xs text-gray-600">Click location on map to see hourly data for that monitor</p>

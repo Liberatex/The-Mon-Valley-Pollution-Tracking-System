@@ -250,8 +250,8 @@ const Dashboard: React.FC = () => {
       <div className="flex-1 overflow-y-auto lg:overflow-hidden max-w-[1920px] w-full mx-auto px-2 sm:px-4 pb-2">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-3 lg:h-full">
           
-          {/* Right Sidebar - AQI Scale - Show first on mobile */}
-          <div className="lg:col-span-3 flex flex-col gap-3 sm:gap-4 order-1 lg:order-3">
+          {/* Right Sidebar - AQI Scale - Show last on mobile */}
+          <div className="lg:col-span-3 flex flex-col gap-3 sm:gap-4 order-3 lg:order-3">
             {/* AQI Scale */}
             <div className="bg-white rounded-lg shadow-md p-3 sm:p-4 flex-1 overflow-y-auto">
               <h3 className="text-sm sm:text-base font-semibold text-slate-800 mb-2 flex items-center gap-1">
@@ -349,8 +349,8 @@ const Dashboard: React.FC = () => {
 
           </div>
 
-          {/* Center - Tableau Dashboard (Map) */}
-          <div className="lg:col-span-6 flex flex-col bg-white rounded-lg shadow-md overflow-hidden lg:h-full min-h-[400px] order-3 lg:order-2">
+          {/* Center - Tableau Dashboard (Map) - Show first on mobile */}
+          <div className="lg:col-span-6 flex flex-col bg-white rounded-lg shadow-md overflow-hidden lg:h-full min-h-[400px] order-1 lg:order-2">
             {/* Tab Navigation */}
             <div className="flex-shrink-0 border-b border-gray-200 bg-white">
               <div className="flex">

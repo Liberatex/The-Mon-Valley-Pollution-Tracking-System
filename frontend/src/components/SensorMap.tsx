@@ -116,7 +116,6 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
   const [apiKeyStatus, setApiKeyStatus] = useState<'configured' | 'not_configured' | 'checking'>('checking');
   const [showMyLocation, setShowMyLocation] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [locationError, setLocationError] = useState<string | null>(null);
   const geolocationWatchId = useRef<number | null>(null);
 
   useEffect(() => {
@@ -325,57 +324,24 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
     };
   }, []);
 
-  // Handle "My Location" feature - simplified to just work
+  // Handle "My Location" feature - simple direct request, let browser handle everything
   useEffect(() => {
-    if (showMyLocation) {
-      // Simple direct geolocation request
-      if (!navigator.geolocation) {
-        setLocationError('Geolocation is not supported by your browser.');
-        setShowMyLocation(false);
-        return;
-      }
-
-      setLocationError(null);
-
-      // Direct geolocation request - let browser handle permission prompt
+    if (showMyLocation && navigator.geolocation) {
+      // Simple direct geolocation request - browser will show permission prompt
       navigator.geolocation.getCurrentPosition(
         (position) => {
           setUserLocation({
             lat: position.coords.latitude,
             lng: position.coords.longitude,
           });
-          setLocationError(null);
-          console.log('My Location updated:', position.coords.latitude, position.coords.longitude);
         },
-        (error) => {
-          // Don't log permission denied errors - they're expected if user previously denied
-          if (error.code !== error.PERMISSION_DENIED) {
-            console.error('Geolocation error:', error);
-          }
-          
-          let errorMessage = 'Unable to retrieve your location';
-          
-          if (error.code === error.PERMISSION_DENIED) {
-            errorMessage = 'Location access was denied. Click the lock icon in your browser\'s address bar, enable location permissions, then refresh the page and try again.';
-          } else if (error.code === error.POSITION_UNAVAILABLE) {
-            errorMessage = 'Location information is unavailable.';
-          } else if (error.code === error.TIMEOUT) {
-            errorMessage = 'Location request timed out. Please try again.';
-          }
-          
-          setLocationError(errorMessage);
+        () => {
+          // Silently fail - don't show errors, just don't set location
           setUserLocation(null);
-        },
-        {
-          enableHighAccuracy: false,
-          timeout: 10000,
-          maximumAge: 0
         }
       );
     } else {
-      // Clear location when disabled
       setUserLocation(null);
-      setLocationError(null);
     }
   }, [showMyLocation]);
 
@@ -468,33 +434,6 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
         </div>
       )}
 
-      {/* Location Error Alert - Only show if there's an error and location is enabled */}
-      {locationError && showMyLocation && (
-        <div className="mx-4 sm:mx-6 lg:mx-8 mb-4 p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <h3 className="font-semibold text-blue-800 mb-1 text-sm sm:text-base">Enable Location Access</h3>
-              <p className="text-xs sm:text-sm text-blue-700 mb-2">{locationError}</p>
-              <div className="text-xs text-blue-600">
-                <strong>Quick fix:</strong> Click the lock icon (🔒) in your browser's address bar → Location → Allow → Refresh page
-              </div>
-            </div>
-            <button
-              onClick={() => {
-                setLocationError(null);
-                setShowMyLocation(false);
-              }}
-              className="text-blue-600 hover:text-blue-800 flex-shrink-0"
-              aria-label="Dismiss"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Map Container */}
       <div className="relative px-4 sm:px-6 lg:px-8">

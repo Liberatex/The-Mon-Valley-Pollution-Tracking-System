@@ -360,6 +360,7 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
     }
 
     // First, use getCurrentPosition to trigger permission prompt and get initial location
+    console.log('📍 Requesting location...');
     navigator.geolocation.getCurrentPosition(
       (position) => {
         console.log('✅ Initial location received:', position.coords.latitude, position.coords.longitude);
@@ -367,6 +368,7 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
           lat: position.coords.latitude,
           lng: position.coords.longitude,
         };
+        console.log('📍 Setting userLocation state:', newLocation);
         setUserLocation(newLocation);
         
         // Then start watching for updates
@@ -395,11 +397,14 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
       },
       (error) => {
         console.warn('⚠️ Geolocation error:', error.code, error.message);
+        if (error.code === error.PERMISSION_DENIED) {
+          console.warn('❌ Permission denied. Please enable location in browser settings.');
+        }
         setUserLocation(null);
       },
       {
         enableHighAccuracy: false,
-        timeout: 10000,
+        timeout: 15000, // Increased timeout
         maximumAge: 0 // Always get fresh location to trigger permission prompt
       }
     );

@@ -359,37 +359,56 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
       geolocationWatchId.current = null;
     }
 
-    // Use watchPosition to keep location updated
-    const watchId = navigator.geolocation.watchPosition(
+    // First, use getCurrentPosition to trigger permission prompt and get initial location
+    navigator.geolocation.getCurrentPosition(
       (position) => {
-        console.log('✅ Location received:', position.coords.latitude, position.coords.longitude);
+        console.log('✅ Initial location received:', position.coords.latitude, position.coords.longitude);
         const newLocation = {
           lat: position.coords.latitude,
           lng: position.coords.longitude,
         };
         setUserLocation(newLocation);
+        
+        // Then start watching for updates
+        const watchId = navigator.geolocation.watchPosition(
+          (watchPosition) => {
+            console.log('✅ Location updated:', watchPosition.coords.latitude, watchPosition.coords.longitude);
+            setUserLocation({
+              lat: watchPosition.coords.latitude,
+              lng: watchPosition.coords.longitude,
+            });
+            geolocationWatchId.current = watchId;
+          },
+          (watchError) => {
+            // Silently handle watch errors - initial position is already set
+            if (watchError.code !== watchError.PERMISSION_DENIED) {
+              console.warn('⚠️ Watch position error:', watchError.code);
+            }
+          },
+          {
+            enableHighAccuracy: false,
+            timeout: 10000,
+            maximumAge: 60000
+          }
+        );
         geolocationWatchId.current = watchId;
       },
       (error) => {
-        // Only log if not permission denied (to reduce console spam)
-        if (error.code !== error.PERMISSION_DENIED) {
-          console.warn('⚠️ Geolocation error:', error.code, error.message);
-        }
+        console.warn('⚠️ Geolocation error:', error.code, error.message);
         setUserLocation(null);
       },
       {
         enableHighAccuracy: false,
         timeout: 10000,
-        maximumAge: 60000
+        maximumAge: 0 // Always get fresh location to trigger permission prompt
       }
     );
     
-    geolocationWatchId.current = watchId;
-    
     // Cleanup function
     return () => {
-      if (watchId !== null && navigator.geolocation) {
-        navigator.geolocation.clearWatch(watchId);
+      if (geolocationWatchId.current !== null && navigator.geolocation) {
+        navigator.geolocation.clearWatch(geolocationWatchId.current);
+        geolocationWatchId.current = null;
       }
     };
   }, [showMyLocation]);

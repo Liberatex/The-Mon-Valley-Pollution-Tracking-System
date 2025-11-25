@@ -336,86 +336,45 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
     };
   }, []);
 
-  // Handle "My Location" feature
+  // Handle "My Location" feature - restored to simple working version
   useEffect(() => {
-    if (!showMyLocation) {
-      // Clear watch when disabled
-      if (geolocationWatchId.current !== null && navigator.geolocation) {
+    if (showMyLocation) {
+      if (!navigator.geolocation) {
+        setShowMyLocation(false);
+        return;
+      }
+
+      // Clear any existing watch
+      if (geolocationWatchId.current !== null) {
         navigator.geolocation.clearWatch(geolocationWatchId.current);
         geolocationWatchId.current = null;
       }
-      setUserLocation(null);
-      return;
-    }
-
-    if (!navigator.geolocation) {
-      console.warn('Geolocation is not supported by this browser');
-      return;
-    }
-
-    // Clear any existing watch first
-    if (geolocationWatchId.current !== null) {
-      navigator.geolocation.clearWatch(geolocationWatchId.current);
-      geolocationWatchId.current = null;
-    }
-
-    // First, use getCurrentPosition to trigger permission prompt and get initial location
-    console.log('📍 Requesting location...');
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        console.log('✅ Initial location received:', position.coords.latitude, position.coords.longitude);
-        const newLocation = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        };
-        console.log('📍 Setting userLocation state:', newLocation);
-        setUserLocation(newLocation);
-        
-        // Then start watching for updates
-        const watchId = navigator.geolocation.watchPosition(
-          (watchPosition) => {
-            console.log('✅ Location updated:', watchPosition.coords.latitude, watchPosition.coords.longitude);
+      
+      // Use getCurrentPosition for one-time location
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          // Only update if still enabled
+          if (showMyLocation) {
             setUserLocation({
-              lat: watchPosition.coords.latitude,
-              lng: watchPosition.coords.longitude,
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
             });
-            geolocationWatchId.current = watchId;
-          },
-          (watchError) => {
-            // Silently handle watch errors - initial position is already set
-            if (watchError.code !== watchError.PERMISSION_DENIED) {
-              console.warn('⚠️ Watch position error:', watchError.code);
-            }
-          },
-          {
-            enableHighAccuracy: false,
-            timeout: 10000,
-            maximumAge: 60000
           }
-        );
-        geolocationWatchId.current = watchId;
-      },
-      (error) => {
-        console.warn('⚠️ Geolocation error:', error.code, error.message);
-        if (error.code === error.PERMISSION_DENIED) {
-          console.warn('❌ Permission denied. Please enable location in browser settings.');
+        },
+        (error) => {
+          // Silently handle errors - don't show errors, just don't set location
+          setUserLocation(null);
+        },
+        {
+          enableHighAccuracy: false,
+          timeout: 10000,
+          maximumAge: 0
         }
-        setUserLocation(null);
-      },
-      {
-        enableHighAccuracy: false,
-        timeout: 15000, // Increased timeout
-        maximumAge: 0 // Always get fresh location to trigger permission prompt
-      }
-    );
-    
-    // Cleanup function
-    return () => {
-      if (geolocationWatchId.current !== null && navigator.geolocation) {
-        navigator.geolocation.clearWatch(geolocationWatchId.current);
-        geolocationWatchId.current = null;
-      }
-    };
+      );
+    } else {
+      // Clear location when disabled
+      setUserLocation(null);
+    }
   }, [showMyLocation]);
 
 

@@ -1,15 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import dayjs from 'dayjs';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { FadeInSection } from './ui/FadeInSection';
 import { shouldUseEmulator } from '../utils/env';
 
-interface DashboardStats {
-  avgPM25: number;
-  sensorCount: number;
-  reportCount: number;
-}
 
 interface AQIDataPoint {
   dt: number;
@@ -17,7 +9,6 @@ interface AQIDataPoint {
 }
 
 const Dashboard: React.FC = () => {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
   const [pm25History, setPm25History] = useState<AQIDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPollutant, setSelectedPollutant] = useState<'pm25' | 'ozone' | 'so2'>('pm25');
@@ -26,9 +17,6 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     async function fetchData() {
       try {
-        // Set stats
-        setStats({ avgPM25: 35.2, sensorCount: 239, reportCount: 0 });
-
         // Fetch ACHD data
         const isDevelopment = shouldUseEmulator();
         const functionsUrl = isDevelopment 
@@ -104,22 +92,6 @@ const Dashboard: React.FC = () => {
     );
   }
 
-  // AQI level calculation (kept for potential future use)
-  // const aqiLevel = aqi && aqi > 0 ? (aqi <= 50 ? 'Good' : aqi <= 100 ? 'Moderate' : aqi <= 150 ? 'Unhealthy for Sensitive' : 'Unhealthy') : 'Unknown';
-
-  // Get AQI level and color
-  const getAQILevel = (aqi: number) => {
-    if (aqi <= 50) return { level: 'Good', color: 'bg-green-500', textColor: 'text-green-700' };
-    if (aqi <= 100) return { level: 'Moderate', color: 'bg-yellow-400', textColor: 'text-yellow-700' };
-    if (aqi <= 150) return { level: 'Unhealthy for Sensitive Groups', color: 'bg-orange-500', textColor: 'text-orange-700' };
-    if (aqi <= 200) return { level: 'Unhealthy', color: 'bg-red-500', textColor: 'text-red-700' };
-    if (aqi <= 300) return { level: 'Very Unhealthy', color: 'bg-purple-500', textColor: 'text-purple-700' };
-    return { level: 'Hazardous', color: 'bg-red-800', textColor: 'text-red-900' };
-  };
-
-  // Mock AQI for display (replace with real data when available)
-  const currentAQI = 65;
-  const aqiInfo = getAQILevel(currentAQI);
 
   // Pollutant definitions
   const pollutantInfo = {
@@ -157,22 +129,8 @@ const Dashboard: React.FC = () => {
       <div className="flex-1 overflow-y-auto lg:overflow-hidden max-w-[1920px] w-full mx-auto px-2 sm:px-4 pb-2">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-3 lg:h-full">
           
-          {/* Right Sidebar - AQI Data & Scale - Show first on mobile */}
+          {/* Right Sidebar - AQI Scale - Show first on mobile */}
           <div className="lg:col-span-3 flex flex-col gap-3 sm:gap-4 order-1 lg:order-3">
-            {/* Current AQI */}
-            <div className={`bg-white rounded-lg shadow-md p-3 sm:p-4 flex-shrink-0 ${aqiInfo.color} bg-opacity-20 border-2 ${aqiInfo.color} border-opacity-50`}>
-              <h3 className="text-xs sm:text-sm font-semibold text-slate-800 mb-1 flex items-center gap-1">
-                Highest Most Recent
-                <span className="text-xs text-gray-400">?</span>
-              </h3>
-              <p className="text-xs text-gray-600 mb-2">{currentPollutant.name} AQI</p>
-              <div className={`text-3xl sm:text-4xl font-bold ${aqiInfo.textColor} mb-1`}>
-                {currentAQI}
-              </div>
-              <p className="text-xs text-gray-600">{dayjs().format('MM/DD/YYYY hh:mm A')} EST</p>
-              <p className="text-xs text-gray-600 mt-1">Occurred at: Avalon</p>
-            </div>
-
             {/* AQI Scale */}
             <div className="bg-white rounded-lg shadow-md p-3 sm:p-4 flex-1 overflow-y-auto">
               <h3 className="text-sm sm:text-base font-semibold text-slate-800 mb-2 flex items-center gap-1">
@@ -209,24 +167,6 @@ const Dashboard: React.FC = () => {
               </div>
               </div>
             </div>
-
-            {/* Stats Cards - Desktop only */}
-            {stats && (
-              <div className="hidden lg:grid grid-cols-1 gap-2">
-                <div className="bg-white rounded-lg shadow-md p-3 text-center">
-                  <div className="text-2xl font-bold text-slate-700">{stats.sensorCount}</div>
-                  <div className="text-xs text-gray-600">Active Sensors</div>
-                </div>
-                <div className="bg-white rounded-lg shadow-md p-3 text-center">
-                  <div className="text-2xl font-bold text-slate-700">{stats.reportCount}</div>
-                  <div className="text-xs text-gray-600">Health Reports</div>
-                </div>
-                <div className="bg-white rounded-lg shadow-md p-3 text-center">
-                  <div className="text-2xl font-bold text-slate-700">{stats.avgPM25.toFixed(1)}</div>
-                  <div className="text-xs text-gray-600">Avg PM2.5 (μg/m³)</div>
-              </div>
-              </div>
-            )}
           </div>
 
           {/* Left Sidebar - Pollutant Selection & Info */}
@@ -416,23 +356,6 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Stats Cards - Mobile only, shown at bottom */}
-          {stats && (
-            <div className="lg:hidden grid grid-cols-3 gap-2 order-4 col-span-1">
-              <div className="bg-white rounded-lg shadow-md p-3 text-center">
-                <div className="text-xl font-bold text-slate-700">{stats.sensorCount}</div>
-                <div className="text-xs text-gray-600">Active Sensors</div>
-              </div>
-              <div className="bg-white rounded-lg shadow-md p-3 text-center">
-                <div className="text-xl font-bold text-slate-700">{stats.reportCount}</div>
-                <div className="text-xs text-gray-600">Health Reports</div>
-              </div>
-              <div className="bg-white rounded-lg shadow-md p-3 text-center">
-                <div className="text-xl font-bold text-slate-700">{stats.avgPM25.toFixed(1)}</div>
-                <div className="text-xs text-gray-600">Avg PM2.5</div>
-              </div>
-            </div>
-          )}
 
         </div>
       </div>

@@ -15,12 +15,21 @@ interface AQIData {
   timestamp: string;
 }
 
+interface ACHDSite {
+  site_name: string;
+  latitude: number;
+  longitude: number;
+  pm25?: number;
+  aqi?: number;
+}
+
 const Dashboard: React.FC = () => {
   const [pm25History, setPm25History] = useState<AQIDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPollutant, setSelectedPollutant] = useState<'pm25' | 'ozone' | 'so2'>('pm25');
   const [activeTab, setActiveTab] = useState<'today' | 'overtime' | 'faq'>('today');
   const [currentAQIData, setCurrentAQIData] = useState<AQIData | null>(null);
+  const [achdSites, setAchdSites] = useState<ACHDSite[]>([]);
 
   useEffect(() => {
     async function fetchData() {
@@ -37,6 +46,19 @@ const Dashboard: React.FC = () => {
           
           if (achdResponse?.data?.success && achdResponse.data.data?.length > 0) {
             const readings = achdResponse.data.data;
+            
+            // Extract ACHD sites with locations
+            const sites: ACHDSite[] = readings
+              .filter((reading: any) => reading.latitude && reading.longitude)
+              .map((reading: any) => ({
+                site_name: reading.site_name || reading.location || 'Unknown',
+                latitude: parseFloat(reading.latitude),
+                longitude: parseFloat(reading.longitude),
+                pm25: reading.pm25 || reading.pm2_5,
+                aqi: reading.aqi || reading.pm25_aqi
+              }));
+            setAchdSites(sites);
+            
             // Find the highest AQI reading
             let highestReading = readings[0];
             let highestAQI = 0;
@@ -310,18 +332,18 @@ const Dashboard: React.FC = () => {
             <div key={activeTab} className="flex-1 overflow-hidden min-h-0 flex flex-col">
               {activeTab === 'today' && (
                 <>
-                  {/* Highest Most Recent PM2.5 AQI Section */}
+                  {/* Highest Most Recent PM2.5 AQI Section - Always at top */}
                   {currentAQIData && aqiInfo && (
-                    <div className={`px-2 pt-2 pb-2 flex-shrink-0 ${aqiInfo.bgColor} ${aqiInfo.borderColor} border-2 rounded-lg mb-2`}>
-                      <h3 className="text-xs sm:text-sm font-semibold text-slate-800 mb-1">
+                    <div className={`px-3 pt-3 pb-3 flex-shrink-0 ${aqiInfo.bgColor} ${aqiInfo.borderColor} border-2 rounded-lg mb-3 mx-2`}>
+                      <h3 className="text-sm sm:text-base font-semibold text-slate-800 mb-2">
                         Highest Most Recent {currentPollutant.name} AQI
                       </h3>
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className={`text-2xl sm:text-3xl font-bold ${aqiInfo.textColor} mb-1`}>
+                          <div className={`text-3xl sm:text-4xl font-bold ${aqiInfo.textColor} mb-1`}>
                             {currentAQIData.aqi}
                           </div>
-                          <div className="text-xs text-gray-600">
+                          <div className="text-xs sm:text-sm text-gray-600">
                             {new Date(currentAQIData.timestamp).toLocaleString('en-US', { 
                               month: '2-digit', 
                               day: '2-digit', 
@@ -331,19 +353,57 @@ const Dashboard: React.FC = () => {
                               hour12: true 
                             })} EST
                           </div>
-                          <div className="text-xs text-gray-600 mt-1">
+                          <div className="text-xs sm:text-sm text-gray-600 mt-1">
                             Occurred at: {currentAQIData.location}
                           </div>
                         </div>
-                        <div className={`px-3 py-2 rounded-lg ${aqiInfo.color} text-white text-xs font-semibold`}>
+                        <div className={`px-4 py-2 rounded-lg ${aqiInfo.color} text-white text-sm font-semibold`}>
                           {aqiInfo.level}
                         </div>
                       </div>
                     </div>
                   )}
                   
-                  <div className="px-2 pt-2 pb-1 flex-shrink-0">
-                    <h3 className="text-xs sm:text-sm font-semibold text-slate-800">{currentPollutant.name} Monitor Locations</h3>
+                  {/* PM2.5 Monitor Locations - Compact Map Section */}
+                  <div className="px-2 pt-2 pb-2 flex-shrink-0">
+                    <h3 className="text-xs sm:text-sm font-semibold text-slate-800 mb-1">
+                      {currentPollutant.name} Monitor Locations
+                    </h3>
+                    <p className="text-xs text-gray-600 mb-2">ACHD monitoring stations with current readings</p>
+                    
+                    {/* Compact Sites List */}
+                    {achdSites.length > 0 ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-32 overflow-y-auto">
+                        {achdSites.map((site, index) => {
+                          const siteAQI = site.aqi || 0;
+                          const siteAQIInfo = getAQILevel(siteAQI);
+                          return (
+                            <div key={index} className="bg-gray-50 rounded p-2 border border-gray-200">
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-medium text-slate-700 truncate">{site.site_name}</p>
+                                  {site.pm25 !== undefined && (
+                                    <p className="text-xs text-gray-600">PM2.5: {site.pm25.toFixed(1)} μg/m³</p>
+                                  )}
+                                </div>
+                                {siteAQI > 0 && (
+                                  <div className={`px-2 py-1 rounded text-xs font-semibold ${siteAQIInfo.color} text-white ml-2`}>
+                                    {siteAQI}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-gray-500">Loading monitoring station data...</p>
+                    )}
+                  </div>
+                  
+                  {/* Tableau Dashboard - Below custom sections */}
+                  <div className="px-2 pt-2 pb-1 flex-shrink-0 border-t border-gray-200 mt-2">
+                    <h3 className="text-xs sm:text-sm font-semibold text-slate-800 mb-1">Detailed Dashboard View</h3>
                     <p className="text-xs text-gray-600">Click location on map to see hourly data for that monitor</p>
                   </div>
                   <div className="flex-1 overflow-hidden min-h-0 px-2 pb-2">

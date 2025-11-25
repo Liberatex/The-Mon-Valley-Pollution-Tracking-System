@@ -330,14 +330,21 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
       // Simple direct geolocation request - browser will show permission prompt
       navigator.geolocation.getCurrentPosition(
         (position) => {
+          console.log('Location received:', position.coords.latitude, position.coords.longitude);
           setUserLocation({
             lat: position.coords.latitude,
             lng: position.coords.longitude,
           });
         },
-        () => {
+        (error) => {
+          console.log('Geolocation error:', error.code, error.message);
           // Silently fail - don't show errors, just don't set location
           setUserLocation(null);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 0
         }
       );
     } else {

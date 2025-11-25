@@ -119,6 +119,7 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [permissionDenied, setPermissionDenied] = useState(false);
+  const [userAttemptedLocation, setUserAttemptedLocation] = useState(false);
   const geolocationWatchId = useRef<number | null>(null);
   const isRequestingLocation = useRef<boolean>(false);
 
@@ -365,8 +366,15 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
           isRequestingLocation.current = false;
         },
         (error) => {
-          console.error('Geolocation error:', error);
-          setLocationError(error.message);
+          // Only log errors, don't spam console
+          if (error.type !== 'permission_denied') {
+            console.error('Geolocation error:', error);
+          }
+          
+          // Only show error if user actively tried to enable location
+          if (userAttemptedLocation) {
+            setLocationError(error.message);
+          }
           
           // If permission denied, mark it but don't prevent future attempts
           // User might change their mind and we want to allow retry
@@ -390,9 +398,10 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
       }
       setUserLocation(null);
       setLocationError(null);
+      setUserAttemptedLocation(false);
       isRequestingLocation.current = false;
     }
-  }, [showMyLocation]);
+  }, [showMyLocation, userAttemptedLocation]);
 
 
   if (loading) return (
@@ -454,7 +463,15 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
             <input 
               type="checkbox" 
               checked={showMyLocation} 
-              onChange={(e) => setShowMyLocation(e.target.checked)}
+              onChange={(e) => {
+                setShowMyLocation(e.target.checked);
+                if (e.target.checked) {
+                  setUserAttemptedLocation(true);
+                } else {
+                  setLocationError(null);
+                  setUserAttemptedLocation(false);
+                }
+              }}
               className="cursor-pointer"
             />
             <span className="text-sm sm:text-base font-medium">
@@ -483,15 +500,41 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
         </div>
       )}
 
-      {/* Location Error Alert */}
-      {locationError && (
-        <div className="mx-4 sm:mx-6 lg:mx-8 mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+      {/* Location Error Alert - Only show if user actively tried */}
+      {locationError && userAttemptedLocation && (
+        <div className="mx-4 sm:mx-6 lg:mx-8 mb-4 p-3 sm:p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
           <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <h3 className="font-semibold text-red-800 mb-1">Location Access Error</h3>
-              <p className="text-sm text-red-700">{locationError}</p>
+              <h3 className="font-semibold text-yellow-800 mb-1 text-sm sm:text-base">Location Access</h3>
+              <p className="text-xs sm:text-sm text-yellow-700 mb-2">{locationError}</p>
+              <button
+                onClick={() => {
+                  setLocationError(null);
+                  setUserAttemptedLocation(false);
+                  // Retry location request
+                  if (showMyLocation) {
+                    setShowMyLocation(false);
+                    setTimeout(() => setShowMyLocation(true), 100);
+                  }
+                }}
+                className="text-xs sm:text-sm text-yellow-800 underline hover:text-yellow-900"
+              >
+                Try again
+              </button>
             </div>
+            <button
+              onClick={() => {
+                setLocationError(null);
+                setUserAttemptedLocation(false);
+              }}
+              className="text-yellow-600 hover:text-yellow-800 flex-shrink-0"
+              aria-label="Dismiss"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
         </div>
       )}

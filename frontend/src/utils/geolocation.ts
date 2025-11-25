@@ -71,12 +71,9 @@ export async function getCurrentLocation(
   }
 
   // Check permission status (but don't block - let browser show prompt)
+  // Don't log warning - it's expected behavior to retry
   const permissionStatus = await checkPermissionStatus();
-  if (permissionStatus === 'denied') {
-    // Permission was previously denied, but we'll still try to trigger the prompt
-    // The browser might allow the user to change their mind
-    console.warn('Geolocation permission was previously denied, but attempting request anyway');
-  }
+  // Silently proceed - browser will handle permission prompt
 
   // Default options - use shorter timeout and fresher data for better UX
   const defaultOptions: PositionOptions = {

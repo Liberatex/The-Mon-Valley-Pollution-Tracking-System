@@ -194,12 +194,11 @@ const ExposureModel: React.FC<ExposureModelProps> = ({ onNavigate }) => {
     setGettingLocation(true);
     setLocationError(null);
     setLocationMethod('geolocation');
-    // Reset permission denied state to allow retry
     setPermissionDenied(false);
     
     // Check if geolocation is available
-    if (!isGeolocationAvailable()) {
-      setLocationError('Geolocation is not available. Please use HTTPS or enable location services.');
+    if (!navigator.geolocation) {
+      setLocationError('Geolocation is not supported by your browser.');
       setGettingLocation(false);
       return;
     }
@@ -207,27 +206,37 @@ const ExposureModel: React.FC<ExposureModelProps> = ({ onNavigate }) => {
     // Mark that we're requesting location
     isRequestingLocation.current = true;
 
-    // Use shared geolocation utility - always allow browser to show prompt
-    await getCurrentLocation(
-      (result) => {
-        setUserLocation({ lat: result.lat, lng: result.lng });
+    // Direct geolocation request - browser will show permission prompt
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        console.log('✅ ExposureModel location received:', position.coords.latitude, position.coords.longitude);
+        setUserLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
         setLocationError(null);
         setPermissionDenied(false);
         setGettingLocation(false);
         isRequestingLocation.current = false;
       },
       (error) => {
-        console.error('Geolocation error:', error);
-        setLocationError(error.message || 'Could not get your location. Please try entering your address manually.');
+        // Don't log permission denied errors - they're expected
+        if (error.code !== error.PERMISSION_DENIED) {
+          console.error('Geolocation error:', error);
+        }
         
-        // If permission denied, mark it but don't prevent future attempts
-        // User might change permissions and want to try again
-        if (error.type === 'permission_denied') {
+        // Only show error if not permission denied (user can enable in browser settings)
+        if (error.code === error.PERMISSION_DENIED) {
           setPermissionDenied(true);
+          // Don't set error message - user needs to enable in browser settings
+        } else {
+          setLocationError('Could not get your location. Please try entering your address manually.');
         }
         
         setGettingLocation(false);
         isRequestingLocation.current = false;
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 15000,
+        maximumAge: 0
       }
     );
   };

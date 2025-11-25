@@ -348,15 +348,19 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
           console.log('My Location updated:', position.coords.latitude, position.coords.longitude);
         },
         (error) => {
-          console.error('Geolocation error:', error);
+          // Don't log permission denied errors - they're expected if user previously denied
+          if (error.code !== error.PERMISSION_DENIED) {
+            console.error('Geolocation error:', error);
+          }
+          
           let errorMessage = 'Unable to retrieve your location';
           
           if (error.code === error.PERMISSION_DENIED) {
-            errorMessage = 'Location access denied. Please enable location permissions in your browser settings.';
+            errorMessage = 'Location access was denied. Click the lock icon in your browser\'s address bar, enable location permissions, then refresh the page and try again.';
           } else if (error.code === error.POSITION_UNAVAILABLE) {
             errorMessage = 'Location information is unavailable.';
           } else if (error.code === error.TIMEOUT) {
-            errorMessage = 'Location request timed out.';
+            errorMessage = 'Location request timed out. Please try again.';
           }
           
           setLocationError(errorMessage);
@@ -466,16 +470,22 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
 
       {/* Location Error Alert - Only show if there's an error and location is enabled */}
       {locationError && showMyLocation && (
-        <div className="mx-4 sm:mx-6 lg:mx-8 mb-4 p-3 sm:p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+        <div className="mx-4 sm:mx-6 lg:mx-8 mb-4 p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+            <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <h3 className="font-semibold text-yellow-800 mb-1 text-sm sm:text-base">Location Access</h3>
-              <p className="text-xs sm:text-sm text-yellow-700">{locationError}</p>
+              <h3 className="font-semibold text-blue-800 mb-1 text-sm sm:text-base">Enable Location Access</h3>
+              <p className="text-xs sm:text-sm text-blue-700 mb-2">{locationError}</p>
+              <div className="text-xs text-blue-600">
+                <strong>Quick fix:</strong> Click the lock icon (🔒) in your browser's address bar → Location → Allow → Refresh page
+              </div>
             </div>
             <button
-              onClick={() => setLocationError(null)}
-              className="text-yellow-600 hover:text-yellow-800 flex-shrink-0"
+              onClick={() => {
+                setLocationError(null);
+                setShowMyLocation(false);
+              }}
+              className="text-blue-600 hover:text-blue-800 flex-shrink-0"
               aria-label="Dismiss"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

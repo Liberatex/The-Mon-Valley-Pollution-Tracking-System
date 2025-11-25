@@ -129,6 +129,7 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
   const [showMyLocation, setShowMyLocation] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const geolocationWatchId = useRef<number | null>(null);
+  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (propSensors && propSensors.length > 0) {
@@ -344,6 +345,11 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
         navigator.geolocation.clearWatch(geolocationWatchId.current);
         geolocationWatchId.current = null;
       }
+      // Clear retry timeout
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
+      }
       setUserLocation(null);
       return;
     }
@@ -372,12 +378,44 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
       },
       (error) => {
         console.warn('⚠️ Geolocation error:', error.code, error.message);
-        // If permission denied, clear location but keep trying
-        if (error.code === error.PERMISSION_DENIED) {
-          setUserLocation(null);
-          // Don't clear watch - let user enable permission and it will work
-        } else {
-          setUserLocation(null);
+        setUserLocation(null);
+        
+        // If permission denied, retry after a delay in case user enables it
+        if (error.code === error.PERMISSION_DENIED && showMyLocation) {
+          // Clear any existing retry timeout
+          if (retryTimeoutRef.current) {
+            clearTimeout(retryTimeoutRef.current);
+          }
+          // Retry after 2 seconds - user might enable permission
+          retryTimeoutRef.current = setTimeout(() => {
+            if (showMyLocation && navigator.geolocation) {
+              console.log('🔄 Retrying geolocation request...');
+              // Clear existing watch and start new one
+              if (geolocationWatchId.current !== null) {
+                navigator.geolocation.clearWatch(geolocationWatchId.current);
+              }
+              const newWatchId = navigator.geolocation.watchPosition(
+                (position) => {
+                  console.log('✅ Location received on retry:', position.coords.latitude, position.coords.longitude);
+                  setUserLocation({
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude,
+                  });
+                  geolocationWatchId.current = newWatchId;
+                },
+                (retryError) => {
+                  console.warn('⚠️ Retry geolocation error:', retryError.code);
+                  setUserLocation(null);
+                },
+                {
+                  enableHighAccuracy: false,
+                  timeout: 10000,
+                  maximumAge: 60000
+                }
+              );
+              geolocationWatchId.current = newWatchId;
+            }
+          }, 2000);
         }
       },
       {

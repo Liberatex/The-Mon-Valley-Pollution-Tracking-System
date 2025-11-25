@@ -103,6 +103,17 @@ const MapController: React.FC<{ center: [number, number], zoom: number }> = ({ c
   return null;
 };
 
+// Component to center map on user location
+const UserLocationController: React.FC<{ location: { lat: number; lng: number } | null }> = ({ location }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (location) {
+      map.setView([location.lat, location.lng], map.getZoom(), { animate: true });
+    }
+  }, [map, location]);
+  return null;
+};
+
 const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSelect }) => {
   const [sensors, setSensors] = useState<Sensor[]>(propSensors || []);
   const [facilities, setFacilities] = useState<TitleVFacility[]>([]);
@@ -327,14 +338,17 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
   // Handle "My Location" feature - simple direct request, let browser handle everything
   useEffect(() => {
     if (showMyLocation && navigator.geolocation) {
-      // Simple direct geolocation request - browser will show permission prompt
-      navigator.geolocation.getCurrentPosition(
+      // Use watchPosition to keep location updated
+      const watchId = navigator.geolocation.watchPosition(
         (position) => {
           console.log('Location received:', position.coords.latitude, position.coords.longitude);
-          setUserLocation({
+          const newLocation = {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
-          });
+          };
+          setUserLocation(newLocation);
+          // Store watch ID for cleanup
+          geolocationWatchId.current = watchId;
         },
         (error) => {
           console.log('Geolocation error:', error.code, error.message);
@@ -347,7 +361,19 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
           maximumAge: 0
         }
       );
+      
+      // Cleanup function
+      return () => {
+        if (watchId !== null && navigator.geolocation) {
+          navigator.geolocation.clearWatch(watchId);
+        }
+      };
     } else {
+      // Clear watch when disabled
+      if (geolocationWatchId.current !== null && navigator.geolocation) {
+        navigator.geolocation.clearWatch(geolocationWatchId.current);
+        geolocationWatchId.current = null;
+      }
       setUserLocation(null);
     }
   }, [showMyLocation]);
@@ -451,6 +477,7 @@ const SensorMap: React.FC<SensorMapProps> = ({ sensors: propSensors, onSensorSel
           className="shadow-lg"
         >
           <MapController center={[CLAIRTON_COORDS.lat, CLAIRTON_COORDS.lng]} zoom={MAP_ZOOM} />
+          <UserLocationController location={userLocation} />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

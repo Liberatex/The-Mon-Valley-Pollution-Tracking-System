@@ -45,6 +45,8 @@ function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
 }
 
 // Calculate exposure score based on PM2.5 and distance
+// Legacy function - kept for backward compatibility
+// New code should use calculateWeightedRisk from weightedRiskAlgorithm service
 function calculateExposureScore(pm25: number, distance: number): { score: number; riskLevel: 'low' | 'moderate' | 'high' | 'very_high' } {
   if (!pm25 || distance === 0) {
     return { score: 0, riskLevel: 'low' };

@@ -188,12 +188,14 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
         clusterRadius: 50,
       });
 
-      // Add cluster layer
+      // Add cluster layer (visible at zoom 0-10)
       map.current.addLayer({
         id: 'sensor-clusters',
         type: 'circle',
         source: 'sensors',
         filter: ['has', 'point_count'],
+        minzoom: 0,
+        maxzoom: 10,
         paint: {
           'circle-color': [
             'step',
@@ -208,12 +210,31 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
         },
       });
 
-      // Add individual sensor layer
+      // Add cluster count labels (zoom 0-10)
+      map.current.addLayer({
+        id: 'sensor-cluster-count',
+        type: 'symbol',
+        source: 'sensors',
+        filter: ['has', 'point_count'],
+        minzoom: 0,
+        maxzoom: 10,
+        layout: {
+          'text-field': '{point_count_abbreviated}',
+          'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
+          'text-size': 12,
+        },
+        paint: {
+          'text-color': '#fff',
+        },
+      });
+
+      // Add individual sensor layer (visible at zoom 11+)
       map.current.addLayer({
         id: 'sensor-points',
         type: 'circle',
         source: 'sensors',
         filter: ['!', ['has', 'point_count']],
+        minzoom: 11,
         paint: {
           'circle-color': [
             'step',
@@ -228,7 +249,14 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
             150,
             '#8f3f97', // Purple: Hazardous (>150)
           ],
-          'circle-radius': 8,
+          'circle-radius': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            11, 6,  // Zoom 11: 6px radius
+            14, 10, // Zoom 14: 10px radius
+            15, 12, // Zoom 15+: 12px radius
+          ],
           'circle-stroke-width': 2,
           'circle-stroke-color': '#fff',
         },

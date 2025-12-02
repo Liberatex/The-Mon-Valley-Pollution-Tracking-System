@@ -10,6 +10,9 @@ interface ImportMetaEnv {
   readonly VITE_USE_EMULATOR: string;
   readonly VITE_PURPLEAIR_API_KEY: string;
   readonly VITE_PROVIDER: string;
+  readonly VITE_MAPBOX_ACCESS_TOKEN: string;
+  readonly VITE_OPENWEATHER_API_KEY: string;
+  readonly VITE_IQAIR_API_KEY: string;
   // Legacy support for REACT_APP_ prefix
   readonly REACT_APP_FIREBASE_API_KEY?: string;
   readonly REACT_APP_FIREBASE_AUTH_DOMAIN?: string;

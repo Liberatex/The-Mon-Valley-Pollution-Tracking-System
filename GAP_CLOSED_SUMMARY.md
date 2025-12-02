@@ -14,6 +14,7 @@
 - ✅ Real distance calculations (Haversine formula)
 - ✅ Real sensor data aggregation (ACHD API)
 - ✅ Professional PDF export (jsPDF)
+
 - ✅ Facility filtering by radius
 - ✅ Accurate symptom report counting
 - ✅ Abstraction layer integration

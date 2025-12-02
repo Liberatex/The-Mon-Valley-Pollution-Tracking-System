@@ -1,8 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
-import { shouldUseEmulator } from '../utils/env';
+import { shouldUseEmulator, env } from '../utils/env';
 import { FadeInSection } from './ui/FadeInSection';
 import { FileText, AlertTriangle, MapPin, ArrowRight, Navigation } from 'lucide-react';
+import { calculateWeightedRisk, calculateVulnerabilityScore } from '../services/weightedRiskAlgorithm';
+import { getWindData, calculateDispersionFactor } from '../services/windDataService';
+import { applyBarkjohnCalibration } from '../services/barkjohnCalibration';
 
 interface TitleVFacility {
   facilityId: string;
@@ -24,8 +27,12 @@ interface ExposureData {
   facilityName: string;
   distance: number;
   pm25: number;
+  pm25Calibrated?: number;
   exposureScore: number;
   riskLevel: 'low' | 'moderate' | 'high' | 'very_high';
+  weightedRisk?: any; // Weighted Risk Algorithm result
+  toxicityWeight?: number;
+  dispersionFactor?: number;
 }
 
 interface ExposureModelProps {
@@ -114,7 +121,7 @@ const ExposureModel: React.FC<ExposureModelProps> = ({ onNavigate }) => {
     const location = userLocation; // Capture for closure
     async function loadAirQuality() {
       try {
-        const OWM_API_KEY = process.env.REACT_APP_OWM_API_KEY || '';
+        const OWM_API_KEY = env.OPENWEATHER_API_KEY || process.env.REACT_APP_OWM_API_KEY || '';
         const aqResp = await axios.get(
           `https://api.openweathermap.org/data/2.5/air_pollution?lat=${location.lat}&lon=${location.lng}&appid=${OWM_API_KEY}`
         );
@@ -130,39 +137,129 @@ const ExposureModel: React.FC<ExposureModelProps> = ({ onNavigate }) => {
     return () => { isMounted = false; };
   }, [userLocation]);
 
-  // Compute exposure whenever inputs are ready
+  // Compute exposure using Weighted Risk Algorithm (VCAN requirement)
   useEffect(() => {
     if (!userLocation || !currentPM25 || facilities.length === 0) {
       setExposureData([]);
       return;
     }
-    try {
-      const exposure = facilities
-        .filter((f: any) => f.location?.lat && f.location?.lng)
-        .map((facility: any) => {
-          const distance = calculateDistance(
-            userLocation.lat,
-            userLocation.lng,
-            facility.location.lat,
-            facility.location.lng
-          );
-          const { score, riskLevel } = calculateExposureScore(currentPM25, distance);
-          return {
-            location: { lat: userLocation.lat, lng: userLocation.lng },
-            facilityId: facility.facilityId,
-            facilityName: facility.name,
-            distance: Math.round(distance * 10) / 10,
-            pm25: currentPM25,
-            exposureScore: Math.round(score * 10) / 10,
-            riskLevel
-          };
-        })
-        .sort((a: any, b: any) => b.exposureScore - a.exposureScore);
-      setExposureData(exposure);
-    } catch (err) {
-      console.error('Exposure computation failed:', err);
-      setError('Failed to load exposure data. Please try again later.');
-    }
+
+    const calculateWeightedRiskForFacilities = async () => {
+      try {
+        // Get wind data for dispersion factor
+        const wind = await getWindData(userLocation.lat, userLocation.lng, env.OPENWEATHER_API_KEY);
+        const dispersionFactor = wind ? calculateDispersionFactor(wind.speed) : 1.0;
+
+        // Get TRI facilities for toxicity weights
+        const baseUrl = shouldUseEmulator()
+          ? 'http://127.0.0.1:5001/mv-pollution-tracking-system/us-central1'
+          : 'https://us-central1-mv-pollution-tracking-system.cloudfunctions.net';
+        
+        let triFacilities: any[] = [];
+        try {
+          const triResponse = await axios.get(`${baseUrl}/getTRIFacilities`);
+          if (triResponse.data?.success && triResponse.data.facilities) {
+            triFacilities = triResponse.data.facilities;
+          }
+        } catch (err) {
+          console.warn('Could not fetch TRI facilities, using defaults');
+        }
+
+        // Calculate vulnerability score (default to 1.0 for now)
+        const vulnerabilityScore = calculateVulnerabilityScore(false, false, 'adult', false);
+
+        // Apply Barkjohn calibration to PM2.5
+        const calibrated = applyBarkjohnCalibration(currentPM25, 50, undefined);
+
+        const exposure = await Promise.all(
+          facilities
+            .filter((f: any) => f.location?.lat && f.location?.lng)
+            .map(async (facility: any) => {
+              const distance = calculateDistance(
+                userLocation.lat,
+                userLocation.lng,
+                facility.location.lat,
+                facility.location.lng
+              );
+
+              // Get toxicity weight for this facility
+              let toxicityWeight = 1.0;
+              if (wind && triFacilities.length > 0) {
+                const matchingFacility = triFacilities.find(
+                  (tf: any) => tf.facilityId === facility.facilityId || tf.name === facility.name
+                );
+                if (matchingFacility) {
+                  toxicityWeight = matchingFacility.toxicityWeight || 1.0;
+                }
+              }
+
+              // Calculate Weighted Risk
+              const riskResult = calculateWeightedRisk({
+                pm25Calibrated: calibrated.correctedPM,
+                toxicityWeight,
+                dispersionFactor,
+                odorScore: 0, // No smell data in ExposureModel
+                odorWeight: 1.0,
+                vulnerabilityScore,
+              });
+
+              // Map Weighted Risk levels to legacy format for compatibility
+              let legacyRiskLevel: 'low' | 'moderate' | 'high' | 'very_high' = 'low';
+              if (riskResult.riskLevel === 'toxic' || riskResult.riskLevel === 'severe') {
+                legacyRiskLevel = 'very_high';
+              } else if (riskResult.riskLevel === 'high') {
+                legacyRiskLevel = 'high';
+              } else if (riskResult.riskLevel === 'elevated') {
+                legacyRiskLevel = 'moderate';
+              }
+
+              return {
+                location: { lat: userLocation.lat, lng: userLocation.lng },
+                facilityId: facility.facilityId,
+                facilityName: facility.name,
+                distance: Math.round(distance * 10) / 10,
+                pm25: currentPM25,
+                pm25Calibrated: calibrated.correctedPM,
+                exposureScore: Math.round(riskResult.riskIndex * 10) / 10,
+                riskLevel: legacyRiskLevel,
+                weightedRisk: riskResult,
+                toxicityWeight,
+                dispersionFactor,
+              };
+            })
+        );
+
+        exposure.sort((a: any, b: any) => b.exposureScore - a.exposureScore);
+        setExposureData(exposure);
+      } catch (err) {
+        console.error('Weighted Risk calculation failed:', err);
+        // Fallback to legacy calculation
+        const exposure = facilities
+          .filter((f: any) => f.location?.lat && f.location?.lng)
+          .map((facility: any) => {
+            const distance = calculateDistance(
+              userLocation.lat,
+              userLocation.lng,
+              facility.location.lat,
+              facility.location.lng
+            );
+            const { score, riskLevel } = calculateExposureScore(currentPM25, distance);
+            return {
+              location: { lat: userLocation.lat, lng: userLocation.lng },
+              facilityId: facility.facilityId,
+              facilityName: facility.name,
+              distance: Math.round(distance * 10) / 10,
+              pm25: currentPM25,
+              exposureScore: Math.round(score * 10) / 10,
+              riskLevel
+            };
+          })
+          .sort((a: any, b: any) => b.exposureScore - a.exposureScore);
+        setExposureData(exposure);
+      }
+    };
+
+    calculateWeightedRiskForFacilities();
   }, [facilities, currentPM25, userLocation]);
 
   const getRiskColor = (level: string) => {
@@ -254,7 +351,7 @@ const ExposureModel: React.FC<ExposureModelProps> = ({ onNavigate }) => {
     setLocationMethod('address');
 
     try {
-      const OWM_API_KEY = process.env.REACT_APP_OWM_API_KEY || '';
+      const OWM_API_KEY = env.OPENWEATHER_API_KEY || process.env.REACT_APP_OWM_API_KEY || '';
       const geocodeResp = await axios.get(
         `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(locationInput)}&limit=1&appid=${OWM_API_KEY}`
       );
@@ -599,20 +696,27 @@ const ExposureModel: React.FC<ExposureModelProps> = ({ onNavigate }) => {
               <h4 className="text-xl sm:text-2xl font-bold text-slate-800 mb-6">How Exposure Risk is Calculated</h4>
               <div className="space-y-4 text-gray-700">
                 <p>
-                  <strong className="text-slate-700">Formula:</strong> Exposure Score = PM2.5 Concentration (μg/m³) ÷ Distance from Facility (miles)
+                  <strong className="text-slate-700">Weighted Risk Algorithm:</strong> This uses the VCAN Weighted Risk Index, which goes beyond standard AQI to account for multiple factors:
                 </p>
+                <p className="font-semibold text-slate-800">Risk = [(PM_cal × W_tox × W_wind) + (Odor_score × W_odor)] × V_user</p>
+                <ul className="list-disc list-inside space-y-2 ml-4 mt-4">
+                  <li><strong className="text-slate-700">PM_cal:</strong> Barkjohn-corrected PM2.5 (accounts for humidity)</li>
+                  <li><strong className="text-slate-700">W_tox:</strong> Toxicity weight based on nearby industrial facilities (EPA TRI data)</li>
+                  <li><strong className="text-slate-700">W_wind:</strong> Dispersion factor (stagnant air = higher risk)</li>
+                  <li><strong className="text-slate-700">V_user:</strong> Personal vulnerability (health factors)</li>
+                </ul>
                 <p>
-                  <strong className="text-slate-700">Interpretation:</strong>
+                  <strong className="text-slate-700">Risk Levels:</strong>
                 </p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
-                  <li><strong className="text-red-600">Very High (≥50):</strong> Immediate health risk, PM2.5 concentration very high relative to distance</li>
-                  <li><strong className="text-orange-600">High (20-49):</strong> Elevated risk, significant exposure for nearby residents</li>
-                  <li><strong className="text-yellow-600">Moderate (10-19):</strong> Moderate exposure, monitor symptoms</li>
-                  <li><strong className="text-green-600">Low (&lt;10):</strong> Lower exposure, continue normal activities with awareness</li>
+                  <li><strong className="text-purple-600">Toxic (Purple):</strong> Immediate alert - likely industrial upset event</li>
+                  <li><strong className="text-red-600">Severe (Red):</strong> All users should shelter in place</li>
+                  <li><strong className="text-orange-600">High (Orange):</strong> Sensitive individuals shelter in place</li>
+                  <li><strong className="text-yellow-600">Elevated (Yellow):</strong> Safe for general public, sensitive users prepare</li>
+                  <li><strong className="text-green-600">Low (Green):</strong> Safe for all</li>
                 </ul>
                 <p className="mt-4 text-gray-600">
-                  This model helps identify which residents are at highest risk based on their proximity to polluting facilities
-                  and current air quality conditions.
+                  This advanced model provides personalized risk assessment that accounts for chemical toxicity, wind patterns, and your personal health factors.
                 </p>
               </div>
             </div>

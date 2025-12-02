@@ -46,7 +46,8 @@ function App() {
   // Lazy load page components
   const HomePage = lazy(() => import('./components/Home'));
   const Dashboard = lazy(() => import('./components/Dashboard'));
-  const SensorMap = lazy(() => import('./components/SensorMap'));
+  // Using Mapbox version for advanced visualizations (VCAN requirement)
+  const SensorMap = lazy(() => import('./components/SensorMapMapbox'));
   const SymptomReportForm = lazy(() => import('./components/SymptomReportForm'));
   const BreatheAI = lazy(() => import('./components/BreatheAI'));
   const ExposureModel = lazy(() => import('./components/ExposureModel'));

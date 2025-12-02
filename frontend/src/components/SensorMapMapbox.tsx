@@ -7,14 +7,14 @@ import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import axios from 'axios';
-import { shouldUseEmulator } from '../utils/env';
+import { shouldUseEmulator, env } from '../utils/env';
 import { applyBarkjohnCalibration } from '../services/barkjohnCalibration';
 import { getWindData, calculateDispersionFactor, isUpwind } from '../services/windDataService';
 import { calculateWeightedRisk, calculateVulnerabilityScore } from '../services/weightedRiskAlgorithm';
 import { Info, AlertCircle, MapPin, Factory, Activity, Navigation } from 'lucide-react';
 
-// Mapbox access token - should be in environment variable
-const MAPBOX_TOKEN = process.env.VITE_MAPBOX_ACCESS_TOKEN || '';
+// Mapbox access token from environment variable
+const MAPBOX_TOKEN = env.MAPBOX_ACCESS_TOKEN || '';
 
 export interface Sensor {
   id: string;

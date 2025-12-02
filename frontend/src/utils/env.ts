@@ -43,6 +43,10 @@ export const env = {
   USE_EMULATOR: getEnvVar('REACT_APP_USE_EMULATOR', 'false'),
   PURPLEAIR_API_KEY: getEnvVar('REACT_APP_PURPLEAIR_API_KEY', ''),
   PROVIDER: getEnvVar('REACT_APP_PROVIDER', 'firebase'),
+  // New API keys for VCAN features
+  MAPBOX_ACCESS_TOKEN: getEnvVar('VITE_MAPBOX_ACCESS_TOKEN', ''),
+  OPENWEATHER_API_KEY: getEnvVar('VITE_OPENWEATHER_API_KEY', ''),
+  IQAIR_API_KEY: getEnvVar('VITE_IQAIR_API_KEY', ''),
   // Azure-specific variables
   AZURE_COSMOS_CONNECTION_STRING: getEnvVar('REACT_APP_AZURE_COSMOS_CONNECTION_STRING', ''),
   AZURE_COSMOS_DATABASE_ID: getEnvVar('REACT_APP_AZURE_COSMOS_DATABASE_ID', 'mv-pollution-tracking'),

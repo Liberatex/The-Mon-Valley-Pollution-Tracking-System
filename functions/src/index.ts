@@ -1206,3 +1206,155 @@ export * from './breachNotification';
 
 // Export data integrity
 export * from './dataIntegrity';
+
+// Export EPA TRI service
+export * from './epaTriService';
+
+// Wind data endpoint
+export const getWindData = functions.https.onRequest(async (req, res) => {
+  corsHandler(req, res, async () => {
+    try {
+      const { lat, lng } = req.query;
+      
+      if (!lat || !lng) {
+        return res.status(400).json({
+          success: false,
+          error: 'Latitude and longitude required',
+        });
+      }
+
+      // Use OpenWeatherMap API (free tier: 60 calls/minute)
+      const apiKey = process.env.OPENWEATHER_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({
+          success: false,
+          error: 'OpenWeatherMap API key not configured',
+        });
+      }
+
+      const response = await axios.get(
+        `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lng}&appid=${apiKey}&units=metric`
+      );
+
+      if (response.data.wind) {
+        return res.json({
+          success: true,
+          data: {
+            speed: response.data.wind.speed || 0,
+            direction: response.data.wind.deg || 0,
+            gust: response.data.wind.gust,
+            timestamp: new Date().toISOString(),
+          },
+        });
+      }
+
+      return res.status(404).json({
+        success: false,
+        error: 'Wind data not available',
+      });
+    } catch (error: any) {
+      console.error('Error fetching wind data:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to fetch wind data',
+      });
+    }
+  });
+});
+
+// Get TRI facilities
+export const getTRIFacilities = functions.https.onRequest(async (req, res) => {
+  corsHandler(req, res, async () => {
+    try {
+      const { fetchTRIFacilities } = await import('./epaTriService');
+      const facilities = await fetchTRIFacilities();
+      
+      return res.json({
+        success: true,
+        facilities,
+        count: facilities.length,
+      });
+    } catch (error: any) {
+      console.error('Error fetching TRI facilities:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to fetch TRI facilities',
+      });
+    }
+  });
+});
+
+// Calculate weighted risk for a location
+export const calculateRisk = functions.https.onRequest(async (req, res) => {
+  corsHandler(req, res, async () => {
+    try {
+      const {
+        pm25,
+        humidity,
+        temperature,
+        lat,
+        lng,
+        hasAsthma,
+        hasCOPD,
+        ageGroup,
+        previousHighExposure,
+        odorScore,
+      } = req.body;
+
+      // Import services
+      const { applyBarkjohnCalibration } = await import('../frontend/src/services/barkjohnCalibration');
+      const { getWindData, calculateDispersionFactor } = await import('../frontend/src/services/windDataService');
+      const { fetchTRIFacilities, getSensorToxicityWeight } = await import('./epaTriService');
+      const { calculateWeightedRisk, calculateVulnerabilityScore, normalizeOdorScore } = await import('../frontend/src/services/weightedRiskAlgorithm');
+
+      // Calibrate PM2.5
+      const calibrated = applyBarkjohnCalibration(pm25 || 0, humidity || 50, temperature);
+
+      // Get wind data
+      const wind = await getWindData(lat, lng);
+      const dispersionFactor = wind ? calculateDispersionFactor(wind.speed) : 1.0;
+
+      // Get TRI facilities and calculate toxicity weight
+      const triFacilities = await fetchTRIFacilities();
+      const toxicityWeight = lat && lng && wind
+        ? getSensorToxicityWeight(lat, lng, triFacilities, wind.direction)
+        : 1.0;
+
+      // Calculate vulnerability score
+      const vulnerabilityScore = calculateVulnerabilityScore(
+        hasAsthma,
+        hasCOPD,
+        ageGroup || 'adult',
+        previousHighExposure
+      );
+
+      // Calculate risk
+      const riskResult = calculateWeightedRisk({
+        pm25Calibrated: calibrated.correctedPM,
+        toxicityWeight,
+        dispersionFactor,
+        odorScore: odorScore || 0,
+        odorWeight: 1.2, // Default odor weight
+        vulnerabilityScore,
+      });
+
+      return res.json({
+        success: true,
+        risk: riskResult,
+        inputs: {
+          pm25Raw: pm25,
+          pm25Calibrated: calibrated.correctedPM,
+          toxicityWeight,
+          dispersionFactor,
+          vulnerabilityScore,
+        },
+      });
+    } catch (error: any) {
+      console.error('Error calculating risk:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to calculate risk',
+      });
+    }
+  });
+});

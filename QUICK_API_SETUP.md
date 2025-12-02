@@ -6,7 +6,10 @@
 
 **Mapbox** (Required):
 1. Go to https://account.mapbox.com/
-2. Sign up/login → Copy your token (starts with `pk.`)
+2. Sign up/login → Create a new token
+3. **Token name**: "MVPT" (or any name you prefer)
+4. **Secret scopes**: Select only **`MAP:READ`** (see MAPBOX_SCOPES_GUIDE.md for details)
+5. Copy your token (starts with `pk.`)
 
 **OpenWeatherMap** (Required):
 1. Go to https://openweathermap.org/api

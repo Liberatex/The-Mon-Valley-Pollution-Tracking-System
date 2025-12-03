@@ -1973,6 +1973,23 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
       }
       
       // Attach handlers to both fill and outline layers
+      // Use 'data' event to ensure source has data before attaching handlers
+      const source = map.current.getSource('risk-zones') as mapboxgl.GeoJSONSource;
+      if (source) {
+        // Wait for source data to be loaded
+        source.once('data', () => {
+          if (map.current?.getLayer('risk-zones-fill')) {
+            map.current.on('click', 'risk-zones-fill', riskZoneClickHandler);
+            console.log('✅ Risk zone fill click handler attached (after data load)');
+          }
+          if (map.current?.getLayer('risk-zones-outline')) {
+            map.current.on('click', 'risk-zones-outline', riskZoneClickHandler);
+            console.log('✅ Risk zone outline click handler attached (after data load)');
+          }
+        });
+      }
+      
+      // Also attach immediately if layers exist (for when source already has data)
       if (map.current.getLayer('risk-zones-fill')) {
         map.current.on('click', 'risk-zones-fill', riskZoneClickHandler);
         console.log('✅ Risk zone fill click handler attached');

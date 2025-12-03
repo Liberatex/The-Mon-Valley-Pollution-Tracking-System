@@ -1788,26 +1788,43 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
     // Always ensure click handlers are attached (even if source already exists)
     // Store handler reference to allow removal
     const riskZoneClickHandler = (e: mapboxgl.MapLayerMouseEvent) => {
-      if (e.features && e.features[0] && e.lngLat && e.features[0].properties) {
-        const props = e.features[0].properties;
-        const zoneId = props.id as string;
-        const zone = riskZones.find((z, idx) => `risk-zone-${idx}` === zoneId);
-        
-        // Check if zone is currently hidden (before toggle)
-        const isCurrentlyHidden = hiddenRiskZones.has(zoneId);
-        
-        // Toggle zone visibility on click (hide/show)
-        setHiddenRiskZones((prev) => {
-          const newSet = new Set(prev);
-          if (newSet.has(zoneId)) {
-            newSet.delete(zoneId); // Show zone
-          } else {
-            newSet.add(zoneId); // Hide zone
-          }
-          return newSet;
-        });
-        
-        if (zone && map.current) {
+      console.log('🔵 Risk zone clicked!', e);
+      e.preventDefault();
+      e.stopPropagation();
+      
+      if (!e.features || !e.features[0] || !e.lngLat || !e.features[0].properties) {
+        console.warn('⚠️ Click event missing required data:', { features: e.features, lngLat: e.lngLat });
+        return;
+      }
+      
+      const props = e.features[0].properties;
+      const zoneId = props.id as string;
+      console.log('🔵 Zone ID from click:', zoneId, 'Available zones:', riskZones.length);
+      
+      // Find zone by index (zones are indexed in the GeoJSON)
+      const zoneIndex = parseInt(zoneId.replace('risk-zone-', ''), 10);
+      const zone = riskZones[zoneIndex];
+      
+      if (!zone) {
+        console.warn('⚠️ Zone not found for ID:', zoneId, 'Index:', zoneIndex);
+        return;
+      }
+      
+      // Check if zone is currently hidden (before toggle)
+      const isCurrentlyHidden = hiddenRiskZones.has(zoneId);
+      
+      // Toggle zone visibility on click (hide/show)
+      setHiddenRiskZones((prev) => {
+        const newSet = new Set(prev);
+        if (newSet.has(zoneId)) {
+          newSet.delete(zoneId); // Show zone
+        } else {
+          newSet.add(zoneId); // Hide zone
+        }
+        return newSet;
+      });
+      
+      if (map.current) {
             const riskLevel = zone.riskLevel;
             const riskColor = riskLevel === 'elevated' ? '#ffff00' :
                             riskLevel === 'high' ? '#ff7e00' :
@@ -1912,45 +1929,48 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
     // Store handler in ref for cleanup
     riskZoneClickHandlerRef.current = riskZoneClickHandler;
     
-    // Remove existing handlers if present, then add new ones
-    // This ensures handlers are always attached, even when source/data updates
-    if (map.current.getLayer('risk-zones-fill')) {
-      // Remove previous handler if it exists
-      if (riskZoneClickHandlerRef.current) {
-        try {
-          map.current.off('click', 'risk-zones-fill', riskZoneClickHandlerRef.current);
-        } catch (e) {
-          // Handler might not exist, that's okay
-        }
+    // Wait a bit to ensure layers are fully rendered before attaching handlers
+    const attachHandlers = () => {
+      if (!map.current) return;
+      
+      // Remove ALL existing click handlers for these layers first
+      try {
+        map.current.off('click', 'risk-zones-fill');
+        map.current.off('click', 'risk-zones-outline');
+      } catch (e) {
+        // Ignore errors
       }
-      // Add the new handler
-      map.current.on('click', 'risk-zones-fill', riskZoneClickHandler);
-      console.log('✅ Risk zone fill click handler attached');
-    }
+      
+      // Attach handlers to both fill and outline layers
+      if (map.current.getLayer('risk-zones-fill')) {
+        map.current.on('click', 'risk-zones-fill', riskZoneClickHandler);
+        console.log('✅ Risk zone fill click handler attached');
+      } else {
+        console.warn('⚠️ risk-zones-fill layer not found');
+      }
 
-    if (map.current.getLayer('risk-zones-outline')) {
-      // Remove previous handler if it exists
-      if (riskZoneClickHandlerRef.current) {
-        try {
-          map.current.off('click', 'risk-zones-outline', riskZoneClickHandlerRef.current);
-        } catch (e) {
-          // Handler might not exist, that's okay
-        }
+      if (map.current.getLayer('risk-zones-outline')) {
+        map.current.on('click', 'risk-zones-outline', riskZoneClickHandler);
+        console.log('✅ Risk zone outline click handler attached');
+      } else {
+        console.warn('⚠️ risk-zones-outline layer not found');
       }
-      // Add the new handler
-      map.current.on('click', 'risk-zones-outline', riskZoneClickHandler);
-      console.log('✅ Risk zone outline click handler attached');
-    }
+    };
+    
+    // Attach handlers immediately and also after a short delay to ensure layers are ready
+    attachHandlers();
+    const timeoutId = setTimeout(attachHandlers, 100);
     
     // Cleanup function
     return () => {
-      if (map.current && riskZoneClickHandlerRef.current) {
+      clearTimeout(timeoutId);
+      if (map.current) {
         try {
           if (map.current.getLayer('risk-zones-fill')) {
-            map.current.off('click', 'risk-zones-fill', riskZoneClickHandlerRef.current);
+            map.current.off('click', 'risk-zones-fill', riskZoneClickHandler);
           }
           if (map.current.getLayer('risk-zones-outline')) {
-            map.current.off('click', 'risk-zones-outline', riskZoneClickHandlerRef.current);
+            map.current.off('click', 'risk-zones-outline', riskZoneClickHandler);
           }
         } catch (e) {
           // Ignore errors during cleanup

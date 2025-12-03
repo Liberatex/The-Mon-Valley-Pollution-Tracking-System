@@ -1789,8 +1789,6 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
     // Store handler reference to allow removal
     const riskZoneClickHandler = (e: mapboxgl.MapLayerMouseEvent) => {
       console.log('🔵 Risk zone clicked!', e);
-      e.preventDefault();
-      e.stopPropagation();
       
       if (!e.features || !e.features[0] || !e.lngLat || !e.features[0].properties) {
         console.warn('⚠️ Click event missing required data:', { features: e.features, lngLat: e.lngLat });
@@ -1824,7 +1822,7 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
         return newSet;
       });
       
-      if (map.current) {
+      if (zone && map.current) {
             const riskLevel = zone.riskLevel;
             const riskColor = riskLevel === 'elevated' ? '#ffff00' :
                             riskLevel === 'high' ? '#ff7e00' :

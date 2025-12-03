@@ -1931,12 +1931,19 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
     const attachHandlers = () => {
       if (!map.current) return;
       
-      // Remove ALL existing click handlers for these layers first
-      try {
-        map.current.off('click', 'risk-zones-fill');
-        map.current.off('click', 'risk-zones-outline');
-      } catch (e) {
-        // Ignore errors
+      // Remove previous handler if it exists, then attach new one
+      const previousHandler = riskZoneClickHandlerRef.current;
+      if (previousHandler) {
+        try {
+          if (map.current.getLayer('risk-zones-fill')) {
+            map.current.off('click', 'risk-zones-fill', previousHandler);
+          }
+          if (map.current.getLayer('risk-zones-outline')) {
+            map.current.off('click', 'risk-zones-outline', previousHandler);
+          }
+        } catch (e) {
+          // Ignore errors
+        }
       }
       
       // Attach handlers to both fill and outline layers
@@ -1962,13 +1969,14 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
     // Cleanup function
     return () => {
       clearTimeout(timeoutId);
-      if (map.current) {
+      if (map.current && riskZoneClickHandlerRef.current) {
         try {
+          const handler = riskZoneClickHandlerRef.current;
           if (map.current.getLayer('risk-zones-fill')) {
-            map.current.off('click', 'risk-zones-fill', riskZoneClickHandler);
+            map.current.off('click', 'risk-zones-fill', handler);
           }
           if (map.current.getLayer('risk-zones-outline')) {
-            map.current.off('click', 'risk-zones-outline', riskZoneClickHandler);
+            map.current.off('click', 'risk-zones-outline', handler);
           }
         } catch (e) {
           // Ignore errors during cleanup

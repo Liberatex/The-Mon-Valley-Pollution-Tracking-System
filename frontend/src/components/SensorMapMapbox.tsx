@@ -1718,11 +1718,15 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
     
     // Show layer if enabled but no data yet
     if (riskZones.length === 0) {
-      // Remove existing layers if present
+      // Remove existing layers FIRST before removing source
+      // Order matters: layers must be removed before source
       if (map.current.getLayer('risk-zones-fill')) {
         map.current.removeLayer('risk-zones-fill');
+      }
+      if (map.current.getLayer('risk-zones-outline')) {
         map.current.removeLayer('risk-zones-outline');
       }
+      // Now safe to remove source after layers are removed
       if (map.current.getSource('risk-zones')) {
         map.current.removeSource('risk-zones');
       }

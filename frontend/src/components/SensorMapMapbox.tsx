@@ -1823,28 +1823,28 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
       });
       
       if (zone && map.current) {
-            const riskLevel = zone.riskLevel;
-            const riskColor = riskLevel === 'elevated' ? '#ffff00' :
-                            riskLevel === 'high' ? '#ff7e00' :
-                            riskLevel === 'severe' ? '#ff0000' :
-                            riskLevel === 'toxic' ? '#9c27b0' : '#cccccc';
-            
-            const riskLabel = riskLevel === 'elevated' ? 'Elevated Risk' :
-                            riskLevel === 'high' ? 'High Risk' :
-                            riskLevel === 'severe' ? 'Severe Risk' :
-                            riskLevel === 'toxic' ? 'Toxic Event' : 'Risk Zone';
-            
-            const recommendation = riskLevel === 'elevated' 
-              ? 'Sensitive individuals should have medications ready. General public can enjoy outdoor activities.'
-              : riskLevel === 'high'
-              ? 'Sensitive individuals should shelter in place. General public should limit outdoor exertion.'
-              : riskLevel === 'severe'
-              ? 'All users should shelter in place. Check window seals and activate air purifiers.'
-              : riskLevel === 'toxic'
-              ? 'IMMEDIATE ALERT: Likely industrial upset event. Consider evacuating if symptoms worsen.'
-              : 'Monitor air quality conditions.';
-            
-            const popupContent = `
+        const riskLevel = zone.riskLevel;
+        const riskColor = riskLevel === 'elevated' ? '#ffff00' :
+                        riskLevel === 'high' ? '#ff7e00' :
+                        riskLevel === 'severe' ? '#ff0000' :
+                        riskLevel === 'toxic' ? '#9c27b0' : '#cccccc';
+        
+        const riskLabel = riskLevel === 'elevated' ? 'Elevated Risk' :
+                        riskLevel === 'high' ? 'High Risk' :
+                        riskLevel === 'severe' ? 'Severe Risk' :
+                        riskLevel === 'toxic' ? 'Toxic Event' : 'Risk Zone';
+        
+        const recommendation = riskLevel === 'elevated' 
+          ? 'Sensitive individuals should have medications ready. General public can enjoy outdoor activities.'
+          : riskLevel === 'high'
+          ? 'Sensitive individuals should shelter in place. General public should limit outdoor exertion.'
+          : riskLevel === 'severe'
+          ? 'All users should shelter in place. Check window seals and activate air purifiers.'
+          : riskLevel === 'toxic'
+          ? 'IMMEDIATE ALERT: Likely industrial upset event. Consider evacuating if symptoms worsen.'
+          : 'Monitor air quality conditions.';
+        
+        const popupContent = `
               <div style="min-width: 280px; max-width: 400px;">
                 <div style="display: flex; align-items: start; gap: 8px; margin-bottom: 12px;">
                   <div style="width: 16px; height: 16px; border-radius: 4px; background-color: ${riskColor}; flex-shrink: 0; margin-top: 2px;"></div>
@@ -1914,15 +1914,15 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
                 </div>
               </div>
             `;
-            
-          // Create and show popup
-          new mapboxgl.Popup({ closeOnClick: true, maxWidth: '450px' })
-            .setLngLat(e.lngLat)
-            .setHTML(popupContent)
-            .addTo(map.current);
-        }
+        
+        // Create and show popup
+        new mapboxgl.Popup({ closeOnClick: true, maxWidth: '450px' })
+          .setLngLat(e.lngLat)
+          .setHTML(popupContent)
+          .addTo(map.current);
       }
-    };
+    }
+  };
     
     // Store handler in ref for cleanup
     riskZoneClickHandlerRef.current = riskZoneClickHandler;

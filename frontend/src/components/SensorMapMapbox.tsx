@@ -1907,8 +1907,9 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
         return; // No layers to query
       }
       
+      let features: mapboxgl.MapboxGeoJSONFeature[] = [];
       try {
-        const features = map.current.queryRenderedFeatures(point, {
+        features = map.current.queryRenderedFeatures(point, {
           layers: layersToQuery
         });
         

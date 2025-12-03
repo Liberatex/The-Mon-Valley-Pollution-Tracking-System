@@ -79,8 +79,7 @@ export async function fetchACHDPM25(): Promise<AQSResponse> {
       success: false,
       data: [],
       source: 'ACHD Official Monitoring',
-      lastUpdated: new Date().toISOString(),
-      error: error.message
+      lastUpdated: new Date().toISOString()
     };
   }
 }

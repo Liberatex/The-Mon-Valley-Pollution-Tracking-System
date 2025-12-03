@@ -205,8 +205,7 @@ export async function fetchACHDWPRDC(): Promise<{
       success: false,
       data: [],
       source: 'WPRDC CKAN DataStore (Official ACHD)',
-      lastUpdated: new Date().toISOString(),
-      error: error.message
+      lastUpdated: new Date().toISOString()
     };
   }
 }

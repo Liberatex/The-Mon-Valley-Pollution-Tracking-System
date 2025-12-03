@@ -27,11 +27,11 @@ export function useRealtimeSensorData(intervalMs: number = 60000) {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const fetchSensorData = async () => {
-    try {
-      const baseUrl = shouldUseEmulator()
-        ? 'http://127.0.0.1:5001/mv-pollution-tracking-system/us-central1'
-        : 'https://us-central1-mv-pollution-tracking-system.cloudfunctions.net';
+    const baseUrl = shouldUseEmulator()
+      ? 'http://127.0.0.1:5001/mv-pollution-tracking-system/us-central1'
+      : 'https://us-central1-mv-pollution-tracking-system.cloudfunctions.net';
 
+    try {
       const response = await axios.get(`${baseUrl}/fetchPurpleAirSensorData`, {
         timeout: 20000,
         headers: { 'Content-Type': 'application/json' },

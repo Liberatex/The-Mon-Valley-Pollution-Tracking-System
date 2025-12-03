@@ -1813,16 +1813,40 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
     // Always ensure click handlers are attached (even if source already exists)
     // Store handler reference to allow removal
     const riskZoneClickHandler = (e: mapboxgl.MapLayerMouseEvent | mapboxgl.MapMouseEvent) => {
-      console.log('🔵 Map clicked!', e);
-      
       // Get all features at the click point, including risk zones
-      if (!map.current || !e.lngLat) return;
+      if (!map.current || !e.lngLat) {
+        return; // Silently ignore if map or coordinates missing
+      }
       
-      const features = map.current.queryRenderedFeatures(e.point, {
-        layers: ['risk-zones-fill', 'risk-zones-outline']
+      // Check if risk zone layers exist before querying
+      const fillLayerExists = map.current.getLayer('risk-zones-fill');
+      const outlineLayerExists = map.current.getLayer('risk-zones-outline');
+      
+      if (!fillLayerExists && !outlineLayerExists) {
+        // Layers don't exist yet, ignore click
+        return;
+      }
+      
+      // Ensure we have a point (pixel coordinates)
+      const point = e.point || (e as any).point;
+      if (!point) {
+        return; // Silently ignore if point missing
+      }
+      
+      // Build layers array with only existing layers
+      const layersToQuery: string[] = [];
+      if (fillLayerExists) layersToQuery.push('risk-zones-fill');
+      if (outlineLayerExists) layersToQuery.push('risk-zones-outline');
+      
+      if (layersToQuery.length === 0) {
+        return; // No layers to query
+      }
+      
+      const features = map.current.queryRenderedFeatures(point, {
+        layers: layersToQuery
       });
       
-      console.log('🔵 Risk zone features at click point:', features.length);
+      console.log('🔵 Risk zone features at click point:', features.length, 'Layers queried:', layersToQuery);
       
       if (features.length === 0) {
         // No risk zone clicked, ignore

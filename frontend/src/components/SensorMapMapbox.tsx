@@ -1949,11 +1949,6 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
         const zoneId = `risk-zone-${clickedZoneIndex}`;
         const zone = clickedZone;
         
-        if (!zone) {
-          console.warn('⚠️ Zone not found for ID:', zoneId, 'Index:', zoneIndex);
-          return;
-        }
-        
         // Check if zone is currently hidden (before toggle)
         const isCurrentlyHidden = hiddenRiskZones.has(zoneId);
         

@@ -1975,7 +1975,7 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
         }
       }
     };
-  }, [map.current, riskZones, showRiskZones, hiddenRiskZones]);
+  }, [riskZones, showRiskZones, hiddenRiskZones]);
 
   // Change cursor on hover for risk zones
   useEffect(() => {

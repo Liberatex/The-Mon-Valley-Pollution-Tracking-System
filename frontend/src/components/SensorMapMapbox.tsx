@@ -2348,8 +2348,8 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
 
   return (
     <div className="sensor-map w-full h-full min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-4 px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6">
+      {/* Header - Hidden on mobile, shown on desktop */}
+      <div className="hidden sm:flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-4 px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6">
         <div className="flex-1">
           <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-800 mb-2">
             Sensor Map - Mon Valley Air Quality
@@ -2358,83 +2358,94 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
             Interactive map showing air quality sensors, industrial facilities, and official monitoring stations.
           </p>
         </div>
-
-        {/* Filters */}
-        <div className="flex flex-wrap gap-3 sm:gap-4">
-          <label className="flex items-center gap-2 cursor-pointer px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">
-            <input
-              type="checkbox"
-              checked={showSensors}
-              onChange={(e) => setShowSensors(e.target.checked)}
-              className="cursor-pointer"
-            />
-            <span className="text-sm sm:text-base font-medium">
-              <Activity className="inline w-4 h-4 mr-1" />
-              PurpleAir Sensors ({sensors.length})
-            </span>
-          </label>
-          <label className="flex items-center gap-2 cursor-pointer px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">
-            <input
-              type="checkbox"
-              checked={showFacilities}
-              onChange={(e) => setShowFacilities(e.target.checked)}
-              className="cursor-pointer"
-            />
-            <span className="text-sm sm:text-base font-medium">
-              <Factory className="inline w-4 h-4 mr-1" />
-              Title V Facilities ({facilities.length})
-            </span>
-          </label>
-          <label className="flex items-center gap-2 cursor-pointer px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">
-            <input
-              type="checkbox"
-              checked={showMyLocation}
-              onChange={(e) => setShowMyLocation(e.target.checked)}
-              className="cursor-pointer"
-            />
-            <span className="text-sm sm:text-base font-medium">
-              <Navigation className="inline w-4 h-4 mr-1" />
-              My Location
-            </span>
-          </label>
-          <label className="flex items-center gap-2 cursor-pointer px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">
-            <input
-              type="checkbox"
-              checked={showSmellReports}
-              onChange={(e) => setShowSmellReports(e.target.checked)}
-              className="cursor-pointer"
-            />
-            <span className="text-sm sm:text-base font-medium">
-              <AlertCircle className="inline w-4 h-4 mr-1" />
-              Smell Reports ({smellClusters.length > 0 ? smellClusters.length : 'No data'})
-            </span>
-          </label>
-          <label className="flex items-center gap-2 cursor-pointer px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">
-            <input
-              type="checkbox"
-              checked={showRiskZones}
-              onChange={(e) => setShowRiskZones(e.target.checked)}
-              className="cursor-pointer"
-            />
-            <span className="text-sm sm:text-base font-medium">
-              <AlertTriangle className="inline w-4 h-4 mr-1" />
-              Risk Zones ({riskZones.length > 0 ? riskZones.length : 'No events'})
-            </span>
-          </label>
-        </div>
       </div>
 
-      {/* Map Container */}
-      <div className="relative px-0 sm:px-6 lg:px-8">
+      {/* Map Container - Full width, moved up */}
+      <div className="relative w-full">
         <div
           ref={mapContainer}
-          className="w-full h-[600px] sm:rounded-lg shadow-lg"
-          style={{ minHeight: '600px' }}
+          className="w-full h-[calc(100vh-60px)] sm:h-[600px] sm:rounded-lg shadow-lg"
+          style={{ minHeight: 'calc(100vh - 60px)' }}
         />
+        
+        {/* Layer Controls - Overlay on left side of map (mobile) */}
+        <div className="absolute top-2 left-2 sm:top-4 sm:left-4 z-[1000] bg-white/95 backdrop-blur-sm rounded-lg shadow-xl p-2 sm:p-3 border border-gray-200 max-w-[calc(100vw-16px)] sm:max-w-none">
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-3">
+            <label className="flex items-center gap-1.5 sm:gap-2 cursor-pointer px-2 py-1.5 sm:px-3 sm:py-2 rounded-md hover:bg-gray-100 transition-colors text-xs sm:text-sm">
+              <input
+                type="checkbox"
+                checked={showSensors}
+                onChange={(e) => setShowSensors(e.target.checked)}
+                className="cursor-pointer w-3 h-3 sm:w-4 sm:h-4"
+              />
+              <span className="font-medium whitespace-nowrap">
+                <Activity className="inline w-3 h-3 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />
+                <span className="hidden sm:inline">PurpleAir Sensors</span>
+                <span className="sm:hidden">Sensors</span>
+                <span className="ml-0.5 sm:ml-1">({sensors.length})</span>
+              </span>
+            </label>
+            <label className="flex items-center gap-1.5 sm:gap-2 cursor-pointer px-2 py-1.5 sm:px-3 sm:py-2 rounded-md hover:bg-gray-100 transition-colors text-xs sm:text-sm">
+              <input
+                type="checkbox"
+                checked={showFacilities}
+                onChange={(e) => setShowFacilities(e.target.checked)}
+                className="cursor-pointer w-3 h-3 sm:w-4 sm:h-4"
+              />
+              <span className="font-medium whitespace-nowrap">
+                <Factory className="inline w-3 h-3 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />
+                <span className="hidden sm:inline">Title V Facilities</span>
+                <span className="sm:hidden">Facilities</span>
+                <span className="ml-0.5 sm:ml-1">({facilities.length})</span>
+              </span>
+            </label>
+            <label className="flex items-center gap-1.5 sm:gap-2 cursor-pointer px-2 py-1.5 sm:px-3 sm:py-2 rounded-md hover:bg-gray-100 transition-colors text-xs sm:text-sm">
+              <input
+                type="checkbox"
+                checked={showMyLocation}
+                onChange={(e) => setShowMyLocation(e.target.checked)}
+                className="cursor-pointer w-3 h-3 sm:w-4 sm:h-4"
+              />
+              <span className="font-medium whitespace-nowrap">
+                <Navigation className="inline w-3 h-3 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />
+                <span className="hidden sm:inline">My Location</span>
+                <span className="sm:hidden">Location</span>
+              </span>
+            </label>
+            <label className="flex items-center gap-1.5 sm:gap-2 cursor-pointer px-2 py-1.5 sm:px-3 sm:py-2 rounded-md hover:bg-gray-100 transition-colors text-xs sm:text-sm">
+              <input
+                type="checkbox"
+                checked={showSmellReports}
+                onChange={(e) => setShowSmellReports(e.target.checked)}
+                className="cursor-pointer w-3 h-3 sm:w-4 sm:h-4"
+              />
+              <span className="font-medium whitespace-nowrap">
+                <AlertCircle className="inline w-3 h-3 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />
+                <span className="hidden sm:inline">Smell Reports</span>
+                <span className="sm:hidden">Smell</span>
+                <span className="ml-0.5 sm:ml-1">({smellClusters.length > 0 ? smellClusters.length : '0'})</span>
+              </span>
+            </label>
+            <label className="flex items-center gap-1.5 sm:gap-2 cursor-pointer px-2 py-1.5 sm:px-3 sm:py-2 rounded-md hover:bg-gray-100 transition-colors text-xs sm:text-sm">
+              <input
+                type="checkbox"
+                checked={showRiskZones}
+                onChange={(e) => setShowRiskZones(e.target.checked)}
+                className="cursor-pointer w-3 h-3 sm:w-4 sm:h-4"
+              />
+              <span className="font-medium whitespace-nowrap">
+                <AlertTriangle className="inline w-3 h-3 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />
+                <span className="hidden sm:inline">Risk Zones</span>
+                <span className="sm:hidden">Risk</span>
+                <span className="ml-0.5 sm:ml-1">({riskZones.length > 0 ? riskZones.length : '0'})</span>
+              </span>
+            </label>
+          </div>
+        </div>
 
         {/* Map Legend */}
         {showLegend && (
-          <div className="absolute top-4 right-4 bg-white rounded-lg shadow-xl p-4 z-[1000] max-w-xs border border-gray-200">
+          <div className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-white rounded-lg shadow-xl p-3 sm:p-4 z-[1000] max-w-[calc(100vw-20px)] sm:max-w-xs border border-gray-200">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-bold text-sm flex items-center gap-2">
                 <Info className="w-4 h-4" />

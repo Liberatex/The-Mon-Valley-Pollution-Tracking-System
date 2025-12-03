@@ -74,17 +74,29 @@ export const isDevelopment = (): boolean => {
 
 // Helper function to check if emulator should be used
 export const shouldUseEmulator = (): boolean => {
-  // Check environment variable first
+  // Explicitly check if we're in production (hosted on Firebase)
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    // If we're on Firebase hosting or any production domain, NEVER use emulator
+    if (hostname.includes('web.app') || 
+        hostname.includes('firebaseapp.com') || 
+        hostname.includes('mv-pollution-tracking-system') ||
+        (hostname !== 'localhost' && hostname !== '127.0.0.1' && !hostname.includes('192.168'))) {
+      return false; // Always use production in hosted environment
+    }
+  }
+  
+  // Check environment variable (only applies in local development)
   if (env.USE_EMULATOR === 'true') {
     return true;
   }
   
-  // In development mode, default to using emulator if not explicitly set to false
+  // In development mode, default to using emulator if running on localhost
   if (isDevelopment()) {
     // Check if we're running on localhost (development)
     if (typeof window !== 'undefined') {
       const hostname = window.location.hostname;
-      if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.includes('192.168')) {
         return true; // Default to emulator in local development
       }
     }

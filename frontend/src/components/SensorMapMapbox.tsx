@@ -166,8 +166,26 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
           ? 'http://127.0.0.1:5001/mv-pollution-tracking-system/us-central1'
           : 'https://us-central1-mv-pollution-tracking-system.cloudfunctions.net';
 
+        // First, try to seed facilities if collection is empty (only in emulator mode)
+        if (shouldUseEmulator()) {
+          try {
+            await axios.post(`${baseUrl}/seedTitleVFacilities`, {}, {
+              timeout: 15000,
+            });
+            console.log('✅ Seeded Title V facilities');
+          } catch (seedError: any) {
+            // Ignore seed errors (might already be seeded or auth required)
+            console.log('ℹ️ Seed attempt:', seedError.response?.status === 401 ? 'Auth required (expected)' : seedError.message);
+          }
+        }
+
         const response = await axios.get(`${baseUrl}/getTitleVFacilities`, {
           timeout: 10000,
+        });
+
+        console.log('📋 Title V facilities response:', {
+          success: response.data?.success,
+          count: response.data?.facilities?.length || 0,
         });
 
         if (response.data?.success && response.data.facilities) {
@@ -176,10 +194,13 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
             !isNaN(f.location.lat) && !isNaN(f.location.lng) &&
             f.location.lat !== 0 && f.location.lng !== 0
           );
+          console.log(`✅ Loaded ${validFacilities.length} valid Title V facilities`);
           setFacilities(validFacilities);
+        } else {
+          console.warn('⚠️ No facilities returned from API');
         }
-      } catch (error) {
-        console.error('Error fetching Title V facilities:', error);
+      } catch (error: any) {
+        console.error('❌ Error fetching Title V facilities:', error.message || error);
       }
     };
 
@@ -1789,6 +1810,12 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
     // Store handler reference to allow removal
     const riskZoneClickHandler = (e: mapboxgl.MapLayerMouseEvent) => {
       console.log('🔵 Risk zone clicked!', e);
+      console.log('🔵 Click event details:', {
+        features: e.features?.length || 0,
+        lngLat: e.lngLat,
+        point: e.point,
+        originalEvent: e.originalEvent?.type,
+      });
       
       if (!e.features || !e.features[0] || !e.lngLat || !e.features[0].properties) {
         console.warn('⚠️ Click event missing required data:', { features: e.features, lngLat: e.lngLat });

@@ -1997,7 +1997,7 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
                 
                 <div style="margin-bottom: 12px; font-size: 13px;">
                   <strong style="color: #374151;">Risk Level:</strong><br/>
-                  <span style="color: ${riskColor}; font-weight: 600; text-transform: capitalize;">${riskLevel}</span>
+                  <span style="color: #1f2937; font-weight: 600; text-transform: capitalize;">${riskLevel}</span>
                 </div>
                 
                 ${zone.affectedArea ? `

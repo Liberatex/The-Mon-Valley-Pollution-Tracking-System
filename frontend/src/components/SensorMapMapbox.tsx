@@ -1906,66 +1906,48 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
         return; // Silently ignore if point missing
       }
       
-      // Query risk zone layers directly
-      // Try both approaches: direct layer query and filtering all features
-      let riskZoneFeatures: mapboxgl.MapboxGeoJSONFeature[] = [];
+      // Use point-in-polygon check instead of queryRenderedFeatures
+      // This is more reliable for fill layers
       try {
-        // First, try querying risk zone layers directly
-        const layersToQuery: string[] = [];
-        if (fillLayerExists) layersToQuery.push('risk-zones-fill');
-        if (outlineLayerExists) layersToQuery.push('risk-zones-outline');
+        // Convert click coordinates to turf point
+        const clickPoint = turf.point([e.lngLat.lng, e.lngLat.lat]);
         
-        if (layersToQuery.length > 0) {
-          riskZoneFeatures = map.current.queryRenderedFeatures(point, {
-            layers: layersToQuery
-          });
-        }
+        // Check each risk zone to see if the click point is inside
+        let clickedZone: RiskZone | null = null;
+        let clickedZoneIndex = -1;
         
-        // If direct query didn't work, try querying all features and filtering
-        if (riskZoneFeatures.length === 0) {
-          const allFeatures = map.current.queryRenderedFeatures(point);
-          console.log('🔵 All features at click:', allFeatures.length, 'Point:', point);
-          
-          if (allFeatures.length > 0) {
-            console.log('🔵 Sample feature layers:', allFeatures.slice(0, 3).map(f => ({ 
-              layerId: f.layer?.id || (f as any).layer?.id,
-              source: f.source,
-              sourceLayer: (f as any).sourceLayer,
-              properties: Object.keys(f.properties || {})
-            })));
+        for (let i = 0; i < riskZones.length; i++) {
+          const zone = riskZones[i];
+          // Skip hidden zones (they're still clickable but we'll handle them)
+          const zoneId = `risk-zone-${i}`;
+          if (hiddenRiskZones.has(zoneId)) {
+            continue; // Skip hidden zones for now
           }
           
-          // Filter for risk zone features by checking source
-          riskZoneFeatures = allFeatures.filter(f => {
-            const source = f.source || (f as any).source;
-            return source === 'risk-zones';
-          });
+          // Check if point is inside polygon
+          if (turf.booleanPointInPolygon(clickPoint, zone.polygon)) {
+            clickedZone = zone;
+            clickedZoneIndex = i;
+            break; // Found the zone, stop searching
+          }
         }
         
-        console.log('🔵 Risk zone features found:', riskZoneFeatures.length);
+        console.log('🔵 Point-in-polygon check:', {
+          clickPoint: [e.lngLat.lng, e.lngLat.lat],
+          zonesChecked: riskZones.length,
+          zoneFound: clickedZone !== null,
+          zoneIndex: clickedZoneIndex
+        });
         
-        if (riskZoneFeatures.length === 0) {
+        if (!clickedZone || clickedZoneIndex === -1) {
           // No risk zone clicked, ignore
           return;
         }
         
-        console.log('✅ Risk zone clicked! Features:', riskZoneFeatures);
+        console.log('✅ Risk zone clicked! Zone index:', clickedZoneIndex);
         
-        // Use the first risk zone feature
-        const clickedFeature = riskZoneFeatures[0];
-        
-        if (!clickedFeature || !clickedFeature.properties) {
-          console.warn('⚠️ Clicked feature missing properties');
-          return;
-        }
-        
-        const props = clickedFeature.properties;
-        const zoneId = props.id as string;
-        console.log('🔵 Zone ID from click:', zoneId, 'Available zones:', riskZones.length);
-        
-        // Find zone by index (zones are indexed in the GeoJSON)
-        const zoneIndex = parseInt(zoneId.replace('risk-zone-', ''), 10);
-        const zone = riskZones[zoneIndex];
+        const zoneId = `risk-zone-${clickedZoneIndex}`;
+        const zone = clickedZone;
         
         if (!zone) {
           console.warn('⚠️ Zone not found for ID:', zoneId, 'Index:', zoneIndex);

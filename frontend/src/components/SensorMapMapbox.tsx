@@ -51,6 +51,18 @@ interface SensorMapMapboxProps {
 const CLAIRTON_COORDS = { lat: 40.292, lng: -79.881 };
 const MAP_ZOOM = 11;
 
+// Convert wind direction in degrees to compass direction
+const degreesToCompass = (degrees: number): string => {
+  // Normalize degrees to 0-360 range
+  const normalized = ((degrees % 360) + 360) % 360;
+  
+  // 8 compass directions: N, NE, E, SE, S, SW, W, NW
+  // Each direction covers 45 degrees (360 / 8 = 45)
+  const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+  const index = Math.round(normalized / 45) % 8;
+  return directions[index];
+};
+
 const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors, onSensorSelect }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -929,7 +941,7 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
                 ${windData ? `
                 <div style="background-color: #f9fafb; padding: 8px; border-radius: 4px; margin-bottom: 12px; font-size: 12px; color: #6b7280;">
                   <strong style="color: #374151;">Wind Conditions:</strong><br/>
-                  Speed: ${windData.speed.toFixed(1)} m/s | Direction: ${windData.direction.toFixed(0)}°<br/>
+                  Speed: ${windData.speed.toFixed(1)} m/s | Direction: ${degreesToCompass(windData.direction)} (${windData.direction.toFixed(0)}°)<br/>
                   Dispersion Factor: ${calculateDispersionFactor(windData.speed).toFixed(2)}x
                 </div>
                 ` : ''}
@@ -2629,19 +2641,27 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
           </div>
             <div className="text-sm text-white">
               <div>Speed: {windData.speed.toFixed(1)} m/s</div>
-              <div>Direction: {windData.direction.toFixed(0)}°</div>
+              <div>Direction: {degreesToCompass(windData.direction)} ({windData.direction.toFixed(0)}°)</div>
               <div className="text-xs text-white/80 mt-1">
                 Dispersion: {calculateDispersionFactor(windData.speed).toFixed(2)}x
         </div>
             </div>
           </div>
             
-            {/* Wind Arrow Visualization on Map */}
+            {/* Wind Arrow Visualization on Map - Matches facility plumes */}
             {(() => {
-              // Add wind arrow layer if not already added
-              if (map.current.getSource('wind-arrow')) {
-                return null;
-              }
+              // Convert wind direction (meteorological: direction wind comes FROM) to bearing (direction wind goes TO)
+              // This matches how facility plumes are calculated
+              const bearing = (windData.direction + 180) % 360; // Wind blows TO this direction
+              
+              // Calculate arrow length based on wind speed (similar to plumes)
+              const baseLength = 0.01; // ~1km
+              const speedMultiplier = Math.min(windData.speed / 5, 2);
+              const arrowLength = baseLength * (1 + speedMultiplier);
+              
+              // Calculate arrow end point using bearing (direction wind goes TO)
+              const start = turf.point([CLAIRTON_COORDS.lng, CLAIRTON_COORDS.lat]);
+              const end = turf.destination(start, arrowLength, bearing, { units: 'degrees' });
               
               // Create wind arrow GeoJSON
               const windArrow = {
@@ -2649,21 +2669,27 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
                 geometry: {
                   type: 'LineString' as const,
                   coordinates: [
-                    [CLAIRTON_COORDS.lng, CLAIRTON_COORDS.lat],
-                    [
-                      CLAIRTON_COORDS.lng + (windData.speed * 0.001 * Math.cos((windData.direction - 90) * Math.PI / 180)),
-                      CLAIRTON_COORDS.lat + (windData.speed * 0.001 * Math.sin((windData.direction - 90) * Math.PI / 180))
-                    ]
+                    [start.geometry.coordinates[0], start.geometry.coordinates[1]],
+                    [end.geometry.coordinates[0], end.geometry.coordinates[1]]
                   ]
                 },
                 properties: {
                   speed: windData.speed,
-                  direction: windData.direction
+                  direction: windData.direction,
+                  bearing: bearing
                 }
               };
 
-              // Add wind arrow source and layer
-              if (!map.current.getSource('wind-arrow')) {
+              // Update or add wind arrow source and layer
+              const source = map.current.getSource('wind-arrow') as mapboxgl.GeoJSONSource;
+              if (source) {
+                // Update existing source with new wind data
+                source.setData({
+                  type: 'FeatureCollection',
+                  features: [windArrow]
+                });
+              } else {
+                // Add wind arrow source and layer
                 map.current.addSource('wind-arrow', {
                   type: 'geojson',
                   data: {
@@ -2683,7 +2709,7 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
                   }
                 });
 
-                // Add arrowhead at end (using point placement instead)
+                // Add arrowhead at end (rotated to show direction wind goes TO)
                 map.current.addLayer({
                   id: 'wind-arrow-head',
                   type: 'symbol',
@@ -2691,7 +2717,7 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
                   layout: {
                     'symbol-placement': 'point',
                     'icon-image': 'arrow',
-                    'icon-rotate': windData.direction,
+                    'icon-rotate': bearing, // Rotate to show direction wind goes TO (matches plumes)
                     'icon-size': 1.5,
                     'icon-allow-overlap': true
                   }

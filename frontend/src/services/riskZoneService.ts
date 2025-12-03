@@ -189,3 +189,113 @@ export function detectPollutionEvents(
   return events;
 }
 
+/**
+ * Generate a hex grid overlay for granular risk visualization
+ * Creates small hexagons covering the map area, each colored by local risk
+ * @param bounds Map bounds {north, south, east, west}
+ * @param hexSize Size of each hexagon in kilometers (default 0.5km for granular view)
+ * @param sensorsWithRisk Array of sensors with calculated risk data
+ * @returns Array of hexagon risk zones
+ */
+export function generateHexGridOverlay(
+  bounds: { north: number; south: number; east: number; west: number },
+  hexSize: number = 0.5, // 500m hexagons for granular visualization
+  sensorsWithRisk: Array<{ lat: number; lng: number; riskIndex: number; riskLevel: string }>
+): RiskZone[] {
+  const hexZones: RiskZone[] = [];
+  
+  // Calculate hexagon spacing
+  // Hexagons are arranged in a staggered grid
+  const hexRadius = hexSize; // radius in km
+  const hexWidth = hexSize * 2; // width of hexagon
+  const hexHeight = hexSize * Math.sqrt(3); // height of hexagon
+  
+  // Convert bounds to approximate km offsets
+  const latRange = bounds.north - bounds.south;
+  const lngRange = bounds.east - bounds.west;
+  
+  // Approximate conversion: 1 degree lat ≈ 111 km, 1 degree lng ≈ 111 km * cos(lat)
+  const avgLat = (bounds.north + bounds.south) / 2;
+  const latKmPerDegree = 111;
+  const lngKmPerDegree = 111 * Math.cos(avgLat * Math.PI / 180);
+  
+  // Calculate number of hexagons needed
+  const cols = Math.ceil((lngRange * lngKmPerDegree) / (hexWidth * 0.75)) + 1;
+  const rows = Math.ceil((latRange * latKmPerDegree) / hexHeight) + 1;
+  
+  // Generate hex grid
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      // Calculate hexagon center
+      const lat = bounds.south + (row * hexHeight / latKmPerDegree);
+      const lngOffset = (col * hexWidth * 0.75) / lngKmPerDegree;
+      const lng = bounds.west + lngOffset;
+      
+      // Offset every other row for staggered grid
+      const adjustedLng = row % 2 === 0 ? lng : lng + (hexWidth * 0.375 / lngKmPerDegree);
+      
+      // Find nearby sensors and calculate average risk
+      const nearbySensors = sensorsWithRisk.filter(sensor => {
+        const distance = Math.sqrt(
+          Math.pow(sensor.lat - lat, 2) + Math.pow(sensor.lng - adjustedLng, 2)
+        );
+        const distanceKm = distance * 111; // Approximate conversion
+        return distanceKm <= hexRadius * 2; // Include sensors within 2x hex radius
+      });
+      
+      if (nearbySensors.length === 0) continue; // Skip hexagons with no nearby sensors
+      
+      // Calculate weighted average risk (closer sensors have more weight)
+      let totalWeight = 0;
+      let weightedRiskSum = 0;
+      
+      nearbySensors.forEach(sensor => {
+        const distance = Math.sqrt(
+          Math.pow(sensor.lat - lat, 2) + Math.pow(sensor.lng - adjustedLng, 2)
+        );
+        const distanceKm = distance * 111;
+        const weight = Math.max(0, 1 - (distanceKm / (hexRadius * 2))); // Inverse distance weighting
+        totalWeight += weight;
+        weightedRiskSum += sensor.riskIndex * weight;
+      });
+      
+      const avgRiskIndex = totalWeight > 0 ? weightedRiskSum / totalWeight : 0;
+      
+      // Determine risk level from average risk index
+      let riskLevel: RiskZone['riskLevel'] = 'elevated';
+      if (avgRiskIndex >= 100) {
+        riskLevel = 'toxic';
+      } else if (avgRiskIndex >= 75) {
+        riskLevel = 'severe';
+      } else if (avgRiskIndex >= 50) {
+        riskLevel = 'high';
+      } else if (avgRiskIndex >= 25) {
+        riskLevel = 'elevated';
+      } else {
+        continue; // Skip hexagons with low risk
+      }
+      
+      // Create hexagon polygon
+      const hexagonVertices: number[][] = [];
+      
+      for (let i = 0; i < 6; i++) {
+        const angle = (i * 60) * (Math.PI / 180);
+        const latOffset = hexRadius * 0.009 * Math.cos(angle);
+        const lngOffset = hexRadius * 0.009 * Math.sin(angle) / Math.cos(lat * Math.PI / 180);
+        hexagonVertices.push([adjustedLng + lngOffset, lat + latOffset]);
+      }
+      hexagonVertices.push(hexagonVertices[0]); // Close polygon
+      
+      const hexagon = turf.polygon([hexagonVertices]);
+      
+      hexZones.push({
+        polygon: hexagon,
+        riskLevel,
+        affectedArea: turf.area(hexagon) / 1000000,
+      });
+    }
+  }
+  
+  return hexZones;
+}
+

@@ -76,6 +76,7 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
   const [loadingCompliance, setLoadingCompliance] = useState(false);
   const [triFacilities, setTriFacilities] = useState<any[]>([]);
   const [userHealthProfile, setUserHealthProfile] = useState<HealthProfile | null>(null);
+  const riskZoneClickHandlerRef = useRef<((e: mapboxgl.MapLayerMouseEvent) => void) | null>(null);
   
   // Use real-time polling hook (60 seconds as per VCAN requirement)
   const { sensors: realtimeSensors, loading: sensorsLoading } = useRealtimeSensorData(60000);
@@ -642,7 +643,7 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
     }
 
     // Ensure layers exist (add if they don't)
-    // Add cluster layer (visible at zoom 0-10)
+      // Add cluster layer (visible at zoom 0-10)
     if (!map.current.getLayer('sensor-clusters')) {
       console.log('✅ Adding sensor-clusters layer');
       map.current.addLayer({
@@ -667,7 +668,7 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
       });
     }
 
-    // Add cluster count labels (zoom 0-10)
+      // Add cluster count labels (zoom 0-10)
     if (!map.current.getLayer('sensor-cluster-count')) {
       console.log('✅ Adding sensor-cluster-count layer');
       map.current.addLayer({
@@ -1736,26 +1737,26 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
     // Always ensure click handlers are attached (even if source already exists)
     // Store handler reference to allow removal
     const riskZoneClickHandler = (e: mapboxgl.MapLayerMouseEvent) => {
-        if (e.features && e.features[0] && e.lngLat && e.features[0].properties) {
-          const props = e.features[0].properties;
-          const zoneId = props.id as string;
-          const zone = riskZones.find((z, idx) => `risk-zone-${idx}` === zoneId);
-          
-          // Check if zone is currently hidden (before toggle)
-          const isCurrentlyHidden = hiddenRiskZones.has(zoneId);
-          
-          // Toggle zone visibility on click (hide/show)
-          setHiddenRiskZones((prev) => {
-            const newSet = new Set(prev);
-            if (newSet.has(zoneId)) {
-              newSet.delete(zoneId); // Show zone
-            } else {
-              newSet.add(zoneId); // Hide zone
-            }
-            return newSet;
-          });
-          
-          if (zone && map.current) {
+      if (e.features && e.features[0] && e.lngLat && e.features[0].properties) {
+        const props = e.features[0].properties;
+        const zoneId = props.id as string;
+        const zone = riskZones.find((z, idx) => `risk-zone-${idx}` === zoneId);
+        
+        // Check if zone is currently hidden (before toggle)
+        const isCurrentlyHidden = hiddenRiskZones.has(zoneId);
+        
+        // Toggle zone visibility on click (hide/show)
+        setHiddenRiskZones((prev) => {
+          const newSet = new Set(prev);
+          if (newSet.has(zoneId)) {
+            newSet.delete(zoneId); // Show zone
+          } else {
+            newSet.add(zoneId); // Hide zone
+          }
+          return newSet;
+        });
+        
+        if (zone && map.current) {
             const riskLevel = zone.riskLevel;
             const riskColor = riskLevel === 'elevated' ? '#ffff00' :
                             riskLevel === 'high' ? '#ff7e00' :
@@ -1848,30 +1849,61 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
               </div>
             `;
             
-            // Create and show popup
-            new mapboxgl.Popup({ closeOnClick: true, maxWidth: '450px' })
-              .setLngLat(e.lngLat)
-              .setHTML(popupContent)
-              .addTo(map.current);
-          }
+          // Create and show popup
+          new mapboxgl.Popup({ closeOnClick: true, maxWidth: '450px' })
+            .setLngLat(e.lngLat)
+            .setHTML(popupContent)
+            .addTo(map.current);
         }
-      };
-      
+      }
+    };
+    
+    // Store handler in ref for cleanup
+    riskZoneClickHandlerRef.current = riskZoneClickHandler;
+    
     // Remove existing handlers if present, then add new ones
     // This ensures handlers are always attached, even when source/data updates
     if (map.current.getLayer('risk-zones-fill')) {
-      // Remove all existing click handlers for this layer
-      map.current.off('click', 'risk-zones-fill');
+      // Remove previous handler if it exists
+      if (riskZoneClickHandlerRef.current) {
+        try {
+          map.current.off('click', 'risk-zones-fill', riskZoneClickHandlerRef.current);
+        } catch (e) {
+          // Handler might not exist, that's okay
+        }
+      }
       // Add the new handler
       map.current.on('click', 'risk-zones-fill', riskZoneClickHandler);
     }
 
     if (map.current.getLayer('risk-zones-outline')) {
-      // Remove all existing click handlers for this layer
-      map.current.off('click', 'risk-zones-outline');
+      // Remove previous handler if it exists
+      if (riskZoneClickHandlerRef.current) {
+        try {
+          map.current.off('click', 'risk-zones-outline', riskZoneClickHandlerRef.current);
+        } catch (e) {
+          // Handler might not exist, that's okay
+        }
+      }
       // Add the new handler
       map.current.on('click', 'risk-zones-outline', riskZoneClickHandler);
     }
+    
+    // Cleanup function
+    return () => {
+      if (map.current && riskZoneClickHandlerRef.current) {
+        try {
+          if (map.current.getLayer('risk-zones-fill')) {
+            map.current.off('click', 'risk-zones-fill', riskZoneClickHandlerRef.current);
+          }
+          if (map.current.getLayer('risk-zones-outline')) {
+            map.current.off('click', 'risk-zones-outline', riskZoneClickHandlerRef.current);
+          }
+        } catch (e) {
+          // Ignore errors during cleanup
+        }
+      }
+    };
   }, [map.current, riskZones, showRiskZones, hiddenRiskZones]);
 
   // Change cursor on hover for risk zones

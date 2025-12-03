@@ -1705,7 +1705,7 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
             'toxic', '#9c27b0', // Purple
             '#cccccc', // Default gray
           ],
-          // Zoom-based opacity: starts at 0.08 at low zoom, decreases to 0.05 when zoomed in
+          // Zoom-based opacity: starts at 0.25 at low zoom, decreases to 0.15 when zoomed in
           // Hidden zones have opacity 0 but remain clickable
           'fill-opacity': [
             'case',
@@ -1714,9 +1714,9 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
               'interpolate',
               ['linear'],
               ['zoom'],
-              8, 0.08,  // Start at 0.08 at low zoom
-              12, 0.065, // Decrease to 0.065 at medium zoom
-              15, 0.05, // Decrease to 0.05 when zoomed in (lowest opacity)
+              8, 0.25,  // Start at 0.25 at low zoom (more visible)
+              12, 0.20, // Decrease to 0.20 at medium zoom
+              15, 0.15, // Decrease to 0.15 when zoomed in (still visible but less intrusive)
             ],
           ],
         },
@@ -2256,24 +2256,24 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
                 </h4>
                 <div className="space-y-1.5 ml-5">
                   <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded" style={{ backgroundColor: '#ffff00', opacity: 0.3 }}></div>
+                    <div className="w-5 h-3 rounded-full" style={{ backgroundColor: '#ffff00', opacity: 0.25 }}></div>
                     <span>Elevated Risk</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded" style={{ backgroundColor: '#ff7e00', opacity: 0.3 }}></div>
+                    <div className="w-5 h-3 rounded-full" style={{ backgroundColor: '#ff7e00', opacity: 0.25 }}></div>
                     <span>High Risk</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded" style={{ backgroundColor: '#ff0000', opacity: 0.3 }}></div>
+                    <div className="w-5 h-3 rounded-full" style={{ backgroundColor: '#ff0000', opacity: 0.25 }}></div>
                     <span>Severe Risk</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded" style={{ backgroundColor: '#9c27b0', opacity: 0.3 }}></div>
+                    <div className="w-5 h-3 rounded-full" style={{ backgroundColor: '#9c27b0', opacity: 0.25 }}></div>
                     <span>Toxic Event</span>
                   </div>
                 </div>
                 <p className="text-gray-500 mt-1 ml-5 text-xs">
-                  Dynamic zones generated from pollution events, sensor readings, and wind patterns
+                  Dynamic elliptical zones generated from pollution events, sensor readings, and wind patterns (elongated downwind)
                 </p>
               </div>
 

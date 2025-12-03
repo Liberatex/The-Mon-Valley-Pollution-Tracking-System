@@ -2171,7 +2171,7 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
                 ${zone.affectedArea ? `
                 <div style="margin-bottom: 12px; font-size: 13px;">
                   <strong style="color: #374151;">Affected Area:</strong><br/>
-                  <span style="color: #1f2937;">${zone.affectedArea.toFixed(2)} km²</span>
+                  <span style="color: #1f2937;">${(zone.affectedArea * 0.386102).toFixed(2)} mi²</span>
                 </div>
                 ` : ''}
                 

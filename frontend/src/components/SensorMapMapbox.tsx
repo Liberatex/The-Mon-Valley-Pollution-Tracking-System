@@ -1705,7 +1705,8 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
             'toxic', '#9c27b0', // Purple
             '#cccccc', // Default gray
           ],
-          // Zoom-based opacity: starts at 0.25 at low zoom, decreases to 0.15 when zoomed in
+          // Zoom-based opacity: starts at 0.45 at low zoom, decreases to 0.35 when zoomed in
+          // More visible colors while still transparent
           // Hidden zones have opacity 0 but remain clickable
           'fill-opacity': [
             'case',
@@ -1714,9 +1715,9 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
               'interpolate',
               ['linear'],
               ['zoom'],
-              8, 0.25,  // Start at 0.25 at low zoom (more visible)
-              12, 0.20, // Decrease to 0.20 at medium zoom
-              15, 0.15, // Decrease to 0.15 when zoomed in (still visible but less intrusive)
+              8, 0.45,  // Start at 0.45 at low zoom (colorfully visible)
+              12, 0.40, // Decrease to 0.40 at medium zoom
+              15, 0.35, // Decrease to 0.35 when zoomed in (still colorfully visible)
             ],
           ],
         },
@@ -1736,8 +1737,8 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
             'toxic', '#9c27b0',
             '#cccccc',
           ],
-          'line-width': 2,
-          'line-opacity': 0.6,
+          'line-width': 2.5,
+          'line-opacity': 0.8,
         },
       });
     }
@@ -1869,43 +1870,33 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
     // Store handler in ref for cleanup
     riskZoneClickHandlerRef.current = riskZoneClickHandler;
     
-    // Remove existing handlers if present, then add new ones
+    // Remove ALL existing click handlers for these layers, then add new ones
     // This ensures handlers are always attached, even when source/data updates
     if (map.current.getLayer('risk-zones-fill')) {
-      // Remove previous handler if it exists
-      if (riskZoneClickHandlerRef.current) {
-        try {
-          map.current.off('click', 'risk-zones-fill', riskZoneClickHandlerRef.current);
-        } catch (e) {
-          // Handler might not exist, that's okay
-        }
-      }
+      // Remove all click handlers for this layer
+      map.current.off('click', 'risk-zones-fill');
       // Add the new handler
       map.current.on('click', 'risk-zones-fill', riskZoneClickHandler);
+      console.log('✅ Risk zone fill click handler attached');
     }
 
     if (map.current.getLayer('risk-zones-outline')) {
-      // Remove previous handler if it exists
-      if (riskZoneClickHandlerRef.current) {
-        try {
-          map.current.off('click', 'risk-zones-outline', riskZoneClickHandlerRef.current);
-        } catch (e) {
-          // Handler might not exist, that's okay
-        }
-      }
+      // Remove all click handlers for this layer
+      map.current.off('click', 'risk-zones-outline');
       // Add the new handler
       map.current.on('click', 'risk-zones-outline', riskZoneClickHandler);
+      console.log('✅ Risk zone outline click handler attached');
     }
     
     // Cleanup function
     return () => {
-      if (map.current && riskZoneClickHandlerRef.current) {
+      if (map.current) {
         try {
           if (map.current.getLayer('risk-zones-fill')) {
-            map.current.off('click', 'risk-zones-fill', riskZoneClickHandlerRef.current);
+            map.current.off('click', 'risk-zones-fill', riskZoneClickHandler);
           }
           if (map.current.getLayer('risk-zones-outline')) {
-            map.current.off('click', 'risk-zones-outline', riskZoneClickHandlerRef.current);
+            map.current.off('click', 'risk-zones-outline', riskZoneClickHandler);
           }
         } catch (e) {
           // Ignore errors during cleanup
@@ -2256,24 +2247,56 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
                 </h4>
                 <div className="space-y-1.5 ml-5">
                   <div className="flex items-center gap-2">
-                    <div className="w-5 h-3 rounded-full" style={{ backgroundColor: '#ffff00', opacity: 0.25 }}></div>
+                    <svg width="20" height="20" viewBox="0 0 20 20" className="flex-shrink-0">
+                      <polygon
+                        points="10,2 16,6 16,14 10,18 4,14 4,6"
+                        fill="#ffff00"
+                        fillOpacity="0.45"
+                        stroke="#ffff00"
+                        strokeWidth="1"
+                      />
+                    </svg>
                     <span>Elevated Risk</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-5 h-3 rounded-full" style={{ backgroundColor: '#ff7e00', opacity: 0.25 }}></div>
+                    <svg width="20" height="20" viewBox="0 0 20 20" className="flex-shrink-0">
+                      <polygon
+                        points="10,2 16,6 16,14 10,18 4,14 4,6"
+                        fill="#ff7e00"
+                        fillOpacity="0.45"
+                        stroke="#ff7e00"
+                        strokeWidth="1"
+                      />
+                    </svg>
                     <span>High Risk</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-5 h-3 rounded-full" style={{ backgroundColor: '#ff0000', opacity: 0.25 }}></div>
+                    <svg width="20" height="20" viewBox="0 0 20 20" className="flex-shrink-0">
+                      <polygon
+                        points="10,2 16,6 16,14 10,18 4,14 4,6"
+                        fill="#ff0000"
+                        fillOpacity="0.45"
+                        stroke="#ff0000"
+                        strokeWidth="1"
+                      />
+                    </svg>
                     <span>Severe Risk</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-5 h-3 rounded-full" style={{ backgroundColor: '#9c27b0', opacity: 0.25 }}></div>
+                    <svg width="20" height="20" viewBox="0 0 20 20" className="flex-shrink-0">
+                      <polygon
+                        points="10,2 16,6 16,14 10,18 4,14 4,6"
+                        fill="#9c27b0"
+                        fillOpacity="0.45"
+                        stroke="#9c27b0"
+                        strokeWidth="1"
+                      />
+                    </svg>
                     <span>Toxic Event</span>
                   </div>
                 </div>
                 <p className="text-gray-500 mt-1 ml-5 text-xs">
-                  Dynamic elliptical zones generated from pollution events, sensor readings, and wind patterns (elongated downwind)
+                  Dynamic hexagon zones generated from pollution events, sensor readings, and wind patterns
                 </p>
               </div>
 

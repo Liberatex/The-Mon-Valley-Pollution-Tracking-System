@@ -47,25 +47,46 @@ export function generateRiskZone(
     radius *= 0.7; // High wind reduces zone
   }
 
-  // Create circle centered on event
+  // Create hexagon polygon centered on event
   const center = turf.point([centerLng, centerLat]);
-  const circle = turf.circle(center, radius, { units: 'kilometers' });
-
-  // Elongate downwind based on wind direction
+  
   // Convert wind direction to bearing (0° = North, clockwise)
   const bearing = windData.direction;
   
-  // Create ellipse elongated downwind
-  const ellipse = turf.ellipse(center, radius, radius * 0.6, {
-    units: 'kilometers',
-    steps: 64,
-    angle: bearing,
-  });
+  // Create hexagon polygon (6 sides)
+  // Calculate hexagon vertices
+  const hexagonVertices: number[][] = [];
+  const numSides = 6;
+  
+  // Adjust radius for hexagon (make it slightly larger to account for hexagon shape)
+  const hexRadius = radius * 1.1;
+  
+  for (let i = 0; i < numSides; i++) {
+    // Calculate angle for each vertex (60 degrees apart)
+    // Rotate hexagon based on wind direction
+    const angle = (i * 60 + bearing) * (Math.PI / 180);
+    
+    // Calculate vertex position
+    // Convert km to degrees (approximate: 1 km ≈ 0.009 degrees at this latitude)
+    const latOffset = hexRadius * 0.009 * Math.cos(angle);
+    const lngOffset = hexRadius * 0.009 * Math.sin(angle) / Math.cos(centerLat * Math.PI / 180);
+    
+    hexagonVertices.push([
+      centerLng + lngOffset,
+      centerLat + latOffset
+    ]);
+  }
+  
+  // Close the polygon by adding the first vertex at the end
+  hexagonVertices.push(hexagonVertices[0]);
+  
+  // Create hexagon polygon
+  const hexagon = turf.polygon([hexagonVertices]);
 
   return {
-    polygon: ellipse,
+    polygon: hexagon,
     riskLevel: severity as RiskZone['riskLevel'],
-    affectedArea: turf.area(ellipse) / 1000000, // Convert to km²
+    affectedArea: turf.area(hexagon) / 1000000, // Convert to km²
   };
 }
 

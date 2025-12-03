@@ -1961,13 +1961,36 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
       }
     };
     
-    // Attach handlers immediately and also after a short delay to ensure layers are ready
+    // Attach handlers after map is loaded and layers are ready
+    // Use map 'load' event to ensure handlers are attached when layers exist
+    const attachHandlersWhenReady = () => {
+      if (!map.current) return;
+      
+      // Wait for map to be fully loaded
+      if (map.current.loaded()) {
+        attachHandlers();
+      } else {
+        // If map not loaded yet, wait for load event
+        map.current.once('load', () => {
+          setTimeout(attachHandlers, 200); // Small delay to ensure layers are rendered
+        });
+      }
+    };
+    
+    // Try attaching immediately, and also set up for when map loads
     attachHandlers();
-    const timeoutId = setTimeout(attachHandlers, 100);
+    attachHandlersWhenReady();
+    
+    // Also try after delays to catch layers that are added later
+    const timeoutId1 = setTimeout(attachHandlers, 100);
+    const timeoutId2 = setTimeout(attachHandlers, 500);
+    const timeoutId3 = setTimeout(attachHandlers, 1000);
     
     // Cleanup function
     return () => {
-      clearTimeout(timeoutId);
+      clearTimeout(timeoutId1);
+      clearTimeout(timeoutId2);
+      clearTimeout(timeoutId3);
       if (map.current && riskZoneClickHandlerRef.current) {
         try {
           const handler = riskZoneClickHandlerRef.current;

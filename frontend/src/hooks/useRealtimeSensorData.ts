@@ -37,6 +37,14 @@ export function useRealtimeSensorData(intervalMs: number = 60000) {
         headers: { 'Content-Type': 'application/json' },
       });
 
+      console.log('📡 PurpleAir API Response:', {
+        success: response.data?.success,
+        hasData: !!response.data?.data,
+        dataLength: response.data?.data?.length || 0,
+        count: response.data?.count,
+        message: response.data?.message,
+      });
+
       if (response.data?.success && response.data.data) {
         const calibratedSensors: SensorData[] = response.data.data
           .map((s: any) => {
@@ -60,12 +68,24 @@ export function useRealtimeSensorData(intervalMs: number = 60000) {
           })
           .filter((s: SensorData) => s.location.lat !== 0 && s.location.lng !== 0);
 
+        console.log(`✅ Processed ${calibratedSensors.length} calibrated sensors from API`);
         setSensors(calibratedSensors);
         setError(null);
+      } else {
+        console.warn('⚠️ API response missing data:', response.data);
+        setSensors([]);
+        setError(response.data?.message || 'No sensor data returned from API');
       }
     } catch (err: any) {
-      console.error('Error fetching sensor data:', err);
-      setError(err.message || 'Failed to fetch sensor data');
+      console.error('❌ Error fetching sensor data:', {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status,
+        code: err.code,
+        url: `${baseUrl}/fetchPurpleAirSensorData`,
+      });
+      setError(err.response?.data?.message || err.message || 'Failed to fetch sensor data');
+      setSensors([]); // Clear sensors on error
     } finally {
       setLoading(false);
     }

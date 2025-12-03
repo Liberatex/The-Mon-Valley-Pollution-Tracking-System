@@ -137,18 +137,26 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
   // Use real-time sensors or fallback to propSensors
   // IMPORTANT: Preserve sensors even if realtimeSensors temporarily becomes empty
   useEffect(() => {
+    console.log(`🔍 Sensor update check:`, {
+      realtimeSensorsCount: realtimeSensors.length,
+      propSensorsCount: propSensors?.length || 0,
+      currentSensorsCount: sensors.length,
+      realtimeLoading: sensorsLoading,
+    });
+
     if (realtimeSensors.length > 0) {
       console.log(`✅ Updating sensors from realtime hook: ${realtimeSensors.length} sensors`);
+      console.log(`   Sample sensor:`, realtimeSensors[0]);
       setSensors(realtimeSensors);
     } else if (propSensors && propSensors.length > 0) {
       console.log(`✅ Using propSensors: ${propSensors.length} sensors`);
       setSensors(propSensors);
-    } else if (sensors.length === 0) {
-      // Only clear sensors if we have no sensors at all and no new data
+    } else if (sensors.length === 0 && !sensorsLoading) {
+      // Only clear sensors if we have no sensors at all and no new data (and not loading)
       console.warn('⚠️ No sensors available from any source');
     }
     // Don't clear sensors if realtimeSensors becomes empty temporarily (preserve existing)
-  }, [realtimeSensors, propSensors]);
+  }, [realtimeSensors, propSensors, sensorsLoading]);
 
   // Fetch Title V facilities (VCAN requirement)
   useEffect(() => {

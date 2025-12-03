@@ -1808,21 +1808,30 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
 
     // Always ensure click handlers are attached (even if source already exists)
     // Store handler reference to allow removal
-    const riskZoneClickHandler = (e: mapboxgl.MapLayerMouseEvent) => {
-      console.log('🔵 Risk zone clicked!', e);
-      console.log('🔵 Click event details:', {
-        features: e.features?.length || 0,
-        lngLat: e.lngLat,
-        point: e.point,
-        originalEvent: e.originalEvent?.type,
+    const riskZoneClickHandler = (e: mapboxgl.MapLayerMouseEvent | mapboxgl.MapMouseEvent) => {
+      console.log('🔵 Map clicked!', e);
+      
+      // Get all features at the click point, including risk zones
+      if (!map.current || !e.lngLat) return;
+      
+      const features = map.current.queryRenderedFeatures(e.point, {
+        layers: ['risk-zones-fill', 'risk-zones-outline']
       });
       
-      if (!e.features || !e.features[0] || !e.lngLat || !e.features[0].properties) {
-        console.warn('⚠️ Click event missing required data:', { features: e.features, lngLat: e.lngLat });
+      console.log('🔵 Risk zone features at click point:', features.length);
+      
+      if (features.length === 0) {
+        // No risk zone clicked, ignore
         return;
       }
       
-      const props = e.features[0].properties;
+      const clickedFeature = features[0];
+      if (!clickedFeature || !clickedFeature.properties) {
+        console.warn('⚠️ Clicked feature missing properties');
+        return;
+      }
+      
+      const props = clickedFeature.properties;
       const zoneId = props.id as string;
       console.log('🔵 Zone ID from click:', zoneId, 'Available zones:', riskZones.length);
       
@@ -1953,97 +1962,47 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
     // Store handler in ref for cleanup
     riskZoneClickHandlerRef.current = riskZoneClickHandler;
     
-    // Wait a bit to ensure layers are fully rendered before attaching handlers
-    const attachHandlers = () => {
+    // Attach a general map click handler that checks for risk zones
+    // This approach is more reliable than layer-specific handlers
+    const attachMapClickHandler = () => {
       if (!map.current) return;
       
-      // Remove previous handler if it exists, then attach new one
+      // Remove previous handler if it exists
       const previousHandler = riskZoneClickHandlerRef.current;
       if (previousHandler) {
         try {
-          if (map.current.getLayer('risk-zones-fill')) {
-            map.current.off('click', 'risk-zones-fill', previousHandler);
-          }
-          if (map.current.getLayer('risk-zones-outline')) {
-            map.current.off('click', 'risk-zones-outline', previousHandler);
-          }
+          map.current.off('click', previousHandler);
         } catch (e) {
           // Ignore errors
         }
       }
       
-      // Attach handlers to both fill and outline layers
-      // Use 'data' event to ensure source has data before attaching handlers
-      const source = map.current.getSource('risk-zones') as mapboxgl.GeoJSONSource;
-      if (source) {
-        // Wait for source data to be loaded
-        source.once('data', () => {
-          if (map.current?.getLayer('risk-zones-fill')) {
-            map.current.on('click', 'risk-zones-fill', riskZoneClickHandler);
-            console.log('✅ Risk zone fill click handler attached (after data load)');
-          }
-          if (map.current?.getLayer('risk-zones-outline')) {
-            map.current.on('click', 'risk-zones-outline', riskZoneClickHandler);
-            console.log('✅ Risk zone outline click handler attached (after data load)');
-          }
-        });
-      }
-      
-      // Also attach immediately if layers exist (for when source already has data)
-      if (map.current.getLayer('risk-zones-fill')) {
-        map.current.on('click', 'risk-zones-fill', riskZoneClickHandler);
-        console.log('✅ Risk zone fill click handler attached');
-      } else {
-        console.warn('⚠️ risk-zones-fill layer not found');
-      }
-
-      if (map.current.getLayer('risk-zones-outline')) {
-        map.current.on('click', 'risk-zones-outline', riskZoneClickHandler);
-        console.log('✅ Risk zone outline click handler attached');
-      } else {
-        console.warn('⚠️ risk-zones-outline layer not found');
-      }
+      // Attach handler to the map itself (not specific layers)
+      // This will catch clicks on risk zones even if other layers are on top
+      map.current.on('click', riskZoneClickHandler);
+      console.log('✅ Risk zone map click handler attached');
     };
     
-    // Attach handlers after map is loaded and layers are ready
-    // Use map 'load' event to ensure handlers are attached when layers exist
-    const attachHandlersWhenReady = () => {
-      if (!map.current) return;
-      
-      // Wait for map to be fully loaded
-      if (map.current.loaded()) {
-        attachHandlers();
-      } else {
-        // If map not loaded yet, wait for load event
-        map.current.once('load', () => {
-          setTimeout(attachHandlers, 200); // Small delay to ensure layers are rendered
-        });
-      }
-    };
+    // Attach handler when map is ready
+    if (map.current.loaded()) {
+      attachMapClickHandler();
+    } else {
+      map.current.once('load', () => {
+        setTimeout(attachMapClickHandler, 100);
+      });
+    }
     
-    // Try attaching immediately, and also set up for when map loads
-    attachHandlers();
-    attachHandlersWhenReady();
-    
-    // Also try after delays to catch layers that are added later
-    const timeoutId1 = setTimeout(attachHandlers, 100);
-    const timeoutId2 = setTimeout(attachHandlers, 500);
-    const timeoutId3 = setTimeout(attachHandlers, 1000);
+    // Also attach after delays to ensure it's set up
+    const timeoutId1 = setTimeout(attachMapClickHandler, 100);
+    const timeoutId2 = setTimeout(attachMapClickHandler, 500);
     
     // Cleanup function
     return () => {
       clearTimeout(timeoutId1);
       clearTimeout(timeoutId2);
-      clearTimeout(timeoutId3);
       if (map.current && riskZoneClickHandlerRef.current) {
         try {
-          const handler = riskZoneClickHandlerRef.current;
-          if (map.current.getLayer('risk-zones-fill')) {
-            map.current.off('click', 'risk-zones-fill', handler);
-          }
-          if (map.current.getLayer('risk-zones-outline')) {
-            map.current.off('click', 'risk-zones-outline', handler);
-          }
+          map.current.off('click', riskZoneClickHandlerRef.current);
         } catch (e) {
           // Ignore errors during cleanup
         }

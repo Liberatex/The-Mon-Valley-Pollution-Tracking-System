@@ -350,10 +350,11 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
 
     // Detect events based on weighted risk index (not raw PM2.5)
     // Thresholds based on weighted risk levels:
-    // Elevated: 25-50, High: 50-75, Severe: 75-100, Toxic: 100+
+    // Elevated: 10-50, High: 50-75, Severe: 75-100, Toxic: 100+
+    // Lowered threshold to 10 to show zones even with low PM2.5 readings
     const events = sensorsWithRisk
       .filter(s => {
-        const hasElevatedRisk = s.riskIndex >= 25;
+        const hasElevatedRisk = s.riskIndex >= 10;
         if (hasElevatedRisk) {
           console.log(`   ⚠️ Event detected: Sensor at [${s.lat}, ${s.lng}] - Risk Index: ${s.riskIndex.toFixed(2)}, Level: ${s.riskLevel}`);
         }
@@ -462,12 +463,45 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
     }
   }, [sensors, smellClusters, windData, facilities, triFacilities, userHealthProfile, showRiskZones, hiddenRiskZones, map.current]);
 
-  // Fetch wind data
+  // Fetch wind data - use backend function if frontend API key not available
   useEffect(() => {
     const fetchWind = async () => {
-      const wind = await getWindData(CLAIRTON_COORDS.lat, CLAIRTON_COORDS.lng);
+      // Try frontend API key first
+      let wind = await getWindData(CLAIRTON_COORDS.lat, CLAIRTON_COORDS.lng, env.OPENWEATHER_API_KEY);
+      
+      // If frontend key not available, use backend function
+      if (!wind) {
+        try {
+          const baseUrl = shouldUseEmulator()
+            ? 'http://127.0.0.1:5001/mv-pollution-tracking-system/us-central1'
+            : 'https://us-central1-mv-pollution-tracking-system.cloudfunctions.net';
+          
+          const response = await axios.get(`${baseUrl}/getWindData`, {
+            params: {
+              lat: CLAIRTON_COORDS.lat,
+              lng: CLAIRTON_COORDS.lng,
+            },
+            timeout: 10000,
+          });
+          
+          if (response.data?.success && response.data.data) {
+            wind = {
+              speed: response.data.data.speed || 0,
+              direction: response.data.data.direction || 0,
+              timestamp: new Date(response.data.data.timestamp || Date.now()),
+            };
+          }
+        } catch (err) {
+          console.warn('Could not fetch wind data from backend:', err);
+        }
+      }
+      
       if (wind) {
         setWindData({ speed: wind.speed, direction: wind.direction });
+      } else {
+        // Use default wind data if API unavailable
+        console.warn('Using default wind data (5 m/s, 180°)');
+        setWindData({ speed: 5, direction: 180 });
       }
     };
     fetchWind();
@@ -2401,11 +2435,11 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#00e400' }}></div>
                     <span>Good (0-12)</span>
-                  </div>
+            </div>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#ffff00' }}></div>
                     <span>Moderate (12-35)</span>
-                  </div>
+          </div>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#ff7e00' }}></div>
                     <span>Unhealthy Sensitive (35-55)</span>
@@ -2422,7 +2456,7 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
                 <p className="text-gray-500 mt-1 ml-5 text-xs">
                   Community-operated sensors providing real-time PM2.5 readings
                 </p>
-              </div>
+      </div>
 
               {/* Smell PGH Reports - Second Section */}
               <div className="border-t border-gray-200 pt-3">
@@ -2434,11 +2468,11 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
                   <div className="flex items-center gap-2">
                     <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-b-[10px] border-l-transparent border-r-transparent" style={{ borderBottomColor: '#90EE90' }}></div>
                     <span>Low (1-2)</span>
-                  </div>
+            </div>
                   <div className="flex items-center gap-2">
                     <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-b-[10px] border-l-transparent border-r-transparent" style={{ borderBottomColor: '#FFD700' }}></div>
                     <span>Moderate (2-3)</span>
-                  </div>
+              </div>
                   <div className="flex items-center gap-2">
                     <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-b-[10px] border-l-transparent border-r-transparent" style={{ borderBottomColor: '#FF8C00' }}></div>
                     <span>High (3-4)</span>

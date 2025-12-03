@@ -1148,44 +1148,123 @@ export const getACHDHistoricalData = functions.https.onRequest(async (req, res) 
 export const fetchPurpleAirSensorData = functions.https.onRequest((req, res) => {
   return corsHandler(req, res, async () => {
     try {
-      const apiKey = process.env.PURPLEAIR_API_KEY;
+      // Get API key from environment (Firebase secrets are automatically injected as env vars)
+      // Also check legacy config for backward compatibility
+      let apiKey = process.env.PURPLEAIR_API_KEY;
+      
+      if (!apiKey && functions.config().purpleair?.api_key) {
+        apiKey = functions.config().purpleair.api_key;
+      }
       
       if (!apiKey) {
         console.warn('PurpleAir API key not configured');
+        console.warn('Checked: process.env.PURPLEAIR_API_KEY and functions.config().purpleair.api_key');
         return res.json({
           success: false,
           data: [],
-          message: 'PurpleAir API key not configured. Please set PURPLEAIR_API_KEY in Firebase Functions environment variables.',
-          note: 'To get an API key, register at https://www2.purpleair.com'
+          message: 'PurpleAir API key not configured. Please set PURPLEAIR_API_KEY in Firebase Functions secrets.',
+          note: 'To get an API key, register at https://www2.purpleair.com. Use: firebase functions:secrets:set PURPLEAIR_API_KEY'
         });
       }
+      
+      console.log('✅ PurpleAir API key found, attempting to fetch sensors from PurpleAir API...');
 
-      // Mon Valley bounding box (Clairton area)
+      // Mon Valley bounding box (Clairton area) - expanded to capture more sensors
       const params = {
         fields: 'sensor_index,name,latitude,longitude,pm2.5,pm2.5_cf_1,humidity,temperature,location_type',
-        nwlng: -80.3,  // NW corner (wider area to capture all sensors)
-        nwlat: 40.5,
-        selng: -79.6,  // SE corner
-        selat: 40.0,
+        nwlng: -80.5,  // NW corner (expanded to capture all Pittsburgh area sensors)
+        nwlat: 40.6,
+        selng: -79.5,  // SE corner
+        selat: 39.9,
         location_type: 0, // Outdoor sensors only
         max_age: 3600, // Max 1 hour old data
       };
 
-      console.log('Fetching PurpleAir sensors for Mon Valley area...');
+      console.log('Fetching PurpleAir sensors for Mon Valley area (expanded bounds)...');
       
-      const response = await axios.get('https://api.purpleair.com/v1/sensors', {
-        params,
-        headers: {
-          'X-API-Key': apiKey,
-        },
-        timeout: 15000,
-      });
-
-      const responseData = response.data as any;
-      const data = responseData.data || [];
-      const fields = responseData.fields || [];
-
-      console.log(`PurpleAir API returned ${data.length} sensors`);
+      let response;
+      let responseData: any;
+      let data: any[] = [];
+      let fields: string[] = [];
+      
+      try {
+        response = await axios.get('https://api.purpleair.com/v1/sensors', {
+          params,
+          headers: {
+            'X-API-Key': apiKey,
+          },
+          timeout: 20000, // Increased timeout for more sensors
+        });
+        
+        responseData = response.data;
+        data = responseData.data || [];
+        fields = responseData.fields || [];
+        console.log(`PurpleAir API returned ${data.length} sensors`);
+      } catch (apiError: any) {
+        // If API key fails due to credits (402), try public JSON endpoint as fallback
+        if (apiError.response?.status === 402) {
+          console.warn('PurpleAir API requires credits (402). Attempting to use public JSON endpoint...');
+          try {
+            // PurpleAir has a public JSON endpoint that doesn't require an API key
+            const publicResponse = await axios.get('https://www.purpleair.com/json', {
+              timeout: 20000,
+            });
+            
+            if (publicResponse.data && Array.isArray(publicResponse.data)) {
+              // Filter for Mon Valley/Pittsburgh area sensors (expanded bounds)
+              const monValleySensors = publicResponse.data.filter((sensor: any) => {
+                const lat = parseFloat(sensor.Lat);
+                const lng = parseFloat(sensor.Lon);
+                return lat >= 39.9 && lat <= 40.6 && lng >= -80.5 && lng <= -79.5;
+              });
+              
+              if (monValleySensors.length > 0) {
+                const sensors = monValleySensors.map((sensor: any) => ({
+                  id: `pa-${sensor.ID}`,
+                  sensorIndex: parseInt(sensor.ID),
+                  name: sensor.Label || `PurpleAir Sensor ${sensor.ID}`,
+                  location: {
+                    lat: parseFloat(sensor.Lat),
+                    lng: parseFloat(sensor.Lon),
+                  },
+                  pm25: parseFloat(sensor['PM2.5_Value']) || 0,
+                  humidity: parseFloat(sensor.humidity) || null,
+                  temperature: parseFloat(sensor.temp_f) ? (parseFloat(sensor.temp_f) - 32) * 5/9 : null,
+                  source: 'PurpleAir',
+                  locationType: 0,
+                }));
+                
+                const validSensors = sensors.filter((s: any) => 
+                  s.location.lat && 
+                  s.location.lng && 
+                  s.pm25 !== null && 
+                  s.pm25 !== undefined &&
+                  !isNaN(s.pm25) &&
+                  s.pm25 > 0
+                );
+                
+                console.log(`✅ Fetched ${validSensors.length} sensors from PurpleAir public JSON endpoint`);
+                
+                return res.json({
+                  success: true,
+                  data: validSensors,
+                  count: validSensors.length,
+                  source: 'PurpleAir (Public JSON)',
+                  lastUpdated: new Date().toISOString(),
+                  note: 'Using PurpleAir public JSON endpoint. API key account needs credits for official API access.',
+                });
+              } else {
+                console.warn('Public JSON endpoint returned data but no sensors in Mon Valley area');
+              }
+            }
+          } catch (publicError: any) {
+            console.error('Public JSON endpoint also failed:', publicError.message);
+            // Fall through to 402 error handling below
+          }
+        }
+        // Re-throw if not 402 or if public endpoint fails
+        throw apiError;
+      }
 
       // Map PurpleAir data to our format
       const sensors = data.map((row: any[]) => {
@@ -1255,20 +1334,26 @@ export const fetchPurpleAirSensorData = functions.https.onRequest((req, res) => 
           
           if (openAQData.success && openAQData.data && openAQData.data.length > 0) {
             // Convert OpenAQ data to sensor format
-            const sensors = openAQData.data.map((reading: any, index: number) => ({
-              id: `openaq-${index}`,
-              sensorIndex: 10000 + index,
-              name: reading.location || 'OpenAQ Sensor',
-              location: {
-                lat: 40.292, // Mon Valley area
-                lng: -79.881,
-              },
-              pm25: reading.pm25,
-              humidity: 60, // Default
-              temperature: 20, // Default
-              source: 'OpenAQ (EPA AirNow)',
-              locationType: 0,
-            }));
+            const sensors = openAQData.data
+              .filter((reading: any) => reading.pm25 && reading.pm25 > 0) // Only include sensors with valid PM2.5
+              .map((reading: any, index: number) => ({
+                id: `openaq-${index}`,
+                sensorIndex: 10000 + index,
+                name: reading.location || 'OpenAQ Sensor',
+                location: {
+                  lat: 40.292, // Mon Valley area
+                  lng: -79.881,
+                },
+                pm25: reading.pm25,
+                humidity: 60, // Default
+                temperature: 20, // Default
+                source: 'OpenAQ (EPA AirNow)',
+                locationType: 0,
+              }));
+            
+            if (sensors.length === 0) {
+              throw new Error('OpenAQ data has no valid PM2.5 readings');
+            }
             
             return res.json({
               success: true,
@@ -1286,29 +1371,33 @@ export const fetchPurpleAirSensorData = functions.https.onRequest((req, res) => 
           
           if (wprdcData.success && wprdcData.data && wprdcData.data.length > 0) {
             // Convert WPRDC data to sensor format
-            const sensors = wprdcData.data.map((reading: any, index: number) => ({
-              id: `wprdc-${index}`,
-              sensorIndex: 20000 + index,
-              name: reading.location || 'ACHD Monitor',
-              location: {
-                lat: 40.292, // Mon Valley area
-                lng: -79.881,
-              },
-              pm25: reading.pm25,
-              humidity: 60, // Default
-              temperature: 20, // Default
-              source: 'WPRDC (Official ACHD)',
-              locationType: 0,
-            }));
+            const sensors = wprdcData.data
+              .filter((reading: any) => reading.pm25 && reading.pm25 > 0) // Only include sensors with valid PM2.5
+              .map((reading: any, index: number) => ({
+                id: `wprdc-${index}`,
+                sensorIndex: 20000 + index,
+                name: reading.location || 'ACHD Monitor',
+                location: {
+                  lat: 40.292, // Mon Valley area
+                  lng: -79.881,
+                },
+                pm25: reading.pm25,
+                humidity: 60, // Default
+                temperature: 20, // Default
+                source: 'WPRDC (Official ACHD)',
+                locationType: 0,
+              }));
             
-            return res.json({
-              success: true,
-              data: sensors,
-              count: sensors.length,
-              source: 'WPRDC (Official ACHD Data)',
-              lastUpdated: new Date().toISOString(),
-              note: 'PurpleAir API requires credits. Using WPRDC (official ACHD data) as alternative.',
-            });
+            if (sensors.length > 0) {
+              return res.json({
+                success: true,
+                data: sensors,
+                count: sensors.length,
+                source: 'WPRDC (Official ACHD Data)',
+                lastUpdated: new Date().toISOString(),
+                note: 'PurpleAir API requires credits. Using WPRDC (official ACHD data) as alternative.',
+              });
+            }
           }
         } catch (fallbackError: any) {
           console.error('Error fetching alternative data sources:', fallbackError);
@@ -1317,7 +1406,7 @@ export const fetchPurpleAirSensorData = functions.https.onRequest((req, res) => 
         // If all fallbacks fail, return error (no mock data)
         return res.status(402).json({
           success: false,
-          error: 'PurpleAir API subscription required. The API key is valid but the account needs credits. Please add credits to your PurpleAir account at https://www2.purpleair.com. Alternative data sources (OpenAQ, WPRDC) also unavailable.',
+          error: 'PurpleAir API subscription required. The API key is valid but the account needs credits. Please add credits to your PurpleAir account at https://www2.purpleair.com. Alternative data sources (OpenAQ, WPRDC) also unavailable or have no valid PM2.5 readings.',
           message: error.message,
           statusCode: 402,
           data: [],

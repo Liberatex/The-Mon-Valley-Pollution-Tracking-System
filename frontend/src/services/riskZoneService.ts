@@ -269,10 +269,11 @@ export function generateHexGridOverlay(
         riskLevel = 'severe';
       } else if (avgRiskIndex >= 50) {
         riskLevel = 'high';
-      } else if (avgRiskIndex >= 25) {
+      } else if (avgRiskIndex >= 10) {
+        // Lowered threshold to 10 to show zones even with low PM2.5 readings
         riskLevel = 'elevated';
       } else {
-        continue; // Skip hexagons with low risk
+        continue; // Skip hexagons with very low risk
       }
       
       // Create hexagon polygon

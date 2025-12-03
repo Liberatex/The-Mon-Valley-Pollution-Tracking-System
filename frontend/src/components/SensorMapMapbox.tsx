@@ -1921,8 +1921,7 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
           .setHTML(popupContent)
           .addTo(map.current);
       }
-    }
-  };
+    };
     
     // Store handler in ref for cleanup
     riskZoneClickHandlerRef.current = riskZoneClickHandler;

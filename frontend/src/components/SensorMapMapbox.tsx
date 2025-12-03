@@ -2622,15 +2622,15 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
         {windData && map.current && (
           <>
             {/* Wind Info Panel */}
-          <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg p-3 shadow-lg z-10">
-              <div className="text-xs font-semibold text-gray-700 mb-1 flex items-center gap-2">
-                <Navigation className="w-4 h-4" style={{ transform: `rotate(${windData.direction}deg)` }} />
+          <div className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-black/40 backdrop-blur-md rounded-lg p-3 shadow-lg z-10 border border-white/20">
+              <div className="text-xs font-semibold text-white mb-1 flex items-center gap-2">
+                <Navigation className="w-4 h-4 text-white" style={{ transform: `rotate(${windData.direction}deg)` }} />
                 Wind Conditions
           </div>
-            <div className="text-sm">
+            <div className="text-sm text-white">
               <div>Speed: {windData.speed.toFixed(1)} m/s</div>
               <div>Direction: {windData.direction.toFixed(0)}°</div>
-              <div className="text-xs text-gray-500 mt-1">
+              <div className="text-xs text-white/80 mt-1">
                 Dispersion: {calculateDispersionFactor(windData.speed).toFixed(2)}x
         </div>
             </div>

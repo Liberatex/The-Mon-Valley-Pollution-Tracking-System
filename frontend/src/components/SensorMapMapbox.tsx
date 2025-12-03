@@ -2397,32 +2397,32 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
                   <Activity className="w-3 h-3" />
                   PurpleAir Sensors
                 </h4>
-                <div className="space-y-1.5 ml-5">
+                <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 ml-5">
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#00e400' }}></div>
-                    <span>Good (0-12 μg/m³)</span>
-            </div>
+                    <span>Good (0-12)</span>
+                  </div>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#ffff00' }}></div>
-                    <span>Moderate (12-35 μg/m³)</span>
-          </div>
+                    <span>Moderate (12-35)</span>
+                  </div>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#ff7e00' }}></div>
-                    <span>Unhealthy for Sensitive (35-55 μg/m³)</span>
+                    <span>Unhealthy Sensitive (35-55)</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#ff0000' }}></div>
-                    <span>Unhealthy (55-150 μg/m³)</span>
+                    <span>Unhealthy (55-150)</span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 col-span-2">
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#8f3f97' }}></div>
-                    <span>Very Unhealthy (150+ μg/m³)</span>
+                    <span>Very Unhealthy (150+)</span>
                   </div>
                 </div>
                 <p className="text-gray-500 mt-1 ml-5 text-xs">
                   Community-operated sensors providing real-time PM2.5 readings
                 </p>
-      </div>
+              </div>
 
               {/* Smell PGH Reports - Second Section */}
               <div className="border-t border-gray-200 pt-3">
@@ -2430,15 +2430,15 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
                   <AlertCircle className="w-3 h-3" />
                   Smell PGH Reports
                 </h4>
-                <div className="space-y-1.5 ml-5">
+                <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 ml-5">
                   <div className="flex items-center gap-2">
                     <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-b-[10px] border-l-transparent border-r-transparent" style={{ borderBottomColor: '#90EE90' }}></div>
                     <span>Low (1-2)</span>
-            </div>
+                  </div>
                   <div className="flex items-center gap-2">
                     <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-b-[10px] border-l-transparent border-r-transparent" style={{ borderBottomColor: '#FFD700' }}></div>
                     <span>Moderate (2-3)</span>
-              </div>
+                  </div>
                   <div className="flex items-center gap-2">
                     <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-b-[10px] border-l-transparent border-r-transparent" style={{ borderBottomColor: '#FF8C00' }}></div>
                     <span>High (3-4)</span>
@@ -2459,9 +2459,9 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
                   <AlertTriangle className="w-3 h-3" />
                   Risk Zones
                 </h4>
-                <div className="space-y-1.5 ml-5">
+                <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 ml-5">
                   <div className="flex items-center gap-2">
-                    <svg width="20" height="20" viewBox="0 0 20 20" className="flex-shrink-0">
+                    <svg width="16" height="16" viewBox="0 0 20 20" className="flex-shrink-0">
                       <polygon
                         points="10,2 16,6 16,14 10,18 4,14 4,6"
                         fill="#ffff00"
@@ -2470,10 +2470,10 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
                         strokeWidth="1"
                       />
                     </svg>
-                    <span>Elevated Risk</span>
+                    <span>Elevated</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <svg width="20" height="20" viewBox="0 0 20 20" className="flex-shrink-0">
+                    <svg width="16" height="16" viewBox="0 0 20 20" className="flex-shrink-0">
                       <polygon
                         points="10,2 16,6 16,14 10,18 4,14 4,6"
                         fill="#ff7e00"
@@ -2482,10 +2482,10 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
                         strokeWidth="1"
                       />
                     </svg>
-                    <span>High Risk</span>
+                    <span>High</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <svg width="20" height="20" viewBox="0 0 20 20" className="flex-shrink-0">
+                    <svg width="16" height="16" viewBox="0 0 20 20" className="flex-shrink-0">
                       <polygon
                         points="10,2 16,6 16,14 10,18 4,14 4,6"
                         fill="#ff0000"
@@ -2494,10 +2494,10 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
                         strokeWidth="1"
                       />
                     </svg>
-                    <span>Severe Risk</span>
+                    <span>Severe</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <svg width="20" height="20" viewBox="0 0 20 20" className="flex-shrink-0">
+                    <svg width="16" height="16" viewBox="0 0 20 20" className="flex-shrink-0">
                       <polygon
                         points="10,2 16,6 16,14 10,18 4,14 4,6"
                         fill="#9c27b0"
@@ -2506,7 +2506,7 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
                         strokeWidth="1"
                       />
                     </svg>
-                    <span>Toxic Event</span>
+                    <span>Toxic</span>
                   </div>
                 </div>
                 <p className="text-gray-500 mt-1 ml-5 text-xs">

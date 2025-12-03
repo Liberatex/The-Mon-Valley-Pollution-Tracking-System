@@ -1674,15 +1674,15 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
                               avgSmell < 3 ? '#FFD700' :
                               avgSmell < 4 ? '#FF8C00' : '#DC143C';
             
-            const popupContent = `
-              <div style="min-width: 250px; max-width: 350px;">
-                <div style="display: flex; align-items: start; gap: 8px; margin-bottom: 12px;">
             // Detect mobile screen size for responsive popup
             const isMobileSmell = window.innerWidth < 640;
-            const smellPopupMinWidth = isMobileSmell ? '220px' : '280px';
-            const smellPopupMaxWidth = isMobileSmell ? '300px' : '400px';
+            const smellPopupMinWidth = isMobileSmell ? '220px' : '250px';
+            const smellPopupMaxWidth = isMobileSmell ? '300px' : '350px';
             const smellPopupMaxWidthMapbox = isMobileSmell ? '300px' : '400px';
             
+            const popupContent = `
+              <div style="min-width: ${smellPopupMinWidth}; max-width: ${smellPopupMaxWidth};">
+                <div style="display: flex; align-items: start; gap: 8px; margin-bottom: 12px;">
                   <div style="width: 12px; height: 12px; border-radius: 50%; background-color: ${smellColor}; flex-shrink: 0; margin-top: 4px;"></div>
                   <div style="flex: 1;">
                     <h3 style="font-weight: bold; font-size: ${isMobileSmell ? '14px' : '16px'}; margin: 0 0 4px 0; color: #1f2937;">Smell Report Cluster</h3>

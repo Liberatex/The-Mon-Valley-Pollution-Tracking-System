@@ -1770,9 +1770,13 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
               'toxic', '#9c27b0', // Purple
               '#cccccc', // Default gray
             ],
+            // Zoom must be top-level, so we multiply zoom-based opacity by hidden check
             'fill-opacity': [
-              'case',
-              ['to-boolean', ['get', 'hidden']], 0,
+              '*',
+              [
+                'case',
+                ['to-boolean', ['get', 'hidden']], 0, 1
+              ],
               [
                 'interpolate',
                 ['linear'],
@@ -1838,9 +1842,13 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
           // Zoom-based opacity: starts at 0.55 at low zoom, decreases to 0.50 when zoomed in
           // More visible colors while still maintaining transparency
           // Hidden zones have opacity 0 but remain clickable
+          // Zoom must be top-level, so we multiply zoom-based opacity by hidden check
           'fill-opacity': [
-            'case',
-            ['to-boolean', ['get', 'hidden']], 0, // Hidden zones are invisible but clickable
+            '*',
+            [
+              'case',
+              ['to-boolean', ['get', 'hidden']], 0, 1 // 0 if hidden, 1 if visible
+            ],
             [
               'interpolate',
               ['linear'],
@@ -1906,11 +1914,20 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
         allFeatures = map.current.queryRenderedFeatures(point);
         
         // Filter for risk zone features
-        const riskZoneFeatures = allFeatures.filter(f => 
-          f.layer && (f.layer.id === 'risk-zones-fill' || f.layer.id === 'risk-zones-outline')
-        );
+        // Check both layer.id and sourceLayer (for different Mapbox versions)
+        const riskZoneFeatures = allFeatures.filter(f => {
+          const layerId = f.layer?.id || (f as any).layer?.id;
+          return layerId === 'risk-zones-fill' || layerId === 'risk-zones-outline';
+        });
         
         console.log('🔵 All features at click:', allFeatures.length, 'Risk zone features:', riskZoneFeatures.length, 'Point:', point);
+        if (allFeatures.length > 0) {
+          console.log('🔵 Sample feature layers:', allFeatures.map(f => ({ 
+            layerId: f.layer?.id || (f as any).layer?.id,
+            source: f.source,
+            sourceLayer: (f as any).sourceLayer
+          })));
+        }
         
         if (riskZoneFeatures.length === 0) {
           // No risk zone clicked, ignore

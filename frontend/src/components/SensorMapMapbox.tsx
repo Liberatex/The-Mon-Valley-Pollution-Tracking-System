@@ -958,7 +958,7 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
             `;
             
             // Create and show popup with responsive width
-            new mapboxgl.Popup({ closeOnClick: true, maxWidth: smellPopupMaxWidthMapbox })
+            new mapboxgl.Popup({ closeOnClick: true, maxWidth: popupMaxWidthMapbox })
               .setLngLat(e.lngLat)
               .setHTML(popupContent)
               .addTo(map.current);

@@ -883,13 +883,19 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
                             riskColor === 'red' ? '#ff0000' :
                             riskColor === 'purple' ? '#9c27b0' : '#00e400';
             
+            // Detect mobile screen size for responsive popup
+            const isMobile = window.innerWidth < 640;
+            const popupMinWidth = isMobile ? '200px' : '250px';
+            const popupMaxWidth = isMobile ? '280px' : '350px';
+            const popupMaxWidthMapbox = isMobile ? '280px' : '400px';
+            
             const popupContent = `
-              <div style="min-width: 250px; max-width: 350px;">
+              <div style="min-width: ${popupMinWidth}; max-width: ${popupMaxWidth};">
                 <div style="display: flex; align-items: start; gap: 8px; margin-bottom: 12px;">
                   <div style="width: 12px; height: 12px; border-radius: 50%; background-color: ${colorHex}; flex-shrink: 0; margin-top: 4px;"></div>
                   <div style="flex: 1;">
-                    <h3 style="font-weight: bold; font-size: 16px; margin: 0 0 4px 0; color: #1f2937;">${sensorWithRisk.name || 'Sensor'}</h3>
-                    <p style="font-size: 12px; color: #6b7280; margin: 0;">${sensorWithRisk.source || 'Unknown Source'}</p>
+                    <h3 style="font-weight: bold; font-size: ${isMobile ? '14px' : '16px'}; margin: 0 0 4px 0; color: #1f2937;">${sensorWithRisk.name || 'Sensor'}</h3>
+                    <p style="font-size: ${isMobile ? '11px' : '12px'}; color: #6b7280; margin: 0;">${sensorWithRisk.source || 'Unknown Source'}</p>
                   </div>
                 </div>
                 
@@ -951,8 +957,8 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
               </div>
             `;
             
-            // Create and show popup
-            new mapboxgl.Popup({ closeOnClick: true, maxWidth: '400px' })
+            // Create and show popup with responsive width
+            new mapboxgl.Popup({ closeOnClick: true, maxWidth: smellPopupMaxWidthMapbox })
               .setLngLat(e.lngLat)
               .setHTML(popupContent)
               .addTo(map.current);
@@ -1111,16 +1117,22 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
             setSelectedFacility(facility);
             setSelectedSensor(null); // Clear sensor selection
             
+            // Detect mobile screen size for responsive popup
+            const isMobile = window.innerWidth < 640;
+            const facilityPopupMinWidth = isMobile ? '220px' : '280px';
+            const facilityPopupMaxWidth = isMobile ? '300px' : '400px';
+            const facilityPopupMaxWidthMapbox = isMobile ? '300px' : '450px';
+            
             // Create popup first with loading state
-            const popup = new mapboxgl.Popup({ closeOnClick: true, maxWidth: '450px' })
+            const popup = new mapboxgl.Popup({ closeOnClick: true, maxWidth: facilityPopupMaxWidthMapbox })
               .setLngLat(e.lngLat)
               .setHTML(`
-                <div style="min-width: 280px; max-width: 400px;">
+                <div style="min-width: ${facilityPopupMinWidth}; max-width: ${facilityPopupMaxWidth};">
                   <div style="display: flex; align-items: start; gap: 8px; margin-bottom: 12px;">
                     <div style="width: 16px; height: 16px; border-radius: 50%; background-color: #dc2626; flex-shrink: 0; margin-top: 2px;"></div>
                     <div style="flex: 1;">
-                      <h3 style="font-weight: bold; font-size: 16px; margin: 0 0 4px 0; color: #1f2937;">${facility.name}</h3>
-                      <p style="font-size: 12px; color: #6b7280; margin: 0;">Title V Operating Permit Facility</p>
+                      <h3 style="font-weight: bold; font-size: ${isMobile ? '14px' : '16px'}; margin: 0 0 4px 0; color: #1f2937;">${facility.name}</h3>
+                      <p style="font-size: ${isMobile ? '11px' : '12px'}; color: #6b7280; margin: 0;">Title V Operating Permit Facility</p>
                     </div>
                   </div>
                   
@@ -1665,10 +1677,16 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
             const popupContent = `
               <div style="min-width: 250px; max-width: 350px;">
                 <div style="display: flex; align-items: start; gap: 8px; margin-bottom: 12px;">
+            // Detect mobile screen size for responsive popup
+            const isMobileSmell = window.innerWidth < 640;
+            const smellPopupMinWidth = isMobileSmell ? '220px' : '280px';
+            const smellPopupMaxWidth = isMobileSmell ? '300px' : '400px';
+            const smellPopupMaxWidthMapbox = isMobileSmell ? '300px' : '400px';
+            
                   <div style="width: 12px; height: 12px; border-radius: 50%; background-color: ${smellColor}; flex-shrink: 0; margin-top: 4px;"></div>
                   <div style="flex: 1;">
-                    <h3 style="font-weight: bold; font-size: 16px; margin: 0 0 4px 0; color: #1f2937;">Smell Report Cluster</h3>
-                    <p style="font-size: 12px; color: #6b7280; margin: 0;">Crowdsourced Odor Reports</p>
+                    <h3 style="font-weight: bold; font-size: ${isMobileSmell ? '14px' : '16px'}; margin: 0 0 4px 0; color: #1f2937;">Smell Report Cluster</h3>
+                    <p style="font-size: ${isMobileSmell ? '11px' : '12px'}; color: #6b7280; margin: 0;">Crowdsourced Odor Reports</p>
                   </div>
                 </div>
                 
@@ -1713,8 +1731,8 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
               </div>
             `;
             
-            // Create and show popup
-            new mapboxgl.Popup({ closeOnClick: true, maxWidth: '400px' })
+            // Create and show popup with responsive width
+            new mapboxgl.Popup({ closeOnClick: true, maxWidth: smellPopupMaxWidthMapbox })
               .setLngLat(e.lngLat)
               .setHTML(popupContent)
               .addTo(map.current);
@@ -2019,13 +2037,19 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
           ? 'IMMEDIATE ALERT: Likely industrial upset event. Consider evacuating if symptoms worsen.'
           : 'Monitor air quality conditions.';
         
+        // Detect mobile screen size for responsive popup
+        const isMobile = window.innerWidth < 640;
+        const riskPopupMinWidth = isMobile ? '220px' : '280px';
+        const riskPopupMaxWidth = isMobile ? '300px' : '400px';
+        const riskPopupMaxWidthMapbox = isMobile ? '300px' : '450px';
+        
         const popupContent = `
-              <div style="min-width: 280px; max-width: 400px;">
+              <div style="min-width: ${riskPopupMinWidth}; max-width: ${riskPopupMaxWidth};">
                 <div style="display: flex; align-items: start; gap: 8px; margin-bottom: 12px;">
                   <div style="width: 16px; height: 16px; border-radius: 4px; background-color: ${riskColor}; flex-shrink: 0; margin-top: 2px;"></div>
                   <div style="flex: 1;">
-                    <h3 style="font-weight: bold; font-size: 16px; margin: 0 0 4px 0; color: #1f2937;">${riskLabel}</h3>
-                    <p style="font-size: 12px; color: #6b7280; margin: 0;">Dynamic Risk Zone</p>
+                    <h3 style="font-weight: bold; font-size: ${isMobile ? '14px' : '16px'}; margin: 0 0 4px 0; color: #1f2937;">${riskLabel}</h3>
+                    <p style="font-size: ${isMobile ? '11px' : '12px'}; color: #6b7280; margin: 0;">Dynamic Risk Zone</p>
                   </div>
                 </div>
                 
@@ -2090,8 +2114,8 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
               </div>
             `;
         
-        // Create and show popup
-          new mapboxgl.Popup({ closeOnClick: true, maxWidth: '450px' })
+        // Create and show popup with responsive width
+          new mapboxgl.Popup({ closeOnClick: true, maxWidth: riskPopupMaxWidthMapbox })
             .setLngLat(e.lngLat)
             .setHTML(popupContent)
             .addTo(map.current);
@@ -2401,10 +2425,10 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
       </div>
 
       {/* Map Container */}
-      <div className="relative px-4 sm:px-6 lg:px-8">
+      <div className="relative px-0 sm:px-6 lg:px-8">
         <div
           ref={mapContainer}
-          className="w-full h-[600px] rounded-lg shadow-lg"
+          className="w-full h-[600px] sm:rounded-lg shadow-lg"
           style={{ minHeight: '600px' }}
         />
 

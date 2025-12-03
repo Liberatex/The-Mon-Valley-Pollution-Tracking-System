@@ -51,22 +51,21 @@ export async function fetchACHDWPRDC(): Promise<{
     const baseUrl = 'https://data.wprdc.org/api/3/action/datastore_search';
     const resourceId = '36fb4629-8003-4acc-a1ca-3302778a530d';
     
-    // Get latest Liberty PM2.5 reading - ONLY valid readings
-    const libertyPM25 = await axios.get(`${baseUrl}`, {
+    // Get latest PM2.5 readings from multiple sites - get more recent data
+    const pm25Readings = await axios.get(`${baseUrl}`, {
       params: {
         resource_id: resourceId,
         filters: JSON.stringify({
-          site: 'Liberty',
           parameter: 'PM25',
           is_valid: true
         }),
-        limit: 1,
+        limit: 10, // Get more readings to find valid ones
         sort: 'datetime_est desc'
       },
       timeout: 10000
     });
     
-    const data = libertyPM25.data as any;
+    const data = pm25Readings.data as any;
     
     if (!data.success || !data.result?.records || data.result.records.length === 0) {
       console.log('No recent Liberty PM2.5 data found');

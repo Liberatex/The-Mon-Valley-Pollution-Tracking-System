@@ -1384,17 +1384,18 @@ export const fetchPurpleAirSensorData = functions.https.onRequest((req, res) => 
           
           if (wprdcData.success && wprdcData.data && wprdcData.data.length > 0) {
             // Convert WPRDC data to sensor format
+            // Use coordinates from WPRDC if available, otherwise default to Mon Valley
             const sensors = wprdcData.data
-              .filter((reading: any) => reading.pm25 && reading.pm25 > 0) // Only include sensors with valid PM2.5
+              .filter((reading: any) => reading.pm25 !== null && reading.pm25 !== undefined && !isNaN(reading.pm25) && reading.pm25 >= 0)
               .map((reading: any, index: number) => ({
-                id: `wprdc-${index}`,
+                id: `wprdc-${reading.location || index}`,
                 sensorIndex: 20000 + index,
                 name: reading.location || 'ACHD Monitor',
                 location: {
-                  lat: 40.292, // Mon Valley area
-                  lng: -79.881,
+                  lat: reading.coordinates?.lat || 40.292, // Use coordinates from WPRDC if available
+                  lng: reading.coordinates?.lng || -79.881,
                 },
-                pm25: reading.pm25,
+                pm25: Math.max(reading.pm25, 0.1), // Use 0.1 as minimum to avoid 0 (which gets filtered elsewhere)
                 humidity: 60, // Default
                 temperature: 20, // Default
                 source: 'WPRDC (Official ACHD)',

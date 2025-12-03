@@ -360,22 +360,43 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
     // Get map bounds for hex grid coverage
     if (map.current) {
       const bounds = map.current.getBounds();
-      const mapBounds = {
-        north: bounds.getNorth(),
-        south: bounds.getSouth(),
-        east: bounds.getEast(),
-        west: bounds.getWest(),
-      };
-      
-      // Generate hex grid overlay (0.5km hexagons for granular view)
-      const hexGridZones = generateHexGridOverlay(
-        mapBounds,
-        0.5, // 500m hexagons - very granular
-        sensorsWithRisk
-      );
-      
-      setRiskZones(hexGridZones);
-      console.log(`Created ${hexGridZones.length} granular hex grid zones covering the map`);
+      if (bounds) {
+        const mapBounds = {
+          north: bounds.getNorth(),
+          south: bounds.getSouth(),
+          east: bounds.getEast(),
+          west: bounds.getWest(),
+        };
+        
+        // Generate hex grid overlay (0.5km hexagons for granular view)
+        const hexGridZones = generateHexGridOverlay(
+          mapBounds,
+          0.5, // 500m hexagons - very granular
+          sensorsWithRisk
+        );
+        
+        setRiskZones(hexGridZones);
+        console.log(`Created ${hexGridZones.length} granular hex grid zones covering the map`);
+      } else {
+        // Fallback: generate zones from events if bounds not available
+        const windSpeed = windData?.speed || 5;
+        const windDirection = windData?.direction || 180;
+        
+        if (events.length > 0) {
+          const zones = events.map(event => 
+            generateRiskZone(
+              event.lat,
+              event.lng,
+              { speed: windSpeed, direction: windDirection, timestamp: new Date() },
+              event.severity
+            )
+          );
+          setRiskZones(zones);
+          console.log(`Created ${zones.length} risk zones from weighted risk events`);
+        } else {
+          setRiskZones([]);
+        }
+      }
     } else {
       // Fallback: generate zones from events if map not ready
       const windSpeed = windData?.speed || 5;

@@ -1245,62 +1245,82 @@ export const fetchPurpleAirSensorData = functions.https.onRequest((req, res) => 
         errorMessage = 'Invalid PurpleAir API key. Please check your API key configuration.';
         statusCode = 401;
       } else if (error.response?.status === 402) {
-        // 402 Payment Required - Return mock data as fallback
-        console.warn('PurpleAir API returned 402 (Payment Required). Using mock data fallback.');
+        // 402 Payment Required - Try alternative real-time APIs
+        console.warn('PurpleAir API returned 402 (Payment Required). Trying alternative real-time data sources...');
         
-        const mockSensors = [
-          {
-            id: 'pa-mock-clairton',
-            sensorIndex: 99901,
-            name: 'Clairton - U.S. Steel Area',
-            location: {
-              lat: 40.2925,
-              lng: -79.8814,
-            },
-            pm25: 18.5,
-            humidity: 65,
-            temperature: 22,
-            source: 'PurpleAir',
-            locationType: 0,
-          },
-          {
-            id: 'pa-mock-braddock',
-            sensorIndex: 99902,
-            name: 'Braddock - Edgar Thomson',
-            location: {
-              lat: 40.4036,
-              lng: -79.8681,
-            },
-            pm25: 22.3,
-            humidity: 62,
-            temperature: 21,
-            source: 'PurpleAir',
-            locationType: 0,
-          },
-          {
-            id: 'pa-mock-dravosburg',
-            sensorIndex: 99903,
-            name: 'Dravosburg - Irvin Plant',
-            location: {
-              lat: 40.3508,
-              lng: -79.8869,
-            },
-            pm25: 19.8,
-            humidity: 64,
-            temperature: 22,
-            source: 'PurpleAir',
-            locationType: 0,
-          },
-        ];
+        try {
+          // Try OpenAQ API (free, aggregates EPA AirNow data)
+          const { tryOpenAQ } = require('./openAQService');
+          const openAQData = await tryOpenAQ();
+          
+          if (openAQData.success && openAQData.data && openAQData.data.length > 0) {
+            // Convert OpenAQ data to sensor format
+            const sensors = openAQData.data.map((reading: any, index: number) => ({
+              id: `openaq-${index}`,
+              sensorIndex: 10000 + index,
+              name: reading.location || 'OpenAQ Sensor',
+              location: {
+                lat: 40.292, // Mon Valley area
+                lng: -79.881,
+              },
+              pm25: reading.pm25,
+              humidity: 60, // Default
+              temperature: 20, // Default
+              source: 'OpenAQ (EPA AirNow)',
+              locationType: 0,
+            }));
+            
+            return res.json({
+              success: true,
+              data: sensors,
+              count: sensors.length,
+              source: 'OpenAQ (EPA AirNow aggregates)',
+              lastUpdated: new Date().toISOString(),
+              note: 'PurpleAir API requires credits. Using OpenAQ (free EPA AirNow data) as alternative.',
+            });
+          }
+          
+          // Try WPRDC (official ACHD data)
+          const { fetchACHDWPRDC } = require('./wprdcService');
+          const wprdcData = await fetchACHDWPRDC();
+          
+          if (wprdcData.success && wprdcData.data && wprdcData.data.length > 0) {
+            // Convert WPRDC data to sensor format
+            const sensors = wprdcData.data.map((reading: any, index: number) => ({
+              id: `wprdc-${index}`,
+              sensorIndex: 20000 + index,
+              name: reading.location || 'ACHD Monitor',
+              location: {
+                lat: 40.292, // Mon Valley area
+                lng: -79.881,
+              },
+              pm25: reading.pm25,
+              humidity: 60, // Default
+              temperature: 20, // Default
+              source: 'WPRDC (Official ACHD)',
+              locationType: 0,
+            }));
+            
+            return res.json({
+              success: true,
+              data: sensors,
+              count: sensors.length,
+              source: 'WPRDC (Official ACHD Data)',
+              lastUpdated: new Date().toISOString(),
+              note: 'PurpleAir API requires credits. Using WPRDC (official ACHD data) as alternative.',
+            });
+          }
+        } catch (fallbackError: any) {
+          console.error('Error fetching alternative data sources:', fallbackError);
+        }
         
-        // Return mock data with success: true so frontend can use it
-        return res.json({
-          success: true,
-          data: mockSensors,
-          count: mockSensors.length,
-          source: 'PurpleAir API (Mock Fallback)',
-          lastUpdated: new Date().toISOString(),
-          note: 'PurpleAir API requires credits. Using mock data for demonstration. To enable real data, add credits to your PurpleAir account at https://www2.purpleair.com',
+        // If all fallbacks fail, return error (no mock data)
+        return res.status(402).json({
+          success: false,
+          error: 'PurpleAir API subscription required. The API key is valid but the account needs credits. Please add credits to your PurpleAir account at https://www2.purpleair.com. Alternative data sources (OpenAQ, WPRDC) also unavailable.',
+          message: error.message,
+          statusCode: 402,
+          data: [],
         });
       } else if (error.response?.status === 403) {
         errorMessage = 'PurpleAir API access forbidden. Please verify your API key permissions.';

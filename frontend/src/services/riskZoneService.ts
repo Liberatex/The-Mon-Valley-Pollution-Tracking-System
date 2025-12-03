@@ -28,23 +28,23 @@ export function generateRiskZone(
   windData: WindData,
   severity: 'moderate' | 'high' | 'severe' | 'toxic' = 'moderate'
 ): RiskZone {
-  // Base radius in kilometers based on severity
+  // Base radius in kilometers based on severity - MUCH smaller for granular visualization
   const baseRadius: Record<string, number> = {
-    moderate: 2,
-    high: 5,
-    severe: 10,
-    toxic: 15,
+    moderate: 0.3,   // 300m - very granular
+    high: 0.5,      // 500m
+    severe: 0.8,    // 800m
+    toxic: 1.2,     // 1.2km - still visible but not overwhelming
   };
 
-  let radius = baseRadius[severity] || 2;
+  let radius = baseRadius[severity] || 0.3;
 
-  // Adjust for wind speed
-  // Low wind = larger zone (pollution doesn't disperse)
-  // High wind = smaller zone (pollution disperses quickly)
+  // Adjust for wind speed (less aggressive scaling for smaller zones)
+  // Low wind = slightly larger zone (pollution doesn't disperse)
+  // High wind = slightly smaller zone (pollution disperses quickly)
   if (windData.speed < 2) {
-    radius *= 1.5; // Stagnant air expands zone
+    radius *= 1.2; // Stagnant air expands zone slightly
   } else if (windData.speed > 7) {
-    radius *= 0.7; // High wind reduces zone
+    radius *= 0.85; // High wind reduces zone slightly
   }
 
   // Create hexagon polygon centered on event
@@ -58,8 +58,8 @@ export function generateRiskZone(
   const hexagonVertices: number[][] = [];
   const numSides = 6;
   
-  // Adjust radius for hexagon (make it slightly larger to account for hexagon shape)
-  const hexRadius = radius * 1.1;
+  // Use radius directly (no need to make hexagon larger for small zones)
+  const hexRadius = radius;
   
   for (let i = 0; i < numSides; i++) {
     // Calculate angle for each vertex (60 degrees apart)

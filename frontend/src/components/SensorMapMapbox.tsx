@@ -13,7 +13,7 @@ import { getWindData, calculateDispersionFactor, isUpwind } from '../services/wi
 import { calculateWeightedRisk, calculateVulnerabilityScore } from '../services/weightedRiskAlgorithm';
 import { useRealtimeSensorData } from '../hooks/useRealtimeSensorData';
 import { fetchSmellPGHReports, clusterOdorReports, OdorCluster, calculateLocationOdorScore } from '../services/smellPGHService';
-import { generateRiskZone, detectPollutionEvents, RiskZone } from '../services/riskZoneService';
+import { generateRiskZone, detectPollutionEvents, RiskZone, generateHexGridOverlay } from '../services/riskZoneService';
 import { getHealthProfile, HealthProfile } from '../services/vulnerabilityStorage';
 import { calculateToxicityWeight } from '../services/toxicityWeightService';
 import { getAuth } from 'firebase/auth';
@@ -319,7 +319,7 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
         vulnerabilityScore, // Use user profile if available, otherwise 1.0
       });
 
-      return {
+            return {
         lat: sensor.location.lat,
         lng: sensor.location.lng,
         riskIndex: riskResult.riskIndex,
@@ -356,23 +356,43 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
       console.log(`   ℹ️ No events detected. Max risk index: ${maxRisk.toFixed(2)} (${maxRiskSensor?.riskLevel || 'unknown'}) at [${maxRiskSensor?.lat}, ${maxRiskSensor?.lng}]`);
     }
 
-    // Generate risk zones from events
-    // Use wind data if available, otherwise use defaults
-    const windSpeed = windData?.speed || 5; // Default 5 mph
-    const windDirection = windData?.direction || 180; // Default 180° (south)
-    
-    if (events.length > 0) {
-      const zones = events.map(event => 
-        generateRiskZone(
-          event.lat,
-          event.lng,
-          { speed: windSpeed, direction: windDirection, timestamp: new Date() },
-          event.severity
-        )
+    // Generate granular hex grid overlay for better visualization
+    // Get map bounds for hex grid coverage
+    if (map.current) {
+      const bounds = map.current.getBounds();
+      const mapBounds = {
+        north: bounds.getNorth(),
+        south: bounds.getSouth(),
+        east: bounds.getEast(),
+        west: bounds.getWest(),
+      };
+      
+      // Generate hex grid overlay (0.5km hexagons for granular view)
+      const hexGridZones = generateHexGridOverlay(
+        mapBounds,
+        0.5, // 500m hexagons - very granular
+        sensorsWithRisk
       );
-      setRiskZones(zones);
-      console.log(`Created ${zones.length} risk zones from weighted risk events`);
+      
+      setRiskZones(hexGridZones);
+      console.log(`Created ${hexGridZones.length} granular hex grid zones covering the map`);
     } else {
+      // Fallback: generate zones from events if map not ready
+      const windSpeed = windData?.speed || 5;
+      const windDirection = windData?.direction || 180;
+      
+      if (events.length > 0) {
+        const zones = events.map(event => 
+          generateRiskZone(
+            event.lat,
+            event.lng,
+            { speed: windSpeed, direction: windDirection, timestamp: new Date() },
+            event.severity
+          )
+        );
+        setRiskZones(zones);
+        console.log(`Created ${zones.length} risk zones from weighted risk events`);
+      } else {
       // Fallback: create zones from high smell clusters if no weighted risk events
       if (smellClusters.length > 0) {
         const smellEvents = smellClusters
@@ -1705,8 +1725,8 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
             'toxic', '#9c27b0', // Purple
             '#cccccc', // Default gray
           ],
-          // Zoom-based opacity: starts at 0.45 at low zoom, decreases to 0.35 when zoomed in
-          // More visible colors while still transparent
+          // Zoom-based opacity: starts at 0.55 at low zoom, decreases to 0.50 when zoomed in
+          // More visible colors while still maintaining transparency
           // Hidden zones have opacity 0 but remain clickable
           'fill-opacity': [
             'case',
@@ -1715,9 +1735,9 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
               'interpolate',
               ['linear'],
               ['zoom'],
-              8, 0.45,  // Start at 0.45 at low zoom (colorfully visible)
-              12, 0.40, // Decrease to 0.40 at medium zoom
-              15, 0.35, // Decrease to 0.35 when zoomed in (still colorfully visible)
+              8, 0.55,  // Start at 0.55 at low zoom (more colorfully visible)
+              12, 0.52, // Decrease to 0.52 at medium zoom
+              15, 0.50, // Decrease to 0.50 when zoomed in (still colorfully visible)
             ],
           ],
         },

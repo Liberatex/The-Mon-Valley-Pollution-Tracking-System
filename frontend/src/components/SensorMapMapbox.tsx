@@ -393,7 +393,7 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
         setRiskZones(zones);
         console.log(`Created ${zones.length} risk zones from weighted risk events`);
       } else {
-      // Fallback: create zones from high smell clusters if no weighted risk events
+        // Fallback: create zones from high smell clusters if no weighted risk events
       if (smellClusters.length > 0) {
         const smellEvents = smellClusters
           .filter(cluster => cluster.averageSmell >= 3)

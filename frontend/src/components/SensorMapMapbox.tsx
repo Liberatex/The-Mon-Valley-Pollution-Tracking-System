@@ -1906,28 +1906,43 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
         return; // Silently ignore if point missing
       }
       
-      // Query ALL features at the point first, then filter for risk zones
-      // This approach works even if other layers are on top
-      let allFeatures: mapboxgl.MapboxGeoJSONFeature[] = [];
+      // Query risk zone layers directly
+      // Try both approaches: direct layer query and filtering all features
+      let riskZoneFeatures: mapboxgl.MapboxGeoJSONFeature[] = [];
       try {
-        // First, try querying all features at the point
-        allFeatures = map.current.queryRenderedFeatures(point);
+        // First, try querying risk zone layers directly
+        const layersToQuery: string[] = [];
+        if (fillLayerExists) layersToQuery.push('risk-zones-fill');
+        if (outlineLayerExists) layersToQuery.push('risk-zones-outline');
         
-        // Filter for risk zone features
-        // Check both layer.id and sourceLayer (for different Mapbox versions)
-        const riskZoneFeatures = allFeatures.filter(f => {
-          const layerId = f.layer?.id || (f as any).layer?.id;
-          return layerId === 'risk-zones-fill' || layerId === 'risk-zones-outline';
-        });
-        
-        console.log('🔵 All features at click:', allFeatures.length, 'Risk zone features:', riskZoneFeatures.length, 'Point:', point);
-        if (allFeatures.length > 0) {
-          console.log('🔵 Sample feature layers:', allFeatures.map(f => ({ 
-            layerId: f.layer?.id || (f as any).layer?.id,
-            source: f.source,
-            sourceLayer: (f as any).sourceLayer
-          })));
+        if (layersToQuery.length > 0) {
+          riskZoneFeatures = map.current.queryRenderedFeatures(point, {
+            layers: layersToQuery
+          });
         }
+        
+        // If direct query didn't work, try querying all features and filtering
+        if (riskZoneFeatures.length === 0) {
+          const allFeatures = map.current.queryRenderedFeatures(point);
+          console.log('🔵 All features at click:', allFeatures.length, 'Point:', point);
+          
+          if (allFeatures.length > 0) {
+            console.log('🔵 Sample feature layers:', allFeatures.slice(0, 3).map(f => ({ 
+              layerId: f.layer?.id || (f as any).layer?.id,
+              source: f.source,
+              sourceLayer: (f as any).sourceLayer,
+              properties: Object.keys(f.properties || {})
+            })));
+          }
+          
+          // Filter for risk zone features by checking source
+          riskZoneFeatures = allFeatures.filter(f => {
+            const source = f.source || (f as any).source;
+            return source === 'risk-zones';
+          });
+        }
+        
+        console.log('🔵 Risk zone features found:', riskZoneFeatures.length);
         
         if (riskZoneFeatures.length === 0) {
           // No risk zone clicked, ignore

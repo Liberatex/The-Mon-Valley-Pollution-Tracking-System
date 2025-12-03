@@ -1751,8 +1751,71 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
 
     const source = map.current.getSource('risk-zones') as mapboxgl.GeoJSONSource;
     if (source) {
+      // Source exists, update data
       source.setData(zonesGeoJSON);
+      
+      // Ensure layers exist and are visible
+      if (!map.current.getLayer('risk-zones-fill')) {
+        map.current.addLayer({
+          id: 'risk-zones-fill',
+          type: 'fill',
+          source: 'risk-zones',
+          paint: {
+            'fill-color': [
+              'match',
+              ['get', 'riskLevel'],
+              'elevated', '#ffff00', // Yellow
+              'high', '#ff7e00', // Orange
+              'severe', '#ff0000', // Red
+              'toxic', '#9c27b0', // Purple
+              '#cccccc', // Default gray
+            ],
+            'fill-opacity': [
+              'case',
+              ['to-boolean', ['get', 'hidden']], 0,
+              [
+                'interpolate',
+                ['linear'],
+                ['zoom'],
+                8, 0.55,
+                12, 0.52,
+                15, 0.50,
+              ],
+            ],
+          },
+        });
+      } else {
+        // Layer exists, ensure it's visible
+        map.current.setLayoutProperty('risk-zones-fill', 'visibility', 'visible');
+      }
+      
+      if (!map.current.getLayer('risk-zones-outline')) {
+        map.current.addLayer({
+          id: 'risk-zones-outline',
+          type: 'line',
+          source: 'risk-zones',
+          paint: {
+            'line-color': [
+              'match',
+              ['get', 'riskLevel'],
+              'elevated', '#ffff00',
+              'high', '#ff7e00',
+              'severe', '#ff0000',
+              'toxic', '#9c27b0',
+              '#cccccc',
+            ],
+            'line-width': 2.5,
+            'line-opacity': 0.8,
+          },
+        });
+      } else {
+        // Layer exists, ensure it's visible
+        map.current.setLayoutProperty('risk-zones-outline', 'visibility', 'visible');
+      }
+      
+      console.log('✅ Risk zones updated:', riskZones.length, 'zones');
     } else {
+      // Source doesn't exist, create it and layers
       map.current.addSource('risk-zones', {
         type: 'geojson',
         data: zonesGeoJSON,
@@ -1808,6 +1871,8 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
           'line-opacity': 0.8,
         },
       });
+      
+      console.log('✅ Risk zones created:', riskZones.length, 'zones');
     }
 
     // Always ensure click handlers are attached (even if source already exists)
@@ -1842,11 +1907,23 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
         return; // No layers to query
       }
       
-      const features = map.current.queryRenderedFeatures(point, {
-        layers: layersToQuery
-      });
-      
-      console.log('🔵 Risk zone features at click point:', features.length, 'Layers queried:', layersToQuery);
+      try {
+        const features = map.current.queryRenderedFeatures(point, {
+          layers: layersToQuery
+        });
+        
+        console.log('🔵 Risk zone features at click point:', features.length, 'Layers queried:', layersToQuery, 'Point:', point);
+        
+        if (features.length === 0) {
+          // No risk zone clicked, ignore
+          return;
+        }
+        
+        console.log('✅ Risk zone clicked! Features:', features);
+      } catch (error: any) {
+        console.error('❌ Error querying risk zone features:', error.message);
+        return;
+      }
       
       if (features.length === 0) {
         // No risk zone clicked, ignore

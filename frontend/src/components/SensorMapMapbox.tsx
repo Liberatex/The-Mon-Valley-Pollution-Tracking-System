@@ -1870,19 +1870,31 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
     // Store handler in ref for cleanup
     riskZoneClickHandlerRef.current = riskZoneClickHandler;
     
-    // Remove ALL existing click handlers for these layers, then add new ones
+    // Remove existing handlers if present, then add new ones
     // This ensures handlers are always attached, even when source/data updates
     if (map.current.getLayer('risk-zones-fill')) {
-      // Remove all click handlers for this layer
-      map.current.off('click', 'risk-zones-fill');
+      // Remove previous handler if it exists
+      if (riskZoneClickHandlerRef.current) {
+        try {
+          map.current.off('click', 'risk-zones-fill', riskZoneClickHandlerRef.current);
+        } catch (e) {
+          // Handler might not exist, that's okay
+        }
+      }
       // Add the new handler
       map.current.on('click', 'risk-zones-fill', riskZoneClickHandler);
       console.log('✅ Risk zone fill click handler attached');
     }
 
     if (map.current.getLayer('risk-zones-outline')) {
-      // Remove all click handlers for this layer
-      map.current.off('click', 'risk-zones-outline');
+      // Remove previous handler if it exists
+      if (riskZoneClickHandlerRef.current) {
+        try {
+          map.current.off('click', 'risk-zones-outline', riskZoneClickHandlerRef.current);
+        } catch (e) {
+          // Handler might not exist, that's okay
+        }
+      }
       // Add the new handler
       map.current.on('click', 'risk-zones-outline', riskZoneClickHandler);
       console.log('✅ Risk zone outline click handler attached');
@@ -1890,13 +1902,13 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
     
     // Cleanup function
     return () => {
-      if (map.current) {
+      if (map.current && riskZoneClickHandlerRef.current) {
         try {
           if (map.current.getLayer('risk-zones-fill')) {
-            map.current.off('click', 'risk-zones-fill', riskZoneClickHandler);
+            map.current.off('click', 'risk-zones-fill', riskZoneClickHandlerRef.current);
           }
           if (map.current.getLayer('risk-zones-outline')) {
-            map.current.off('click', 'risk-zones-outline', riskZoneClickHandler);
+            map.current.off('click', 'risk-zones-outline', riskZoneClickHandlerRef.current);
           }
         } catch (e) {
           // Ignore errors during cleanup

@@ -415,7 +415,7 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
         console.log(`Created ${zones.length} risk zones from weighted risk events`);
       } else {
         // Fallback: create zones from high smell clusters if no weighted risk events
-      if (smellClusters.length > 0) {
+        if (smellClusters.length > 0) {
         const smellEvents = smellClusters
           .filter(cluster => cluster.averageSmell >= 3)
           .map(cluster => ({
@@ -432,13 +432,14 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
             event.severity
           )
         );
-        setRiskZones(zones);
-        console.log(`Created ${zones.length} risk zones from smell clusters (fallback)`);
-      } else {
-        setRiskZones([]);
+          setRiskZones(zones);
+          console.log(`Created ${zones.length} risk zones from smell clusters (fallback)`);
+        } else {
+          setRiskZones([]);
+        }
       }
     }
-  }, [sensors, smellClusters, windData, facilities, triFacilities, userHealthProfile, showRiskZones, hiddenRiskZones]);
+  }, [sensors, smellClusters, windData, facilities, triFacilities, userHealthProfile, showRiskZones, hiddenRiskZones, map.current]);
 
   // Fetch wind data
   useEffect(() => {

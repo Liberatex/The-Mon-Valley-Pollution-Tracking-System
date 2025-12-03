@@ -1520,6 +1520,104 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
           'line-dasharray': [2, 2], // Dashed line
         },
       });
+
+      // Add click handler for facility plumes with popup
+      map.current.on('click', 'facility-plumes-fill', (e) => {
+        if (e.features && e.features[0] && e.lngLat && e.features[0].properties) {
+          const props = e.features[0].properties;
+          const facility = facilities.find((f) => f.facilityId === props.facilityId);
+          
+          if (facility && map.current && windData) {
+            // Calculate plume direction (where pollution travels TO)
+            const bearing = (windData.direction + 180) % 360; // Wind blows TO this direction
+            const plumeDirection = degreesToCompass(bearing);
+            
+            // Detect mobile screen size for responsive popup
+            const isMobile = window.innerWidth < 640;
+            const plumePopupMinWidth = isMobile ? '220px' : '280px';
+            const plumePopupMaxWidth = isMobile ? '300px' : '400px';
+            const plumePopupMaxWidthMapbox = isMobile ? '300px' : '450px';
+            
+            const popupContent = `
+              <div style="min-width: ${plumePopupMinWidth}; max-width: ${plumePopupMaxWidth};">
+                <div style="display: flex; align-items: start; gap: 8px; margin-bottom: 12px;">
+                  <div style="width: 16px; height: 16px; border-radius: 4px; background-color: #ff6b6b; flex-shrink: 0; margin-top: 2px;"></div>
+                  <div style="flex: 1;">
+                    <h3 style="font-weight: bold; font-size: ${isMobile ? '14px' : '16px'}; margin: 0 0 4px 0; color: #1f2937;">${facility.name}</h3>
+                    <p style="font-size: ${isMobile ? '11px' : '12px'}; color: #6b7280; margin: 0;">Pollution Plume</p>
+                  </div>
+                </div>
+                
+                <div style="margin-bottom: 12px; font-size: 13px;">
+                  <strong style="color: #374151;">Plume Direction:</strong><br/>
+                  <span style="color: #1f2937; font-weight: 600;">${plumeDirection} (${bearing.toFixed(0)}°)</span>
+                  <p style="font-size: 11px; color: #6b7280; margin: 4px 0 0 0;">Pollution traveling ${plumeDirection.toLowerCase()} from this facility</p>
+                </div>
+                
+                <div style="margin-bottom: 12px; font-size: 13px;">
+                  <strong style="color: #374151;">Wind Conditions:</strong><br/>
+                  <div style="margin-top: 4px;">
+                    <div>Speed: <span style="color: #1f2937;">${windData.speed.toFixed(1)} m/s</span></div>
+                    <div>Direction: <span style="color: #1f2937;">${degreesToCompass(windData.direction)} (${windData.direction.toFixed(0)}°)</span></div>
+                    <div style="font-size: 11px; color: #6b7280; margin-top: 2px;">Dispersion: ${calculateDispersionFactor(windData.speed).toFixed(2)}x</div>
+                  </div>
+                </div>
+                
+                <div style="background-color: #fef3c7; padding: 8px; border-radius: 4px; font-size: 12px; color: #92400e; border-left: 4px solid #f59e0b; margin-bottom: 12px;">
+                  <strong>Note:</strong> This plume shows where pollution from this facility is likely traveling based on current wind conditions. Plume length and direction update dynamically with wind changes.
+                </div>
+                
+                <div style="background-color: #eff6ff; padding: 8px; border-radius: 4px; font-size: 12px; color: #1e40af; border-left: 3px solid #3b82f6; margin-bottom: 12px;">
+                  💡 <strong>Tip:</strong> Click the facility icon (${facility.name}) for full facility details, compliance status, and permit information.
+                </div>
+                
+                <div style="border-top: 1px solid #e5e7eb; margin-top: 12px; padding-top: 12px;">
+                  <div style="font-size: 11px; color: #6b7280;">
+                    <strong style="color: #374151; display: block; margin-bottom: 4px;">Data Sources:</strong>
+                    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+                      <div style="display: flex; align-items: start; gap: 6px;">
+                        <span style="color: #dc2626;">🏭</span>
+                        <div>
+                          <div style="font-weight: 600; color: #1f2937;">Facility Location</div>
+                          <div style="margin-top: 2px; font-size: 10px;">EPA ECHO API - Title V Operating Permit Facilities</div>
+                        </div>
+                      </div>
+                      <div style="display: flex; align-items: start; gap: 6px;">
+                        <span style="color: #10b981;">🌬️</span>
+                        <div>
+                          <div style="font-weight: 600; color: #1f2937;">Wind Data</div>
+                          <div style="margin-top: 2px; font-size: 10px;">OpenWeatherMap API for real-time wind speed and direction</div>
+                        </div>
+                      </div>
+                      <div style="margin-top: 4px; font-size: 10px; color: #9ca3af; font-style: italic;">
+                        Plume visualization calculated using dispersion modeling based on wind speed and direction.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `;
+            
+            // Create and show popup
+            new mapboxgl.Popup({ closeOnClick: true, maxWidth: plumePopupMaxWidthMapbox })
+              .setLngLat(e.lngLat)
+              .setHTML(popupContent)
+              .addTo(map.current);
+          }
+        }
+      });
+
+      // Change cursor on hover for plumes
+      map.current.on('mouseenter', 'facility-plumes-fill', () => {
+        if (map.current) {
+          map.current.getCanvas().style.cursor = 'pointer';
+        }
+      });
+      map.current.on('mouseleave', 'facility-plumes-fill', () => {
+        if (map.current) {
+          map.current.getCanvas().style.cursor = '';
+        }
+      });
     }
   }, [map.current, showFacilities, facilities, windData]);
 

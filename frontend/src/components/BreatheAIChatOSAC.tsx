@@ -6,7 +6,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './BreatheAI.css';
 import axios from 'axios';
-import { Send, X } from 'lucide-react';
+import { Send, X, CheckCircle } from 'lucide-react';
 import { BreatheAILogo } from './BreatheAILogo';
 import {
   OSACData,
@@ -16,6 +16,8 @@ import {
   correlateWithSensors,
 } from '../services/osacFramework';
 import { useRealtimeSensorData } from '../hooks/useRealtimeSensorData';
+import { shouldUseEmulator } from '../utils/env';
+import { getAuth } from 'firebase/auth';
 
 export interface Message {
   id: string;
@@ -38,7 +40,7 @@ export const BreatheAIChatOSAC: React.FC<BreatheAIChatOSACProps> = ({
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: "Hello! I'm BreatheAI, your air quality health assistant. I can help you report symptoms, check air quality, and get personalized recommendations. How can I help you today?",
+      text: "Hello! I'm BreatheAI, your air quality health assistant. I can help you:\n\n• Report symptoms and health impacts (just describe what you're experiencing and I'll guide you through the process)\n• Check air quality in your area\n• Get personalized health recommendations\n• Submit symptom reports for advocacy and regulatory action\n\nWhat would you like to do today?",
       sender: 'ai',
       timestamp: new Date(),
       type: 'text',
@@ -54,7 +56,17 @@ export const BreatheAIChatOSAC: React.FC<BreatheAIChatOSACProps> = ({
     causes: [],
     timestamp: new Date(),
   });
+  
+  // Additional OSAC fields for full symptom reporting (matching SymptomReportForm)
+  const [osacDetails, setOsacDetails] = useState<{
+    onset?: string; // 'Sudden' | 'Gradual' | 'Intermittent'
+    severity?: number; // 1-5 scale
+    course?: string; // 'Improving' | 'Stable' | 'Worsening'
+    aggravatingFactors?: string[]; // From aggravatingOptions
+  }>({});
   const [awaitingResponse, setAwaitingResponse] = useState(false);
+  const [reportSubmitted, setReportSubmitted] = useState(false);
+  const [submittingReport, setSubmittingReport] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Get real-time sensor data for correlation
@@ -90,8 +102,96 @@ export const BreatheAIChatOSAC: React.FC<BreatheAIChatOSACProps> = ({
     setMessages((prev) => [...prev, newMessage]);
   };
 
+  // Submit symptom report (VCAN requirement - BreatheAI symptom reporting module)
+  const submitSymptomReport = async () => {
+    if (!osacData.symptoms || osacData.symptoms.length === 0) {
+      addMessage('I need to know about your symptoms first. Can you describe what you\'re experiencing?', 'ai', 'question');
+      return;
+    }
+
+    setSubmittingReport(true);
+    addMessage('Submitting your symptom report...', 'ai');
+
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      const userId = user?.uid || `anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+      // Map OSAC data to symptom report format (matching SymptomReportForm structure)
+      const reportData = {
+        userId,
+        fullName: '', // Can be collected if needed
+        age: '', // Can be collected if needed
+        symptoms: osacData.symptoms || [],
+        severity: osacDetails.severity || Math.min(5, (osacData.symptoms?.length || 1) + 1),
+        osac: {
+          onset: osacDetails.onset || 'Gradual', // 'Sudden' | 'Gradual' | 'Intermittent'
+          severity: osacDetails.severity || Math.min(5, (osacData.symptoms?.length || 1) + 1), // 1-5 scale
+          aggravatingFactors: osacDetails.aggravatingFactors || osacData.actions || osacData.odors || [],
+          course: osacDetails.course || 'Stable', // 'Improving' | 'Stable' | 'Worsening'
+        },
+        submittedAt: new Date().toISOString(),
+        location: osacData.location?.lat && osacData.location?.lng ? {
+          lat: osacData.location.lat,
+          lng: osacData.location.lng,
+        } : undefined,
+        consent: true,
+      };
+
+      const baseUrl = shouldUseEmulator()
+        ? 'http://127.0.0.1:5001/mv-pollution-tracking-system/us-central1'
+        : 'https://us-central1-mv-pollution-tracking-system.cloudfunctions.net';
+
+      const response = await axios.post(
+        `${baseUrl}/submitSymptomReport`,
+        reportData,
+        {
+          headers: { 'Content-Type': 'application/json' },
+          timeout: 10000,
+        }
+      );
+
+      if (response.data?.success) {
+        setReportSubmitted(true);
+        addMessage(
+          `✅ Your symptom report has been submitted successfully! Report ID: ${response.data.reportId?.substring(0, 8)}...`,
+          'ai',
+          'suggestion'
+        );
+        addMessage(
+          'Your report helps build evidence for advocacy and regulatory action. Thank you for contributing to community health tracking.',
+          'ai'
+        );
+      } else {
+        throw new Error('Submission failed');
+      }
+    } catch (error: any) {
+      console.error('Error submitting symptom report:', error);
+      addMessage(
+        'Sorry, there was an error submitting your report. Please try again or use the "Report Symptoms" page.',
+        'ai',
+        'alert'
+      );
+    } finally {
+      setSubmittingReport(false);
+    }
+  };
+
   const processUserInput = async (input: string) => {
     const lowerInput = input.toLowerCase();
+
+    // Check if user wants to submit report
+    if (lowerInput.includes('yes') && lowerInput.includes('submit') || 
+        lowerInput.includes('submit report') ||
+        lowerInput === 'yes, submit report') {
+      await submitSymptomReport();
+      return;
+    }
+
+    if (lowerInput.includes('no') && (lowerInput.includes('just') || lowerInput.includes('chat'))) {
+      addMessage('Understood. I\'m here if you need anything else!', 'ai');
+      return;
+    }
 
     // Detect symptoms
     const symptomClassification = classifySymptom(input);
@@ -116,6 +216,53 @@ export const BreatheAIChatOSAC: React.FC<BreatheAIChatOSACProps> = ({
           odors: [...currentOdors, ...newOdors],
         }));
       }
+    }
+
+    // Handle OSAC detail questions (onset, severity, course, aggravating factors)
+    if (lowerInput.includes('sudden') || lowerInput.includes('gradual') || lowerInput.includes('intermittent')) {
+      const onset = lowerInput.includes('sudden') ? 'Sudden' : 
+                    lowerInput.includes('gradual') ? 'Gradual' : 'Intermittent';
+      setOsacDetails(prev => ({ ...prev, onset }));
+      addMessage(`Got it - your symptoms started ${onset.toLowerCase()}.`, 'ai');
+    }
+    
+    if (lowerInput.match(/\b(1|2|3|4|5|mild|moderate|severe|very severe|extreme)\b/i)) {
+      const severityMatch = lowerInput.match(/\b([1-5])\b/);
+      const severity = severityMatch ? parseInt(severityMatch[1]) :
+                      lowerInput.includes('mild') ? 1 :
+                      lowerInput.includes('moderate') ? 2 :
+                      lowerInput.includes('severe') && lowerInput.includes('very') ? 4 :
+                      lowerInput.includes('severe') ? 3 :
+                      lowerInput.includes('extreme') ? 5 : undefined;
+      if (severity) {
+        setOsacDetails(prev => ({ ...prev, severity }));
+        addMessage(`I've noted your symptom severity as ${severity}/5.`, 'ai');
+      }
+    }
+    
+    if (lowerInput.includes('improving') || lowerInput.includes('stable') || lowerInput.includes('worsening')) {
+      const course = lowerInput.includes('improving') ? 'Improving' :
+                    lowerInput.includes('worsening') ? 'Worsening' : 'Stable';
+      setOsacDetails(prev => ({ ...prev, course }));
+      addMessage(`Understood - your symptoms are ${course.toLowerCase()}.`, 'ai');
+    }
+    
+    // Handle aggravating factors (multiple selection)
+    const aggravatingOptions = ['Physical Activity', 'Outdoor Exposure', 'Industrial Smell', 'Weather Conditions', 'Time of Day'];
+    const detectedAggravating = aggravatingOptions.filter(option => 
+      lowerInput.includes(option.toLowerCase().split(' ')[0]) || 
+      (option === 'Physical Activity' && lowerInput.includes('activity')) ||
+      (option === 'Outdoor Exposure' && lowerInput.includes('outdoor')) ||
+      (option === 'Industrial Smell' && lowerInput.includes('industrial')) ||
+      (option === 'Weather Conditions' && lowerInput.includes('weather')) ||
+      (option === 'Time of Day' && lowerInput.includes('time'))
+    );
+    if (detectedAggravating.length > 0) {
+      setOsacDetails(prev => ({
+        ...prev,
+        aggravatingFactors: [...(prev.aggravatingFactors || []), ...detectedAggravating].filter((v, i, a) => a.indexOf(v) === i)
+      }));
+      addMessage(`I've noted these aggravating factors: ${detectedAggravating.join(', ')}.`, 'ai');
     }
 
     // Generate OSAC questions
@@ -150,7 +297,43 @@ export const BreatheAIChatOSAC: React.FC<BreatheAIChatOSACProps> = ({
               sensorData
             );
 
-            addMessage(correlation.recommendation, 'ai', 'suggestion');
+            // Immediate feedback with correlation (VCAN requirement)
+            if (correlation.correlation !== 'none') {
+              const correlationLevel = correlation.correlation === 'high' ? 'strongly' : 
+                                      correlation.correlation === 'medium' ? 'moderately' : 'weakly';
+              addMessage(
+                `🔍 I've checked nearby air quality sensors. Your symptoms ${correlationLevel} correlate with current air quality conditions.`,
+                'ai',
+                'suggestion'
+              );
+              
+              if (correlation.nearbySensors && correlation.nearbySensors.length > 0) {
+                const avgPM25 = correlation.nearbySensors.reduce((sum, s) => sum + (s.pm25 || 0), 0) / correlation.nearbySensors.length;
+                addMessage(
+                  `📊 Nearby sensors show PM2.5 levels of ${avgPM25.toFixed(1)} μg/m³. ${correlation.recommendation}`,
+                  'ai',
+                  'suggestion'
+                );
+              } else {
+                addMessage(correlation.recommendation, 'ai', 'suggestion');
+              }
+            } else {
+              addMessage(
+                'I couldn\'t find nearby sensors to correlate with your symptoms. This may be due to limited sensor coverage in your area.',
+                'ai',
+                'alert'
+              );
+            }
+            
+            // Offer to submit symptom report if we have symptoms (VCAN requirement - closed feedback loop)
+            if (osacData.symptoms && osacData.symptoms.length > 0 && !reportSubmitted) {
+              addMessage(
+                'Would you like me to submit a symptom report with this information? This helps track health impacts in your community and creates legally defensible data for advocacy.',
+                'ai',
+                'question',
+                ['Yes, submit report', 'No, just chatting']
+              );
+            }
           },
           () => {
             // Location denied - continue without it
@@ -169,7 +352,43 @@ export const BreatheAIChatOSAC: React.FC<BreatheAIChatOSACProps> = ({
           sensorData
         );
 
-        addMessage(correlation.recommendation, 'ai', 'suggestion');
+        // Immediate feedback with correlation (VCAN requirement)
+        if (correlation.correlation !== 'none') {
+          const correlationLevel = correlation.correlation === 'high' ? 'strongly' : 
+                                  correlation.correlation === 'medium' ? 'moderately' : 'weakly';
+          addMessage(
+            `🔍 I've checked nearby air quality sensors. Your symptoms ${correlationLevel} correlate with current air quality conditions.`,
+            'ai',
+            'suggestion'
+          );
+          
+          if (correlation.nearbySensors && correlation.nearbySensors.length > 0) {
+            const avgPM25 = correlation.nearbySensors.reduce((sum, s) => sum + (s.pm25 || 0), 0) / correlation.nearbySensors.length;
+            addMessage(
+              `📊 Nearby sensors show PM2.5 levels of ${avgPM25.toFixed(1)} μg/m³. ${correlation.recommendation}`,
+              'ai',
+              'suggestion'
+            );
+          } else {
+            addMessage(correlation.recommendation, 'ai', 'suggestion');
+          }
+        } else {
+          addMessage(
+            'I couldn\'t find nearby sensors to correlate with your symptoms. This may be due to limited sensor coverage in your area.',
+            'ai',
+            'alert'
+          );
+        }
+        
+        // Offer to submit symptom report if we have symptoms (VCAN requirement - closed feedback loop)
+        if (osacData.symptoms && osacData.symptoms.length > 0 && !reportSubmitted) {
+          addMessage(
+            'Would you like me to submit a symptom report with this information? This helps track health impacts in your community and creates legally defensible data for advocacy.',
+            'ai',
+            'question',
+            ['Yes, submit report', 'No, just chatting']
+          );
+        }
       }
     }
 

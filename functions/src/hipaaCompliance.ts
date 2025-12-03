@@ -71,12 +71,14 @@ export async function storeInHealthVault(
   const encryptedData = await encryptHealthData(healthData, encryptionKey);
   
   // Store in health_vault collection (protected by Firestore security rules)
+  // Use ISO string for emulator compatibility (serverTimestamp() doesn't work well in emulators)
+  const now = new Date().toISOString();
   await db.collection('health_vault').doc(pseudonymizedId).set({
     userId: pseudonymizedId,
     encryptedData,
     encryptionKeyId: 'default',
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    createdAt: now,
+    updatedAt: now,
   });
 }
 

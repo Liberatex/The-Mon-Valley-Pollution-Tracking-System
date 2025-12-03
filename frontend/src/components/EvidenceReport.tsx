@@ -17,6 +17,8 @@ interface EvidenceReport {
     maxPM25: number;
     facilitiesAffected: string[];
     riskLevel: string;
+    totalViolations?: number;
+    sncFacilities?: number;
   };
   facilityDetails: Array<{
     name: string;
@@ -64,17 +66,24 @@ const EvidenceReport: React.FC = () => {
       const facilitiesResp = await axios.get(`${baseUrl}/getTitleVFacilities`);
       const facilities = facilitiesResp.data?.facilities || [];
 
-      // Calculate distance helper function (define before use)
-      const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
-        const R = 3959; // Earth's radius in miles
-        const dLat = (lat2 - lat1) * Math.PI / 180;
-        const dLng = (lng2 - lng1) * Math.PI / 180;
-        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-          Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-          Math.sin(dLng / 2) * Math.sin(dLng / 2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return R * c;
-      };
+      // Fetch compliance data for facilities (VCAN requirement)
+      const facilitiesWithCompliance = await Promise.all(
+        facilities.map(async (facility: any) => {
+          try {
+            const complianceResp = await axios.get(`${baseUrl}/getFacilityCompliance`, {
+              params: { facilityId: facility.facilityId },
+              timeout: 5000,
+            });
+            return {
+              ...facility,
+              compliance: complianceResp.data?.compliance || null,
+            };
+          } catch (error) {
+            return { ...facility, compliance: null };
+          }
+        })
+      );
+
 
       // Fetch actual sensor data for PM2.5 calculations
       let avgPM25 = 45.2; // Default fallback
@@ -96,43 +105,62 @@ const EvidenceReport: React.FC = () => {
         console.warn('Could not fetch ACHD data for report, using defaults');
       }
 
-      // Calculate findings
+      // Filter facilities by radius (use facilitiesWithCompliance)
+      const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+        const R = 3959; // Earth's radius in miles
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLng = (lng2 - lng1) * Math.PI / 180;
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+          Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+      };
+
+      const nearbyFacilities = facilitiesWithCompliance
+        .filter((f: any) => {
+          if (!f.location?.lat || !f.location?.lng) return false;
+          const distance = calculateDistance(centerLat, centerLng, f.location.lat, f.location.lng);
+          return distance <= radius;
+        })
+        .map((f: any) => {
+          const distance = calculateDistance(centerLat, centerLng, f.location.lat, f.location.lng);
+          return { ...f, distance };
+        })
+        .sort((a: any, b: any) => a.distance - b.distance);
+
+      // Calculate findings (after nearbyFacilities is defined)
       const symptomReportCount = filteredReports.filter((r: any) => (r as any).symptoms && (r as any).symptoms.length > 0).length;
+      
+      // Count compliance violations
+      const totalViolations = nearbyFacilities.reduce((sum: number, f: any) => {
+        return sum + (f.compliance?.violations?.length || 0);
+      }, 0);
+      
+      const sncFacilities = nearbyFacilities.filter((f: any) => f.compliance?.isSNC).length;
+      
       const findings = {
         airQualityEvents: filteredReports.length,
         symptomReports: symptomReportCount,
         avgPM25: Math.round(avgPM25 * 10) / 10,
         maxPM25: Math.round(maxPM25 * 10) / 10,
-        facilitiesAffected: facilities
-          .filter((f: any) => f.location?.lat && f.location?.lng)
-          .map((f: any) => {
-            const dist = calculateDistance(centerLat, centerLng, f.location.lat, f.location.lng);
-            return dist <= radius ? f.name : null;
-          })
-          .filter((n: any) => n !== null),
+        facilitiesAffected: nearbyFacilities.map((f: any) => f.name),
         riskLevel: symptomReportCount > 20 ? 'very_high' : 
                    symptomReportCount > 10 ? 'high' :
-                   symptomReportCount > 5 ? 'moderate' : 'low'
+                   symptomReportCount > 5 ? 'moderate' : 'low',
+        totalViolations,
+        sncFacilities,
       };
 
-      const facilityDetails = facilities
-        .filter((f: any) => f.location?.lat && f.location?.lng)
-        .map((facility: any) => {
-          const distance = calculateDistance(
-            centerLat,
-            centerLng,
-            facility.location.lat,
-            facility.location.lng
-          );
-          return {
-            name: facility.name,
-            distance: Math.round(distance * 10) / 10,
-            emissions: facility.emissionsData || [],
-            violations: facility.violations?.length || 0
-          };
-        })
-        .filter((f: any) => f.distance <= radius) // Only include facilities within radius
-        .sort((a: any, b: any) => a.distance - b.distance); // Sort by distance
+      const facilityDetails = nearbyFacilities.slice(0, 10).map((f: any) => ({
+        name: f.name,
+        distance: Math.round(f.distance * 10) / 10,
+        emissions: f.emissionsData || [],
+        violations: f.compliance?.violations?.length || 0,
+        complianceStatus: f.compliance?.status || 'Unknown',
+        isSNC: f.compliance?.isSNC || false,
+        quartersInNonCompliance: f.compliance?.quartersInNonCompliance || 0,
+      }));
 
       const recommendations = [
         "Immediate ACHD investigation of U.S. Steel Clairton operations during high PM2.5 events",
@@ -196,7 +224,9 @@ const EvidenceReport: React.FC = () => {
         `Air Quality Events: ${report.findings.airQualityEvents} documented high-pollution events`,
         `Average PM2.5: ${report.findings.avgPM25} μg/m³`,
         `Peak PM2.5: ${report.findings.maxPM25} μg/m³ (${(report.findings.maxPM25 / 35 * 100).toFixed(0)}% above EPA standard)`,
-        `Risk Level: ${report.findings.riskLevel.toUpperCase()}`
+        `Risk Level: ${report.findings.riskLevel.toUpperCase()}`,
+        ...(report.findings.totalViolations ? [`Total Compliance Violations: ${report.findings.totalViolations}`] : []),
+        ...(report.findings.sncFacilities ? [`Facilities in Significant Non-Compliance: ${report.findings.sncFacilities}`] : []),
       ];
 
       findings.forEach((line) => {
@@ -233,6 +263,20 @@ const EvidenceReport: React.FC = () => {
           doc.setFont('helvetica', 'normal');
           doc.text(`   Distance: ${facility.distance} miles`, margin, yPos);
           yPos += 7;
+          if ((facility as any).complianceStatus) {
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor((facility as any).isSNC ? 220 : (facility as any).complianceStatus === 'Non-Compliant' ? 184 : 16, 
+                            (facility as any).isSNC ? 38 : (facility as any).complianceStatus === 'Non-Compliant' ? 134 : 185, 
+                            (facility as any).isSNC ? 38 : (facility as any).complianceStatus === 'Non-Compliant' ? 11 : 129);
+            doc.text(`   Compliance: ${(facility as any).complianceStatus}${(facility as any).isSNC ? ' (SNC)' : ''}`, margin, yPos);
+            doc.setTextColor(0, 0, 0);
+            yPos += 7;
+            doc.setFont('helvetica', 'normal');
+            if ((facility as any).quartersInNonCompliance > 0) {
+              doc.text(`   Quarters in Non-Compliance: ${(facility as any).quartersInNonCompliance}`, margin, yPos);
+              yPos += 7;
+            }
+          }
           if (facility.emissions.length > 0) {
             doc.text(`   Emissions:`, margin, yPos);
             yPos += 7;

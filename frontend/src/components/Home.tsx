@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { FadeInSection } from './ui/FadeInSection';
-import { BarChart3, Map, FileText, Bot, AlertTriangle, ArrowRight, Activity, Shield, Zap } from 'lucide-react';
+import { Map, FileText, Bot, AlertTriangle, ArrowRight, Activity, Shield, Zap } from 'lucide-react'; // BarChart3 removed (was for Dashboard)
 
 interface HomeProps {
-  onNavigate?: (view: 'dashboard' | 'map' | 'symptoms' | 'ai' | 'exposure') => void;
+  onNavigate?: (view: 'map' | 'symptoms' | 'ai' | 'exposure') => void; // 'dashboard' removed
 }
 
 const Home: React.FC<HomeProps> = ({ onNavigate }) => {
@@ -52,14 +52,15 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
               Explore Sensor Map
               <ArrowRight className="w-4 h-4" />
             </button>
-            <button
+            {/* Dashboard button removed (kept in codebase for future use) */}
+            {/* <button
               onClick={() => onNavigate?.('dashboard')}
               className="bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-lg font-semibold text-sm sm:text-base transition-all duration-200 hover:-translate-y-1 hover:shadow-xl backdrop-blur-sm border border-white/20 flex items-center gap-2"
             >
               <BarChart3 className="w-5 h-5" />
               View Dashboard
               <ArrowRight className="w-4 h-4" />
-            </button>
+            </button> */}
             <button
               onClick={() => onNavigate?.('symptoms')}
               className="bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-lg font-semibold text-sm sm:text-base transition-all duration-200 hover:-translate-y-1 hover:shadow-xl backdrop-blur-sm border border-white/20 flex items-center gap-2"
@@ -208,7 +209,8 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
             </button>
           </div>
 
-          <div className="border-l-4 border-blue-500 pl-4 sm:pl-6 py-2 group hover:bg-gray-50 rounded-r-lg transition-colors duration-200">
+          {/* Dashboard section removed (kept in codebase for future use) */}
+          {/* <div className="border-l-4 border-blue-500 pl-4 sm:pl-6 py-2 group hover:bg-gray-50 rounded-r-lg transition-colors duration-200">
             <div className="flex items-start justify-between mb-2 sm:mb-3">
               <h4 className="text-blue-600 text-lg sm:text-xl font-semibold tracking-tight flex items-center gap-2">
                 <BarChart3 className="w-5 h-5" />
@@ -226,7 +228,7 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
               Open Dashboard
               <ArrowRight className="w-4 h-4" />
             </button>
-          </div>
+          </div> */}
 
           <div className="border-l-4 border-purple-500 pl-4 sm:pl-6 py-2 group hover:bg-gray-50 rounded-r-lg transition-colors duration-200">
             <div className="flex items-start justify-between mb-2 sm:mb-3">
@@ -357,7 +359,8 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
             </span>
           </button>
 
-          <button
+          {/* Dashboard button removed (kept in codebase for future use) */}
+          {/* <button
             onClick={() => onNavigate?.('dashboard')}
             className="bg-white hover:bg-teal-50 border-2 border-teal-200 hover:border-teal-400 rounded-xl p-6 text-left transition-all duration-200 hover:-translate-y-1 hover:shadow-lg group"
           >
@@ -373,7 +376,7 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
             <span className="text-teal-600 font-semibold text-sm flex items-center gap-2 group-hover:gap-3 transition-all">
               Open Dashboard <ArrowRight className="w-4 h-4" />
             </span>
-          </button>
+          </button> */}
 
           <button
             onClick={() => onNavigate?.('exposure')}

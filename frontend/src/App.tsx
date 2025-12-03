@@ -1,13 +1,13 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { Home, BarChart3, Map, FileText, Bot, AlertTriangle } from 'lucide-react';
+import { Home, Map, FileText, Bot, AlertTriangle } from 'lucide-react'; // BarChart3 removed (was for Dashboard)
 import './App.css';
 import Logo from './components/Logo';
 import { feedbackService, UserFeedback } from './services/feedbackService';
 import { PageTransition } from './components/ui/PageTransition';
 import { FloatingChatBubble } from './components/FloatingChatBubble';
 
-type View = 'home' | 'dashboard' | 'map' | 'symptoms' | 'ai' | 'exposure';
+type View = 'home' | 'map' | 'symptoms' | 'ai' | 'exposure'; // 'dashboard' removed for now (kept in codebase for future use)
 
 function App() {
   const [currentView, setCurrentView] = useState<View>('home');
@@ -45,7 +45,8 @@ function App() {
 
   // Lazy load page components
   const HomePage = lazy(() => import('./components/Home'));
-  const Dashboard = lazy(() => import('./components/Dashboard'));
+  // Dashboard removed from navigation (kept in codebase for future use)
+  // const Dashboard = lazy(() => import('./components/Dashboard'));
   // Using Mapbox version for advanced visualizations (VCAN requirement)
   const SensorMap = lazy(() => import('./components/SensorMapMapbox'));
   const SymptomReportForm = lazy(() => import('./components/SymptomReportForm'));
@@ -61,7 +62,7 @@ function App() {
     </div>
   );
 
-  const handleNavigate = (view: 'dashboard' | 'map' | 'symptoms' | 'ai' | 'exposure') => {
+  const handleNavigate = (view: 'map' | 'symptoms' | 'ai' | 'exposure') => {
     setCurrentView(view);
   };
 
@@ -69,8 +70,9 @@ function App() {
     switch (currentView) {
       case 'home':
         return <Suspense fallback={<LoadingFallback />}><HomePage onNavigate={handleNavigate} /></Suspense>;
-      case 'dashboard':
-        return <Suspense fallback={<LoadingFallback />}><Dashboard /></Suspense>;
+      // Dashboard removed from navigation (kept in codebase for future use)
+      // case 'dashboard':
+      //   return <Suspense fallback={<LoadingFallback />}><Dashboard /></Suspense>;
       case 'map':
         return <Suspense fallback={<LoadingFallback />}><SensorMap onSensorSelect={() => {}} /></Suspense>;
       case 'symptoms':
@@ -112,14 +114,15 @@ function App() {
             <Home className="w-4 h-4 md:w-5 md:h-5" />
             <span className="hidden sm:inline">Home</span>
           </button>
-          <button
+          {/* Dashboard removed from navigation (kept in codebase for future use) */}
+          {/* <button
             className={`nav-button ${currentView === 'dashboard' ? 'active' : ''}`}
             onClick={() => handleNavClick('dashboard')}
             aria-current={currentView === 'dashboard' ? 'page' : undefined}
           >
             <BarChart3 className="w-4 h-4 md:w-5 md:h-5" />
             <span className="hidden sm:inline">Dashboard</span>
-          </button>
+          </button> */}
           <button
             className={`nav-button ${currentView === 'map' ? 'active' : ''}`}
             onClick={() => handleNavClick('map')}
@@ -163,13 +166,14 @@ function App() {
             <Home className="w-5 h-5" />
             <span>Home</span>
           </button>
-          <button
+          {/* Dashboard removed from navigation (kept in codebase for future use) */}
+          {/* <button
             className={`nav-button ${currentView === 'dashboard' ? 'active' : ''}`}
             onClick={() => handleNavClick('dashboard')}
           >
             <BarChart3 className="w-5 h-5" />
             <span>Dashboard</span>
-          </button>
+          </button> */}
           <button
             className={`nav-button ${currentView === 'map' ? 'active' : ''}`}
             onClick={() => handleNavClick('map')}

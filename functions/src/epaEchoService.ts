@@ -27,16 +27,105 @@ export interface ECHOFacility {
 /**
  * Fetch facility compliance data from EPA ECHO API
  * @param registryId EPA Registry ID (e.g., '110000305886' for Clairton)
+ * 
+ * EPA ECHO API Documentation:
+ * - Web Services: https://echo.epa.gov/tools/web-services/detailed-facility-report
+ * - DFR Data Dictionary: https://echo.epa.gov/help/reports/dfr-data-dictionary#AirComp
+ * - Air Compliance Data: https://echo.epa.gov/help/reports/dfr-data-dictionary#AirComp
+ * 
+ * API Endpoint: https://echo.epa.gov/tools/web-services/dfr_rest_services.get_dfr
+ * Query Parameters:
+ *   - p_id: Registry ID (required)
+ *   - p_system: System type ('AIR' for air compliance)
+ *   - output: Response format ('JSON' or 'XML')
+ * 
+ * Note: EPA ECHO REST APIs are public and do not require API keys
  */
 export async function fetchECHOCompliance(
   registryId: string
 ): Promise<ECHOFacility | null> {
   try {
-    // EPA ECHO API endpoint
-    // Note: Full implementation would use the ECHO Detailed Facility Report (DFR) API
-    // Endpoint: https://echo.epa.gov/tools/web-services
+    // Try to fetch from EPA ECHO API first
+    const echoApiUrl = 'https://echo.epa.gov/tools/web-services/dfr_rest_services.get_dfr';
     
-    // For now, return hardcoded compliance data for Mon Valley facilities
+    try {
+      const response = await axios.get(echoApiUrl, {
+        params: {
+          p_id: registryId,
+          p_system: 'AIR', // Air compliance data
+          output: 'JSON',
+        },
+        timeout: 10000, // 10 second timeout
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'Mon-Valley-Pollution-Tracking-System/1.0',
+        },
+      });
+
+      // Parse ECHO API response
+      const responseData = response.data as any;
+      if (responseData && responseData.Results) {
+        const facilityData = responseData.Results;
+        
+        // Extract compliance status from ECHO response
+        // Structure may vary - adjust based on actual API response
+        const complianceStatus = facilityData.ThreeYearComplianceStatus || 
+                                facilityData.AirComplianceStatus || 
+                                'Unknown';
+        
+        const qnc = facilityData.QNC || facilityData.QuartersInNonCompliance || 0;
+        const lastInspection = facilityData.LastInspectionDate ? 
+                              new Date(facilityData.LastInspectionDate) : undefined;
+        
+        // Parse violations if available
+        const violations: Array<{ type: string; date: Date; description: string }> = [];
+        if (facilityData.Violations && Array.isArray(facilityData.Violations)) {
+          facilityData.Violations.forEach((v: any) => {
+            violations.push({
+              type: v.Type || 'Air Quality',
+              date: v.Date ? new Date(v.Date) : new Date(),
+              description: v.Description || v.ViolationDescription || 'Violation reported',
+            });
+          });
+        }
+
+        // Determine compliance status
+        let status: ECHOFacility['complianceStatus'] = 'Unknown';
+        if (complianceStatus.includes('Significant Non-Compliance') || 
+            complianceStatus.includes('SNC')) {
+          status = 'Significant Non-Compliance';
+        } else if (complianceStatus.includes('Non-Compliant') || 
+                   complianceStatus.includes('NonCompliant') ||
+                   qnc > 0) {
+          status = 'Non-Compliant';
+        } else if (complianceStatus.includes('Compliant')) {
+          status = 'Compliant';
+        }
+
+        return {
+          facilityId: facilityData.FacilityId || registryId,
+          registryId,
+          name: facilityData.FacilityName || 'Unknown Facility',
+          location: {
+            lat: facilityData.Latitude ? parseFloat(facilityData.Latitude) : 0,
+            lng: facilityData.Longitude ? parseFloat(facilityData.Longitude) : 0,
+          },
+          complianceStatus: status,
+          quartersInNonCompliance: parseInt(qnc.toString()) || 0,
+          lastInspectionDate: lastInspection,
+          violations,
+          permitNumber: facilityData.PermitNumber || facilityData.AirPermitNumber,
+        };
+      }
+    } catch (apiError: any) {
+      // If API call fails, log and fall back to hardcoded data
+      console.warn(`EPA ECHO API call failed for registry ID ${registryId}:`, 
+                   apiError.response?.status || apiError.message);
+      // Fall through to hardcoded data below
+    }
+
+    // Fallback to hardcoded compliance data for Mon Valley facilities
+    // This ensures the system works even if API is unavailable
     const monValleyFacilities: Record<string, ECHOFacility> = {
       '110000305886': {
         // U.S. Steel Clairton Works

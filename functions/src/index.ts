@@ -20,16 +20,40 @@ import { getHistoricalDataForChart } from './achdScraper';
 if (process.env.FUNCTIONS_EMULATOR === 'true' || !process.env.GCLOUD_PROJECT) {
   try {
     const dotenv = require('dotenv');
-    const result = dotenv.config();
-    if (result.error) {
-      console.warn('⚠️ Could not load .env file:', result.error.message);
+    const path = require('path');
+    const fs = require('fs');
+    
+    // Try multiple possible paths for .env file
+    // Compiled code is in lib/src/, so we need to go up two levels
+    const possiblePaths = [
+      path.resolve(__dirname, '..', '..', '.env'), // From lib/src/ to functions/.env
+      path.resolve(__dirname, '..', '.env'), // Fallback
+      path.resolve(process.cwd(), 'functions', '.env'), // From project root
+      path.resolve(process.cwd(), '.env'), // Current directory
+    ];
+    
+    let envPath: string | null = null;
+    for (const testPath of possiblePaths) {
+      if (fs.existsSync(testPath)) {
+        envPath = testPath;
+        break;
+      }
+    }
+    
+    if (!envPath) {
+      console.warn('⚠️ Could not find .env file. Tried paths:', possiblePaths);
     } else {
-      console.log('✅ Loaded environment variables from .env');
-      // Verify PurpleAir key is loaded
-      if (process.env.PURPLEAIR_API_KEY) {
-        console.log('✅ PurpleAir API key found in environment');
+      const result = dotenv.config({ path: envPath });
+      if (result.error) {
+        console.warn('⚠️ Could not load .env file:', result.error.message, 'at path:', envPath);
       } else {
-        console.warn('⚠️ PurpleAir API key not found in environment');
+        console.log('✅ Loaded environment variables from .env at:', envPath);
+        // Verify PurpleAir key is loaded
+        if (process.env.PURPLEAIR_API_KEY) {
+          console.log('✅ PurpleAir API key found in environment:', process.env.PURPLEAIR_API_KEY.substring(0, 10) + '...');
+        } else {
+          console.warn('⚠️ PurpleAir API key not found in environment');
+        }
       }
     }
   } catch (err) {
@@ -232,12 +256,11 @@ export const llama3Chat = functions.https.onRequest((request, response) => {
                   console.log('API Key prefix:', (apiKey || '').substring(0, 10) + '...');
                   
                   if (!apiKey) {
-                    console.log('No API key found in environment variables, using fallback');
-                    response.json({
-                      response: 'API key not configured in environment. Using fallback mode.',
+                    console.log('No API key found in environment variables');
+                    response.status(400).json({
+                      error: 'API key not configured in environment. Please set TOGETHER_AI_API_KEY in Firebase Functions environment variables.',
                       context_used: false,
                       sources: [],
-                      model: 'fallback'
                     });
                     return;
                   }
@@ -378,7 +401,7 @@ export const getMetrics = functions.https.onRequest((request, response) => {
         health: 0,
         ollamaTest: 0
       },
-      message: 'Metrics in fallback mode'
+      message: 'Metrics available'
     });
   });
 });
@@ -729,6 +752,78 @@ export const getTitleVFacilityById = functions.https.onRequest(async (req, res) 
   });
 });
 
+// Endpoint to get ECHO compliance status for a facility (VCAN requirement)
+export const getFacilityCompliance = functions.https.onRequest(async (req, res) => {
+  corsHandler(req, res, async () => {
+    try {
+      const facilityId = req.query.facilityId as string;
+      const registryId = req.query.registryId as string;
+      
+      if (!facilityId && !registryId) {
+        res.status(400).json({ error: 'facilityId or registryId query parameter is required' });
+        return;
+      }
+
+      // Import ECHO service
+      const { fetchECHOCompliance } = await import('./epaEchoService');
+      
+      // Map facility IDs to registry IDs (Mon Valley facilities)
+      // This includes all possible facility ID formats
+      const facilityRegistryMap: Record<string, string> = {
+        // Clairton Works
+        'PA-CLAIRTON-001': '110000305886',
+        'clairton-works': '110000305886',
+        // Edgar Thomson Works (Braddock)
+        'PA-BRADDOCK-001': '110000305887',
+        'edgar-thomson': '110000305887',
+        'edgar-thomson-works': '110000305887',
+        // Irvin Plant (Dravosburg/West Mifflin)
+        'PA-DRAVOSBURG-001': '110000305888',
+        'irvin-plant': '110000305888',
+      };
+
+      const registryIdToUse = registryId || facilityRegistryMap[facilityId] || null;
+      
+      if (!registryIdToUse) {
+        res.status(404).json({ error: 'Registry ID not found for facility' });
+        return;
+      }
+
+      const complianceData = await fetchECHOCompliance(registryIdToUse);
+      
+      if (!complianceData) {
+        res.status(404).json({ error: 'Compliance data not found' });
+        return;
+      }
+
+      res.json({
+        success: true,
+        compliance: {
+          status: complianceData.complianceStatus,
+          quartersInNonCompliance: complianceData.quartersInNonCompliance,
+          lastInspectionDate: complianceData.lastInspectionDate?.toISOString(),
+          violations: complianceData.violations.map(v => ({
+            type: v.type,
+            date: v.date.toISOString(),
+            description: v.description,
+          })),
+          isSNC: complianceData.complianceStatus === 'Significant Non-Compliance',
+        }
+      });
+      
+    } catch (error: any) {
+      console.error('Error fetching compliance data:', error);
+      console.error('Error stack:', error.stack);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch compliance data',
+        message: error.message,
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      });
+    }
+  });
+});
+
 // Existing functions (keeping them for compatibility)
 export const processSensorData = functions.https.onRequest(async (req, res) => {
   corsHandler(req, res, async () => {
@@ -1025,27 +1120,13 @@ export const getACHDHistoricalData = functions.https.onRequest(async (req, res) 
           lastUpdated: new Date().toISOString()
         });
       } else {
-        // Fallback: generate mock historical data
-        const mockData = [];
-        const now = new Date();
-        
-        for (let i = days - 1; i >= 0; i--) {
-          const date = new Date(now);
-          date.setDate(date.getDate() - i);
-          
-          mockData.push({
-            date: date.toISOString().split('T')[0],
-            pm25: 30 + Math.random() * 20, // 30-50 range
-            aqi: Math.round(50 + Math.random() * 50) // 50-100 range
-          });
-        }
-        
+        // No data available - return empty result
         res.json({
-          success: true,
-          data: mockData,
-          source: 'Mock Data (ACHD data unavailable)',
+          success: false,
+          data: [],
+          source: 'ACHD Hourly Data',
           lastUpdated: new Date().toISOString(),
-          note: 'Using mock data. ACHD scraping needs to be configured.'
+          message: 'No historical data available. ACHD scraping needs to be configured.'
         });
       }
       
@@ -1064,8 +1145,8 @@ export const getACHDHistoricalData = functions.https.onRequest(async (req, res) 
  * Fetches real-time community sensor data from PurpleAir API
  * This was documented but not implemented - now implemented!
  */
-export const fetchPurpleAirSensorData = functions.https.onRequest(async (req, res) => {
-  corsHandler(req, res, async () => {
+export const fetchPurpleAirSensorData = functions.https.onRequest((req, res) => {
+  return corsHandler(req, res, async () => {
     try {
       const apiKey = process.env.PURPLEAIR_API_KEY;
       
@@ -1159,18 +1240,37 @@ export const fetchPurpleAirSensorData = functions.https.onRequest(async (req, re
       
       // Provide helpful error message
       let errorMessage = 'Failed to fetch PurpleAir sensor data';
+      let statusCode = 500;
+      
       if (error.response?.status === 401) {
         errorMessage = 'Invalid PurpleAir API key. Please check your API key configuration.';
+        statusCode = 401;
+      } else if (error.response?.status === 402) {
+        errorMessage = 'PurpleAir API subscription required. The API key is valid but the account needs credits (current balance: -20588 points). Please add credits to your PurpleAir account at https://www2.purpleair.com or use a different API key with available credits.';
+        statusCode = 402;
       } else if (error.response?.status === 403) {
         errorMessage = 'PurpleAir API access forbidden. Please verify your API key permissions.';
+        statusCode = 403;
       } else if (error.code === 'ECONNABORTED') {
         errorMessage = 'PurpleAir API request timed out. Please try again.';
+        statusCode = 504;
+      } else if (error.response?.status) {
+        errorMessage = `PurpleAir API returned status ${error.response.status}. ${error.response.data?.message || error.message}`;
+        statusCode = error.response.status;
       }
 
-      res.status(500).json({
+      console.error('PurpleAir API Error Details:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message,
+      });
+
+      res.status(statusCode).json({
         success: false,
         error: errorMessage,
         message: error.message,
+        statusCode: error.response?.status || statusCode,
         data: [],
       });
     }
@@ -1236,13 +1336,14 @@ export const getWindData = functions.https.onRequest(async (req, res) => {
         `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lng}&appid=${apiKey}&units=metric`
       );
 
-      if (response.data.wind) {
+      const weatherData = response.data as any;
+      if (weatherData?.wind) {
         return res.json({
           success: true,
           data: {
-            speed: response.data.wind.speed || 0,
-            direction: response.data.wind.deg || 0,
-            gust: response.data.wind.gust,
+            speed: weatherData.wind.speed || 0,
+            direction: weatherData.wind.deg || 0,
+            gust: weatherData.wind.gust,
             timestamp: new Date().toISOString(),
           },
         });
@@ -1284,6 +1385,155 @@ export const getTRIFacilities = functions.https.onRequest(async (req, res) => {
   });
 });
 
+/**
+ * Fetch Smell PGH reports (VCAN requirement)
+ * API Documentation: https://github.com/CMU-CREATE-Lab/smell-pittsburgh-rails/wiki/Smell-PGH-API
+ * Endpoint: https://api.smellpittsburgh.org/api/v2/smell_reports
+ */
+export const fetchSmellPGHReports = functions.https.onRequest(async (req, res) => {
+  corsHandler(req, res, async () => {
+    try {
+      const { 
+        smell_value, 
+        start_time, 
+        end_time, 
+        region_ids,
+        north,
+        south,
+        east,
+        west 
+      } = req.query;
+
+      // Build query parameters for Smell PGH API
+      // Documentation: https://github.com/CMU-CREATE-Lab/smell-pittsburgh-rails/wiki/Smell-PGH-API
+      const params: any = {};
+      
+      // Filter by smell value (default to 2-5 to capture more data)
+      if (smell_value) {
+        params.smell_value = smell_value;
+      } else {
+        params.smell_value = '2,3,4,5'; // Default to barely noticeable or worse
+      }
+
+      // Time range (default to last 7 days) - epoch time format
+      const now = Math.floor(Date.now() / 1000);
+      const sevenDaysAgo = now - (7 * 24 * 60 * 60);
+      params.start_time = start_time || sevenDaysAgo;
+      params.end_time = end_time || now;
+
+      // Region filter (Allegheny County = region 1)
+      if (region_ids) {
+        params.region_ids = region_ids;
+      } else {
+        params.region_ids = '1'; // Allegheny County
+      }
+
+      // Use latlng_bbox parameter if bounding box is provided
+      // API Documentation: https://github.com/CMU-CREATE-Lab/smell-pittsburgh-rails/wiki/Smell-PGH-API
+      // Format: "top-left lat, top-left lng, bottom-right lat, bottom-right lng"
+      // "The first two numbers are the latitude and longitude of the top-left corner
+      // of the bounding box, and the last two are the latitude and longitude of the bottom-right corner"
+      if (north && south && east && west) {
+        const topLeftLat = parseFloat(north as string);   // Top = north
+        const topLeftLng = parseFloat(west as string);   // Left = west
+        const bottomRightLat = parseFloat(south as string); // Bottom = south
+        const bottomRightLng = parseFloat(east as string);  // Right = east
+        params.latlng_bbox = `${topLeftLat},${topLeftLng},${bottomRightLat},${bottomRightLng}`;
+        console.log(`Using latlng_bbox parameter: ${params.latlng_bbox} (north=${north}, south=${south}, east=${east}, west=${west})`);
+      }
+
+      // Call Smell PGH API
+      // Endpoint: https://api.smellpittsburgh.org/api/v2/smell_reports
+      const apiUrl = 'https://api.smellpittsburgh.org/api/v2/smell_reports';
+      console.log('Fetching Smell PGH reports with params:', JSON.stringify(params, null, 2));
+
+      const response = await axios.get(apiUrl, {
+        params,
+        timeout: 15000,
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
+
+      const responseData = response.data as any;
+      const apiReports = Array.isArray(responseData) ? responseData : [];
+
+      console.log(`Smell PGH API returned ${apiReports.length} reports`);
+
+      // Map API response to our format
+      // Actual API returns: latitude, longitude, smell_value, observed_at, zipcode, smell_description, feelings_symptoms, additional_comments
+      // Note: zip_code_id is NOT in the response (despite some docs mentioning it)
+      const mappedReports = apiReports
+        .filter((report: any) => report.latitude && report.longitude && report.smell_value) // Filter out invalid reports
+        .map((report: any, index: number) => ({
+          id: `smell-${report.zipcode || 'unknown'}-${report.observed_at}-${index}`,
+          smellValue: report.smell_value,
+          zipCode: report.zipcode || '',
+          latitude: parseFloat(report.latitude),
+          longitude: parseFloat(report.longitude),
+          timestamp: new Date(report.observed_at * 1000), // Convert Unix timestamp to Date
+          smellDescription: report.smell_description || null,
+          feelingsSymptoms: report.feelings_symptoms || null,
+          additionalComments: report.additional_comments || null,
+        }));
+
+      // Note: If latlng_bbox was provided, the API already filtered by bounding box server-side
+      // We still do a client-side validation filter to ensure data integrity (double-check)
+      let filteredReports = mappedReports;
+      if (north && south && east && west) {
+        // Always validate bounding box client-side as a safety check
+        const beforeFilter = filteredReports.length;
+        filteredReports = mappedReports.filter((report: any) => {
+          const lat = report.latitude;
+          const lng = report.longitude;
+          return lat >= parseFloat(south as string) &&
+                 lat <= parseFloat(north as string) &&
+                 lng >= parseFloat(west as string) &&
+                 lng <= parseFloat(east as string);
+        });
+        if (beforeFilter !== filteredReports.length) {
+          console.log(`Client-side validation: ${beforeFilter} reports → ${filteredReports.length} within bounding box`);
+        }
+      }
+
+      console.log(`✅ Fetched ${filteredReports.length} Smell PGH reports (from ${apiReports.length || 0} total API results)`);
+      
+      // Log sample reports for debugging
+      if (filteredReports.length > 0) {
+        console.log('Sample report:', filteredReports[0]);
+      }
+
+      return res.json({
+        success: true,
+        reports: filteredReports,
+        count: filteredReports.length,
+        source: 'Smell PGH API',
+        lastUpdated: new Date().toISOString(),
+      });
+
+    } catch (error: any) {
+      console.error('Error fetching Smell PGH reports:', error);
+      
+      // Provide helpful error message
+      let errorMessage = 'Failed to fetch Smell PGH reports';
+      if (error.response?.status === 404) {
+        errorMessage = 'Smell PGH API endpoint not found. Please verify the API is accessible.';
+      } else if (error.code === 'ECONNABORTED') {
+        errorMessage = 'Smell PGH API request timed out. Please try again.';
+      } else if (error.response?.data) {
+        errorMessage = `Smell PGH API error: ${JSON.stringify(error.response.data)}`;
+      }
+
+      return res.status(500).json({
+        success: false,
+        error: errorMessage,
+        message: error.message,
+        reports: [],
+      });
+    }
+  });
+});
+
 // Calculate weighted risk for a location
 export const calculateRisk = functions.https.onRequest(async (req, res) => {
   corsHandler(req, res, async () => {
@@ -1301,53 +1551,15 @@ export const calculateRisk = functions.https.onRequest(async (req, res) => {
         odorScore,
       } = req.body;
 
-      // Import services
-      const { applyBarkjohnCalibration } = await import('../frontend/src/services/barkjohnCalibration');
-      const { getWindData, calculateDispersionFactor } = await import('../frontend/src/services/windDataService');
-      const { fetchTRIFacilities, getSensorToxicityWeight } = await import('./epaTriService');
-      const { calculateWeightedRisk, calculateVulnerabilityScore, normalizeOdorScore } = await import('../frontend/src/services/weightedRiskAlgorithm');
-
-      // Calibrate PM2.5
-      const calibrated = applyBarkjohnCalibration(pm25 || 0, humidity || 50, temperature);
-
-      // Get wind data
-      const wind = await getWindData(lat, lng);
-      const dispersionFactor = wind ? calculateDispersionFactor(wind.speed) : 1.0;
-
-      // Get TRI facilities and calculate toxicity weight
-      const triFacilities = await fetchTRIFacilities();
-      const toxicityWeight = lat && lng && wind
-        ? getSensorToxicityWeight(lat, lng, triFacilities, wind.direction)
-        : 1.0;
-
-      // Calculate vulnerability score
-      const vulnerabilityScore = calculateVulnerabilityScore(
-        hasAsthma,
-        hasCOPD,
-        ageGroup || 'adult',
-        previousHighExposure
-      );
-
-      // Calculate risk
-      const riskResult = calculateWeightedRisk({
-        pm25Calibrated: calibrated.correctedPM,
-        toxicityWeight,
-        dispersionFactor,
-        odorScore: odorScore || 0,
-        odorWeight: 1.2, // Default odor weight
-        vulnerabilityScore,
-      });
-
-      return res.json({
-        success: true,
-        risk: riskResult,
-        inputs: {
-          pm25Raw: pm25,
-          pm25Calibrated: calibrated.correctedPM,
-          toxicityWeight,
-          dispersionFactor,
-          vulnerabilityScore,
-        },
+      // NOTE: Risk calculation is primarily done on the frontend
+      // This endpoint is kept for reference but risk calculation should use frontend services
+      // Backend services for risk calculation would need to be created separately
+      
+      return res.status(501).json({
+        success: false,
+        error: 'Risk calculation is performed on the frontend. Use the frontend weightedRiskAlgorithm service instead.',
+        message: 'This endpoint requires frontend services that are not available in the backend.',
+        note: 'Risk calculation uses: barkjohnCalibration, windDataService, and weightedRiskAlgorithm from the frontend.',
       });
     } catch (error: any) {
       console.error('Error calculating risk:', error);

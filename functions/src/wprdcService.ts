@@ -200,18 +200,13 @@ export async function fetchACHDWPRDC(): Promise<{
   } catch (error: any) {
     console.error('Error fetching WPRDC data:', error.message);
     
-    // Return fallback
+    // Return error - no fallback data
     return {
-      success: true,
-      data: [{
-        pm25: 45.2,
-        timestamp: new Date().toISOString(),
-        location: 'Mon Valley (Fallback)',
-        source: 'Estimated - WPRDC unavailable',
-        aqi: 3
-      }],
-      source: 'Fallback Data',
-      lastUpdated: new Date().toISOString()
+      success: false,
+      data: [],
+      source: 'WPRDC CKAN DataStore (Official ACHD)',
+      lastUpdated: new Date().toISOString(),
+      error: error.message
     };
   }
 }

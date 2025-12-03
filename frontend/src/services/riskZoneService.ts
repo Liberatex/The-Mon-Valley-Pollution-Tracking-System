@@ -8,7 +8,7 @@ import * as turf from '@turf/turf';
 import { WindData } from './windDataService';
 
 export interface RiskZone {
-  polygon: turf.Feature<turf.Polygon>;
+  polygon: GeoJSON.Feature<GeoJSON.Polygon>;
   riskLevel: 'elevated' | 'high' | 'severe' | 'toxic';
   affectedArea: number; // square kilometers
   affectedUsers?: number; // Number of users in zone

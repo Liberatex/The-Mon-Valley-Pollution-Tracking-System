@@ -74,18 +74,13 @@ export async function fetchACHDPM25(): Promise<AQSResponse> {
   } catch (error: any) {
     console.error('Error fetching from all sources:', error.message);
     
-    // Return fallback data
+    // Return error - no fallback data
     return {
-      success: true,
-      data: [{
-        pm25: 45.2, // Realistic Mon Valley value
-        timestamp: new Date().toISOString(),
-        location: 'Mon Valley (Fallback)',
-        source: 'Fallback - typical Mon Valley PM2.5',
-        aqi: 3
-      }],
-      source: 'Fallback Data',
-      lastUpdated: new Date().toISOString()
+      success: false,
+      data: [],
+      source: 'ACHD Official Monitoring',
+      lastUpdated: new Date().toISOString(),
+      error: error.message
     };
   }
 }

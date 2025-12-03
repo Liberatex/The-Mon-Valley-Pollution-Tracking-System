@@ -116,7 +116,7 @@ export function generateOSACQuestions(
   }
 
   // If odors detected, ask about location
-  if (currentData.odors && currentData.odors.length > 0 && !currentData.location.indoor) {
+  if (currentData.odors && currentData.odors.length > 0 && currentData.location && !currentData.location.indoor) {
     questions.push({
       category: 'actions',
       question: 'Are you indoors or outdoors right now?',
@@ -135,6 +135,47 @@ export function generateOSACQuestions(
     questions.push({
       category: 'actions',
       question: 'What actions have you taken? (e.g., closed windows, activated air purifier, left area)',
+      required: false,
+    });
+  }
+
+  // Enhanced OSAC questions for full symptom reporting (matching SymptomReportForm)
+  // Ask about onset if we have symptoms but no onset data
+  if (currentData.symptoms && currentData.symptoms.length > 0) {
+    questions.push({
+      category: 'symptoms',
+      question: 'How did your symptoms start?',
+      options: ['Sudden', 'Gradual', 'Intermittent'],
+      required: false,
+    });
+  }
+
+  // Ask about severity if we have symptoms
+  if (currentData.symptoms && currentData.symptoms.length > 0) {
+    questions.push({
+      category: 'symptoms',
+      question: 'How severe are your symptoms?',
+      options: ['Mild (1)', 'Moderate (2)', 'Severe (3)', 'Very Severe (4)', 'Extreme (5)'],
+      required: false,
+    });
+  }
+
+  // Ask about course/progression
+  if (currentData.symptoms && currentData.symptoms.length > 0) {
+    questions.push({
+      category: 'symptoms',
+      question: 'How are your symptoms changing?',
+      options: ['Improving', 'Stable', 'Worsening'],
+      required: false,
+    });
+  }
+
+  // Ask about aggravating factors
+  if (currentData.symptoms && currentData.symptoms.length > 0) {
+    questions.push({
+      category: 'actions',
+      question: 'What makes your symptoms worse? (Select all that apply)',
+      options: ['Physical Activity', 'Outdoor Exposure', 'Industrial Smell', 'Weather Conditions', 'Time of Day'],
       required: false,
     });
   }

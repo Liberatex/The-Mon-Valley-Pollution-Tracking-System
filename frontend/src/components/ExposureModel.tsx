@@ -36,7 +36,7 @@ interface ExposureData {
 }
 
 interface ExposureModelProps {
-  onNavigate?: (view: 'symptoms' | 'home' | 'dashboard' | 'map' | 'ai' | 'exposure') => void;
+  onNavigate?: (view: 'symptoms' | 'home' | 'map' | 'ai' | 'exposure') => void; // 'dashboard' removed
 }
 
 // Calculate distance between two points (Haversine formula)
@@ -74,8 +74,10 @@ function calculateExposureScore(pm25: number, distance: number): { score: number
 const ExposureModel: React.FC<ExposureModelProps> = ({ onNavigate }) => {
   const [facilities, setFacilities] = useState<TitleVFacility[]>([]);
   const [exposureData, setExposureData] = useState<ExposureData[]>([]);
-  const [currentAQI, setCurrentAQI] = useState<number | null>(null);
-  const [currentPM25, setCurrentPM25] = useState<number | null>(null);
+  const [currentPM25Raw, setCurrentPM25Raw] = useState<number | null>(null);
+  const [currentPM25Calibrated, setCurrentPM25Calibrated] = useState<number | null>(null);
+  const [weightedRiskIndex, setWeightedRiskIndex] = useState<number | null>(null);
+  const [weightedRiskLevel, setWeightedRiskLevel] = useState<string>('low');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -126,11 +128,20 @@ const ExposureModel: React.FC<ExposureModelProps> = ({ onNavigate }) => {
           `https://api.openweathermap.org/data/2.5/air_pollution?lat=${location.lat}&lon=${location.lng}&appid=${OWM_API_KEY}`
         );
         if (!isMounted) return;
-        setCurrentAQI(aqResp.data?.list?.[0]?.main?.aqi || null);
-        setCurrentPM25(aqResp.data?.list?.[0]?.components?.pm2_5 ?? 35.0);
+        const rawPM25 = aqResp.data?.list?.[0]?.components?.pm2_5 ?? null;
+        if (rawPM25 !== null) {
+          setCurrentPM25Raw(rawPM25);
+          // Apply Barkjohn calibration
+          const calibrated = applyBarkjohnCalibration(rawPM25, 50, undefined);
+          setCurrentPM25Calibrated(calibrated.correctedPM);
+        }
       } catch (err) {
         console.warn('Air quality fetch failed, using fallback.', err);
-        if (isMounted) setCurrentPM25(35.0);
+        if (isMounted) {
+          setCurrentPM25Raw(35.0);
+          const calibrated = applyBarkjohnCalibration(35.0, 50, undefined);
+          setCurrentPM25Calibrated(calibrated.correctedPM);
+        }
       }
     }
     loadAirQuality();
@@ -139,8 +150,20 @@ const ExposureModel: React.FC<ExposureModelProps> = ({ onNavigate }) => {
 
   // Compute exposure using Weighted Risk Algorithm (VCAN requirement)
   useEffect(() => {
-    if (!userLocation || !currentPM25 || facilities.length === 0) {
+    if (!userLocation) {
       setExposureData([]);
+      setWeightedRiskIndex(null);
+      return;
+    }
+
+    // Allow calculation even if PM2.5 or facilities are missing (use defaults)
+    const hasPM25 = currentPM25Calibrated !== null && currentPM25Calibrated !== undefined;
+    const hasFacilities = facilities.length > 0;
+    
+    if (!hasPM25 && !hasFacilities) {
+      // No data at all - can't calculate
+      setExposureData([]);
+      setWeightedRiskIndex(null);
       return;
     }
 
@@ -168,12 +191,52 @@ const ExposureModel: React.FC<ExposureModelProps> = ({ onNavigate }) => {
         // Calculate vulnerability score (default to 1.0 for now)
         const vulnerabilityScore = calculateVulnerabilityScore(false, false, 'adult', false);
 
-        // Apply Barkjohn calibration to PM2.5
-        const calibrated = applyBarkjohnCalibration(currentPM25, 50, undefined);
+        // Use already-calibrated PM2.5 (from loadAirQuality effect)
+        // Default to 35.0 if not available (typical Mon Valley baseline)
+        const calibratedPM = currentPM25Calibrated !== null && currentPM25Calibrated !== undefined ? currentPM25Calibrated : 35.0;
 
-        const exposure = await Promise.all(
-          facilities
-            .filter((f: any) => f.location?.lat && f.location?.lng)
+        // Calculate overall weighted risk index for user location
+        // Use average toxicity weight from nearby facilities
+        let avgToxicityWeight = 1.0;
+        if (wind && triFacilities.length > 0) {
+          const nearbyFacilities = facilities
+            .filter((f: any) => {
+              if (!f.location?.lat || !f.location?.lng) return false;
+              const dist = calculateDistance(userLocation.lat, userLocation.lng, f.location.lat, f.location.lng);
+              return dist < 10; // Within 10 miles
+            });
+          
+          if (nearbyFacilities.length > 0) {
+            const toxicityWeights = nearbyFacilities.map((facility: any) => {
+              const matchingFacility = triFacilities.find(
+                (tf: any) => tf.facilityId === facility.facilityId || tf.name === facility.name
+              );
+              return matchingFacility?.totalToxicityScore ? Math.min(2.0, 1.0 + (matchingFacility.totalToxicityScore / 20)) : 1.0;
+            });
+            avgToxicityWeight = toxicityWeights.reduce((sum, w) => sum + w, 0) / toxicityWeights.length;
+          }
+        }
+
+        // Calculate overall weighted risk for user location
+        const overallRiskResult = calculateWeightedRisk({
+          pm25Calibrated: calibratedPM,
+          toxicityWeight: avgToxicityWeight,
+          dispersionFactor,
+          odorScore: 0, // No smell data in ExposureModel
+          odorWeight: 1.2, // Use standard odor weight
+          vulnerabilityScore,
+        });
+        
+        setWeightedRiskIndex(overallRiskResult.riskIndex);
+        setWeightedRiskLevel(overallRiskResult.riskLevel);
+
+        // Calculate exposure for facilities (or return empty if no facilities)
+        const facilitiesToProcess = facilities.length > 0 
+          ? facilities.filter((f: any) => f.location?.lat && f.location?.lng)
+          : [];
+        
+        const exposure = facilitiesToProcess.length > 0 ? await Promise.all(
+          facilitiesToProcess
             .map(async (facility: any) => {
               const distance = calculateDistance(
                 userLocation.lat,
@@ -189,17 +252,18 @@ const ExposureModel: React.FC<ExposureModelProps> = ({ onNavigate }) => {
                   (tf: any) => tf.facilityId === facility.facilityId || tf.name === facility.name
                 );
                 if (matchingFacility) {
-                  toxicityWeight = matchingFacility.toxicityWeight || 1.0;
+                  // Calculate toxicity weight from TRI data
+                  toxicityWeight = Math.min(2.0, 1.0 + (matchingFacility.totalToxicityScore / 20));
                 }
               }
 
-              // Calculate Weighted Risk
+              // Calculate Weighted Risk for this facility
               const riskResult = calculateWeightedRisk({
-                pm25Calibrated: calibrated.correctedPM,
+                pm25Calibrated: calibratedPM,
                 toxicityWeight,
                 dispersionFactor,
                 odorScore: 0, // No smell data in ExposureModel
-                odorWeight: 1.0,
+                odorWeight: 1.2, // Use standard odor weight
                 vulnerabilityScore,
               });
 
@@ -218,8 +282,8 @@ const ExposureModel: React.FC<ExposureModelProps> = ({ onNavigate }) => {
                 facilityId: facility.facilityId,
                 facilityName: facility.name,
                 distance: Math.round(distance * 10) / 10,
-                pm25: currentPM25,
-                pm25Calibrated: calibrated.correctedPM,
+                pm25: currentPM25Raw || 0,
+                pm25Calibrated: calibratedPM,
                 exposureScore: Math.round(riskResult.riskIndex * 10) / 10,
                 riskLevel: legacyRiskLevel,
                 weightedRisk: riskResult,
@@ -227,40 +291,19 @@ const ExposureModel: React.FC<ExposureModelProps> = ({ onNavigate }) => {
                 dispersionFactor,
               };
             })
-        );
+        ) : [];
 
         exposure.sort((a: any, b: any) => b.exposureScore - a.exposureScore);
         setExposureData(exposure);
       } catch (err) {
         console.error('Weighted Risk calculation failed:', err);
-        // Fallback to legacy calculation
-        const exposure = facilities
-          .filter((f: any) => f.location?.lat && f.location?.lng)
-          .map((facility: any) => {
-            const distance = calculateDistance(
-              userLocation.lat,
-              userLocation.lng,
-              facility.location.lat,
-              facility.location.lng
-            );
-            const { score, riskLevel } = calculateExposureScore(currentPM25, distance);
-            return {
-              location: { lat: userLocation.lat, lng: userLocation.lng },
-              facilityId: facility.facilityId,
-              facilityName: facility.name,
-              distance: Math.round(distance * 10) / 10,
-              pm25: currentPM25,
-              exposureScore: Math.round(score * 10) / 10,
-              riskLevel
-            };
-          })
-          .sort((a: any, b: any) => b.exposureScore - a.exposureScore);
-        setExposureData(exposure);
+        setWeightedRiskIndex(null);
+        setExposureData([]);
       }
     };
 
     calculateWeightedRiskForFacilities();
-  }, [facilities, currentPM25, userLocation]);
+  }, [facilities, currentPM25Calibrated, currentPM25Raw, userLocation]);
 
   const getRiskColor = (level: string) => {
     switch (level) {
@@ -351,9 +394,17 @@ const ExposureModel: React.FC<ExposureModelProps> = ({ onNavigate }) => {
     setLocationMethod('address');
 
     try {
-      const OWM_API_KEY = env.OPENWEATHER_API_KEY || process.env.REACT_APP_OWM_API_KEY || '';
+      const OWM_API_KEY = env.OPENWEATHER_API_KEY || process.env.REACT_APP_OWM_API_KEY || process.env.VITE_OPENWEATHER_API_KEY || '';
+      
+      if (!OWM_API_KEY) {
+        setLocationError('Geocoding service is not configured. Please use coordinates instead (e.g., 40.292,-79.881).');
+        setGettingLocation(false);
+        return;
+      }
+
       const geocodeResp = await axios.get(
-        `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(locationInput)}&limit=1&appid=${OWM_API_KEY}`
+        `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(locationInput)}&limit=1&appid=${OWM_API_KEY}`,
+        { timeout: 10000 }
       );
 
       if (geocodeResp.data && geocodeResp.data.length > 0) {
@@ -366,11 +417,17 @@ const ExposureModel: React.FC<ExposureModelProps> = ({ onNavigate }) => {
         setLocationError(null);
         setLocationInput(`${name}${state ? `, ${state}` : ''}${country ? `, ${country}` : ''}`);
       } else {
-        setLocationError('Address not found. Please try a different address or use coordinates.');
+        setLocationError('Address not found. Please try a different address or use coordinates (e.g., 40.292,-79.881).');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Geocoding error:', err);
-      setLocationError('Could not find that address. Please try again or use coordinates.');
+      if (err.response?.status === 401) {
+        setLocationError('Geocoding service authentication failed. Please use coordinates instead (e.g., 40.292,-79.881).');
+      } else if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+        setLocationError('Request timed out. Please try again or use coordinates.');
+      } else {
+        setLocationError('Could not find that address. Please try again or use coordinates (e.g., 40.292,-79.881).');
+      }
     } finally {
       setGettingLocation(false);
     }
@@ -418,8 +475,10 @@ const ExposureModel: React.FC<ExposureModelProps> = ({ onNavigate }) => {
     setLocationInput('');
     setLocationError(null);
     setExposureData([]);
-    setCurrentAQI(null);
-    setCurrentPM25(null);
+    setCurrentPM25Raw(null);
+    setCurrentPM25Calibrated(null);
+    setWeightedRiskIndex(null);
+    setWeightedRiskLevel('low');
   };
 
   if (loading) {
@@ -580,21 +639,38 @@ const ExposureModel: React.FC<ExposureModelProps> = ({ onNavigate }) => {
                   <h3 className="text-xl sm:text-2xl font-bold text-slate-800 mb-6">Current Conditions at Your Location</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
                     <div className="text-gray-700">
-                      <strong className="text-slate-700 block mb-1">Current AQI:</strong>
-                      <span className="text-lg font-semibold text-slate-800">{currentAQI || 'N/A'}</span>
+                      <strong className="text-slate-700 block mb-1">Weighted Risk Index:</strong>
+                      <span className={`text-lg font-semibold ${
+                        weightedRiskIndex === null ? 'text-slate-800' :
+                        weightedRiskIndex < 25 ? 'text-green-600' :
+                        weightedRiskIndex < 50 ? 'text-yellow-600' :
+                        weightedRiskIndex < 75 ? 'text-orange-600' :
+                        weightedRiskIndex < 100 ? 'text-red-600' : 'text-purple-600'
+                      }`}>
+                        {weightedRiskIndex !== null ? weightedRiskIndex.toFixed(1) : 'Calculating...'}
+                      </span>
+                      {weightedRiskIndex !== null && (
+                        <span className="text-xs text-gray-500 block mt-1 capitalize">{weightedRiskLevel} Risk</span>
+                      )}
                     </div>
                     <div className="text-gray-700">
-                      <strong className="text-slate-700 block mb-1">Current PM2.5:</strong>
-                      <span className="text-lg font-semibold text-slate-800">{currentPM25?.toFixed(1) || 'N/A'} μg/m³</span>
+                      <strong className="text-slate-700 block mb-1">PM2.5 (Calibrated):</strong>
+                      <span className="text-lg font-semibold text-slate-800">{currentPM25Calibrated?.toFixed(1) || 'N/A'} μg/m³</span>
+                      {currentPM25Raw && currentPM25Calibrated && (
+                        <span className="text-xs text-gray-500 block mt-1">Raw: {currentPM25Raw.toFixed(1)} μg/m³</span>
+                      )}
                     </div>
                     <div className="text-gray-700">
-                      <strong className="text-slate-700 block mb-1">Active Facilities:</strong>
+                      <strong className="text-slate-700 block mb-1">Nearby Facilities:</strong>
                       <span className="text-lg font-semibold text-slate-800">{facilities.length}</span>
                     </div>
                   </div>
                   <div className="pt-4 border-t border-gray-200">
                     <p className="text-sm text-gray-600">
-                      <strong className="text-slate-700">Formula:</strong> Exposure Risk = PM2.5 Concentration ÷ Distance from Facility
+                      <strong className="text-slate-700">Formula:</strong> Risk Index = [(PM_cal × W_tox × W_wind) + (Odor_score × W_odor)] × V_user
+                    </p>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Where: PM_cal = Barkjohn-calibrated PM2.5, W_tox = Toxicity Weight (EPA TRI), W_wind = Dispersion Factor, Odor_score = Smell PGH reports, W_odor = Gas Proxy Weight (1.2), V_user = Vulnerability Multiplier
                     </p>
                   </div>
                 </div>
@@ -631,31 +707,78 @@ const ExposureModel: React.FC<ExposureModelProps> = ({ onNavigate }) => {
                             </div>
                             <div className="text-gray-700">
                               <strong className="text-slate-700 block mb-1">PM2.5:</strong>
-                              <span className="text-lg font-semibold text-slate-800">{data.pm25.toFixed(1)} μg/m³</span>
+                              <span className="text-lg font-semibold text-slate-800">
+                                {data.pm25Calibrated ? `${data.pm25Calibrated.toFixed(1)} μg/m³` : `${data.pm25.toFixed(1)} μg/m³`}
+                                {data.pm25Calibrated && data.pm25Calibrated !== data.pm25 && (
+                                  <span className="text-xs text-gray-500 ml-1">(calibrated)</span>
+                                )}
+                              </span>
                             </div>
                             <div className="text-gray-700">
-                              <strong className="text-slate-700 block mb-1">Exposure Score:</strong>
-                              <span className="text-lg font-semibold text-slate-800">{data.exposureScore.toFixed(2)}</span>
+                              <strong className="text-slate-700 block mb-1">Risk Index:</strong>
+                              <span className="text-lg font-semibold text-slate-800">
+                                {data.weightedRisk?.riskIndex?.toFixed(1) || data.exposureScore.toFixed(2)}
+                              </span>
                             </div>
                           </div>
+
+                          {/* Show weighted risk breakdown if available */}
+                          {data.weightedRisk && (
+                            <div className="bg-gray-50 rounded-lg p-4 mb-4 border border-gray-200">
+                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                                <div>
+                                  <span className="text-gray-600">Toxicity Weight:</span>
+                                  <span className="font-semibold text-slate-800 ml-1">{data.toxicityWeight?.toFixed(2) || '1.00'}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-600">Dispersion:</span>
+                                  <span className="font-semibold text-slate-800 ml-1">{data.dispersionFactor?.toFixed(2) || '1.00'}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-600">PM Component:</span>
+                                  <span className="font-semibold text-slate-800 ml-1">{data.weightedRisk.components?.pmComponent?.toFixed(1) || 'N/A'}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-600">Confidence:</span>
+                                  <span className="font-semibold text-slate-800 ml-1 capitalize">{data.weightedRisk.confidence || 'medium'}</span>
+                                </div>
+                              </div>
+                            </div>
+                          )}
 
                           {/* Progress bar for exposure level */}
                           <div className="bg-gray-200 rounded-full h-5 overflow-hidden mb-4">
                             <div 
                               className="h-full transition-all duration-1000 ease-out"
                               style={{
-                                backgroundColor: getRiskColor(data.riskLevel),
-                                width: `${Math.min(100, (data.exposureScore / 100) * 100)}%`
+                                backgroundColor: data.weightedRisk?.riskColor === 'purple' ? '#9c27b0' :
+                                                 data.weightedRisk?.riskColor === 'red' ? '#d32f2f' :
+                                                 data.weightedRisk?.riskColor === 'orange' ? '#f57c00' :
+                                                 data.weightedRisk?.riskColor === 'yellow' ? '#fbc02d' :
+                                                 data.weightedRisk?.riskColor === 'green' ? '#388e3c' :
+                                                 getRiskColor(data.riskLevel),
+                                width: `${Math.min(100, ((data.weightedRisk?.riskIndex || data.exposureScore) / 100) * 100)}%`
                               }}
                             />
                           </div>
 
-                          <div className="mt-4 text-base text-gray-700 font-medium">
-                            {data.riskLevel === 'very_high' && '⚠️ Immediate health risk - consider evacuation or protective measures'}
-                            {data.riskLevel === 'high' && '🔴 Elevated risk - sensitive groups should take precautions'}
-                            {data.riskLevel === 'moderate' && '🟡 Moderate risk - monitor symptoms'}
-                            {data.riskLevel === 'low' && '🟢 Low risk - continue normal activities with awareness'}
-                          </div>
+                          {/* Show weighted risk recommendation if available, otherwise fallback to legacy */}
+                          {data.weightedRisk?.recommendation ? (
+                            <div className="mt-4 text-base text-gray-700 font-medium p-3 bg-blue-50 rounded-lg border-l-4" 
+                                 style={{ borderColor: data.weightedRisk.riskColor === 'purple' ? '#9c27b0' :
+                                                       data.weightedRisk.riskColor === 'red' ? '#d32f2f' :
+                                                       data.weightedRisk.riskColor === 'orange' ? '#f57c00' :
+                                                       data.weightedRisk.riskColor === 'yellow' ? '#fbc02d' : '#388e3c' }}>
+                              {data.weightedRisk.recommendation}
+                            </div>
+                          ) : (
+                            <div className="mt-4 text-base text-gray-700 font-medium">
+                              {data.riskLevel === 'very_high' && '⚠️ Immediate health risk - consider evacuation or protective measures'}
+                              {data.riskLevel === 'high' && '🔴 Elevated risk - sensitive groups should take precautions'}
+                              {data.riskLevel === 'moderate' && '🟡 Moderate risk - monitor symptoms'}
+                              {data.riskLevel === 'low' && '🟢 Low risk - continue normal activities with awareness'}
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>

@@ -21,7 +21,7 @@ export const BreatheAIChat: React.FC<BreatheAIChatProps> = ({ compact = false, o
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: "Hello! I'm BreatheAI, your air quality health assistant. Ask me anything about air quality, health, or the Mon Valley!",
+      text: "Hello! I'm BreatheAI, your air quality health assistant. I can help you:\n\n• Report symptoms and health impacts (just describe what you're experiencing and I'll guide you through the process)\n• Check air quality in your area\n• Get personalized health recommendations\n• Submit symptom reports for advocacy and regulatory action\n\nWhat would you like to do today?",
       sender: 'ai',
       timestamp: new Date(),
       type: 'text'

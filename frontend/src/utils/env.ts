@@ -16,7 +16,9 @@ const getEnvVar = (key: string, defaultValue?: string): string => {
     if (import.meta && import.meta.env) {
       const viteKey = key.replace('REACT_APP_', 'VITE_');
       // @ts-ignore
-      return import.meta.env[viteKey] || import.meta.env[key] || defaultValue || '';
+      // Check both VITE_ prefixed version and original key
+      const value = import.meta.env[viteKey] || import.meta.env[key] || import.meta.env[`REACT_APP_${key}`] || defaultValue || '';
+      return value;
     }
   } catch (e) {
     // import.meta not available, fall through to process.env
@@ -40,7 +42,7 @@ export const env = {
   FIREBASE_STORAGE_BUCKET: getEnvVar('REACT_APP_FIREBASE_STORAGE_BUCKET', 'test-project.appspot.com'),
   FIREBASE_MESSAGING_SENDER_ID: getEnvVar('REACT_APP_FIREBASE_MESSAGING_SENDER_ID', '123456789'),
   FIREBASE_APP_ID: getEnvVar('REACT_APP_FIREBASE_APP_ID', 'test-app-id'),
-  USE_EMULATOR: getEnvVar('REACT_APP_USE_EMULATOR', 'false'),
+  USE_EMULATOR: getEnvVar('REACT_APP_USE_EMULATOR') || getEnvVar('VITE_USE_EMULATOR') || 'false',
   PURPLEAIR_API_KEY: getEnvVar('REACT_APP_PURPLEAIR_API_KEY', ''),
   PROVIDER: getEnvVar('REACT_APP_PROVIDER', 'firebase'),
   // New API keys for VCAN features
@@ -72,6 +74,22 @@ export const isDevelopment = (): boolean => {
 
 // Helper function to check if emulator should be used
 export const shouldUseEmulator = (): boolean => {
-  return env.USE_EMULATOR === 'true';
+  // Check environment variable first
+  if (env.USE_EMULATOR === 'true') {
+    return true;
+  }
+  
+  // In development mode, default to using emulator if not explicitly set to false
+  if (isDevelopment()) {
+    // Check if we're running on localhost (development)
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        return true; // Default to emulator in local development
+      }
+    }
+  }
+  
+  return false;
 };
 

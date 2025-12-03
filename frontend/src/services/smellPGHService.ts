@@ -2,7 +2,11 @@
  * Smell PGH Service
  * Integrates with CMU Create Lab's Smell PGH for crowdsourced odor reports
  * Used as proxy for H2S and SO2 detection
+ * API Documentation: https://github.com/CMU-CREATE-Lab/smell-pittsburgh-rails/wiki/Smell-PGH-API
  */
+
+import axios from 'axios';
+import { shouldUseEmulator } from '../utils/env';
 
 export interface SmellReport {
   id: string;
@@ -31,8 +35,8 @@ export interface OdorCluster {
  */
 export function clusterOdorReports(
   reports: SmellReport[],
-  maxDistance: number = 0.01, // ~1km in degrees
-  minReports: number = 3
+  maxDistance: number = 0.015, // ~1.5km in degrees (increased to capture more clusters)
+  minReports: number = 2 // Lowered from 3 to 2 to show more clusters
 ): OdorCluster[] {
   const clusters: OdorCluster[] = [];
   const processed = new Set<string>();
@@ -83,30 +87,87 @@ export function clusterOdorReports(
 }
 
 /**
- * Fetch Smell PGH reports
- * Note: This requires API access from CMU Create Lab
- * For now, returns mock data structure
+ * Fetch Smell PGH reports from backend Cloud Function
+ * API Documentation: https://github.com/CMU-CREATE-Lab/smell-pittsburgh-rails/wiki/Smell-PGH-API
  * @param boundingBox Bounding box for Mon Valley area
+ * @param days Number of days to look back (default: 7)
+ * @param minSmellValue Minimum smell value to include (1-5, default: 3)
  */
-export async function fetchSmellPGHReports(boundingBox?: {
-  north: number;
-  south: number;
-  east: number;
-  west: number;
-}): Promise<SmellReport[]> {
+export async function fetchSmellPGHReports(
+  boundingBox?: {
+    north: number;
+    south: number;
+    east: number;
+    west: number;
+  },
+  days: number = 7,
+  minSmellValue: number = 3
+): Promise<SmellReport[]> {
   try {
-    // TODO: Replace with actual Smell PGH API endpoint
-    // Expected endpoint: https://smellpgh.org/api/reports or similar
-    // For now, return empty array - will be populated when API access is granted
+    // Determine base URL (emulator vs production)
+    const isDevelopment = shouldUseEmulator();
     
-    // Mock structure for development
-    const mockReports: SmellReport[] = [
-      // These would come from the actual API
-    ];
+    const baseUrl = isDevelopment
+      ? 'http://127.0.0.1:5001/mv-pollution-tracking-system/us-central1'
+      : 'https://us-central1-mv-pollution-tracking-system.cloudfunctions.net';
 
-    return mockReports;
+    // Build query parameters according to Smell PGH API documentation
+    // Documentation: https://github.com/CMU-CREATE-Lab/smell-pittsburgh-rails/wiki/How-to-use-the-API
+    const params: any = {
+      smell_value: `${minSmellValue},4,5`, // Include specified value and above (comma-separated)
+      region_ids: '1', // Allegheny County (region 1)
+    };
+
+    // Add time range (Unix timestamps)
+    const now = Math.floor(Date.now() / 1000);
+    const startTime = now - (days * 24 * 60 * 60);
+    params.start_time = startTime;
+    params.end_time = now;
+
+    // Note: Smell PGH API doesn't support bounding box parameters directly
+    // We'll filter by bounding box after receiving the data
+    // If bounding box is provided, we'll pass it for backend filtering
+    if (boundingBox) {
+      params.north = boundingBox.north;
+      params.south = boundingBox.south;
+      params.east = boundingBox.east;
+      params.west = boundingBox.west;
+    }
+
+    // Call backend Cloud Function
+    const response = await axios.get(`${baseUrl}/fetchSmellPGHReports`, {
+      params,
+      timeout: 15000,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (response.data?.success && response.data.reports) {
+      // Map backend response to our format
+      const mappedReports = response.data.reports
+        .filter((report: any) => report.latitude && report.longitude) // Filter out invalid reports
+        .map((report: any) => ({
+          id: report.id || `smell-${report.zipCode}-${report.timestamp}-${Math.random().toString(36).substr(2, 9)}`,
+          smellValue: report.smellValue,
+          zipCode: report.zipCode || '',
+          latitude: parseFloat(report.latitude),
+          longitude: parseFloat(report.longitude),
+          timestamp: report.timestamp instanceof Date ? report.timestamp : new Date(report.timestamp),
+          symptoms: report.feelingsSymptoms ? 
+            (Array.isArray(report.feelingsSymptoms) ? report.feelingsSymptoms : [report.feelingsSymptoms]) : 
+            [],
+        }));
+      
+      console.log(`✅ Mapped ${mappedReports.length} Smell PGH reports from backend`);
+      return mappedReports;
+    }
+
+    console.warn('⚠️ No reports in response:', response.data);
+    return [];
   } catch (error) {
     console.error('Error fetching Smell PGH reports:', error);
+    // Return empty array on error (graceful degradation)
     return [];
   }
 }

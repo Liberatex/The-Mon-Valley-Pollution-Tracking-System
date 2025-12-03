@@ -59,31 +59,21 @@ export async function tryOpenAQ(): Promise<any> {
     
     // No good data found
     return {
-      success: true,
-      data: [{
-        pm25: 45.2, // Typical Mon Valley value
-        timestamp: new Date().toISOString(),
-        location: 'Mon Valley (Estimated)',
-        source: 'Estimated - EPA AirNow data unavailable',
-        aqi: 3
-      }],
-      source: 'Estimated Value',
-      lastUpdated: new Date().toISOString()
+      success: false,
+      data: [],
+      source: 'OpenAQ (EPA AirNow aggregates)',
+      lastUpdated: new Date().toISOString(),
+      message: 'No OpenAQ data available for Mon Valley area'
     };
     
   } catch (error: any) {
     console.error('OpenAQ error:', error.message);
     return {
-      success: true,
-      data: [{
-        pm25: 45.2, // Typical Mon Valley value
-        timestamp: new Date().toISOString(),
-        location: 'Mon Valley (Fallback)',
-        source: 'Fallback - typical Mon Valley PM2.5',
-        aqi: 3
-      }],
-      source: 'Fallback Data',
-      lastUpdated: new Date().toISOString()
+      success: false,
+      data: [],
+      source: 'OpenAQ (EPA AirNow aggregates)',
+      lastUpdated: new Date().toISOString(),
+      error: error.message
     };
   }
 }

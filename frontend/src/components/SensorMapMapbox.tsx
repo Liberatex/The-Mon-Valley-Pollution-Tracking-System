@@ -2369,9 +2369,9 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
         />
         
         {/* Layer Controls - Overlay on left side of map (mobile) */}
-        <div className="absolute top-2 left-2 sm:top-4 sm:left-4 z-[1000] bg-white/95 backdrop-blur-sm rounded-lg shadow-xl p-2 sm:p-3 border border-gray-200 max-w-[calc(100vw-16px)] sm:max-w-none">
-          <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-3">
-            <label className="flex items-center gap-1.5 sm:gap-2 cursor-pointer px-2 py-1.5 sm:px-3 sm:py-2 rounded-md hover:bg-gray-100 transition-colors text-xs sm:text-sm">
+        <div className="absolute top-2 left-2 sm:top-4 sm:left-4 z-[1000] bg-black/40 backdrop-blur-md rounded-lg shadow-xl p-2 sm:p-3 border border-white/20 max-w-[calc(100vw-16px)] sm:max-w-none">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            <label className="flex items-center gap-1.5 sm:gap-2 cursor-pointer px-2 py-1.5 sm:px-3 sm:py-2 rounded-md hover:bg-white/20 transition-colors text-xs sm:text-sm text-white">
               <input
                 type="checkbox"
                 checked={showSensors}
@@ -2385,7 +2385,7 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
                 <span className="ml-0.5 sm:ml-1">({sensors.length})</span>
               </span>
             </label>
-            <label className="flex items-center gap-1.5 sm:gap-2 cursor-pointer px-2 py-1.5 sm:px-3 sm:py-2 rounded-md hover:bg-gray-100 transition-colors text-xs sm:text-sm">
+            <label className="flex items-center gap-1.5 sm:gap-2 cursor-pointer px-2 py-1.5 sm:px-3 sm:py-2 rounded-md hover:bg-white/20 transition-colors text-xs sm:text-sm text-white">
               <input
                 type="checkbox"
                 checked={showFacilities}
@@ -2399,7 +2399,7 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
                 <span className="ml-0.5 sm:ml-1">({facilities.length})</span>
               </span>
             </label>
-            <label className="flex items-center gap-1.5 sm:gap-2 cursor-pointer px-2 py-1.5 sm:px-3 sm:py-2 rounded-md hover:bg-gray-100 transition-colors text-xs sm:text-sm">
+            <label className="flex items-center gap-1.5 sm:gap-2 cursor-pointer px-2 py-1.5 sm:px-3 sm:py-2 rounded-md hover:bg-white/20 transition-colors text-xs sm:text-sm text-white">
               <input
                 type="checkbox"
                 checked={showMyLocation}
@@ -2412,7 +2412,7 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
                 <span className="sm:hidden">Location</span>
               </span>
             </label>
-            <label className="flex items-center gap-1.5 sm:gap-2 cursor-pointer px-2 py-1.5 sm:px-3 sm:py-2 rounded-md hover:bg-gray-100 transition-colors text-xs sm:text-sm">
+            <label className="flex items-center gap-1.5 sm:gap-2 cursor-pointer px-2 py-1.5 sm:px-3 sm:py-2 rounded-md hover:bg-white/20 transition-colors text-xs sm:text-sm text-white">
               <input
                 type="checkbox"
                 checked={showSmellReports}
@@ -2426,7 +2426,7 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
                 <span className="ml-0.5 sm:ml-1">({smellClusters.length > 0 ? smellClusters.length : '0'})</span>
               </span>
             </label>
-            <label className="flex items-center gap-1.5 sm:gap-2 cursor-pointer px-2 py-1.5 sm:px-3 sm:py-2 rounded-md hover:bg-gray-100 transition-colors text-xs sm:text-sm">
+            <label className="flex items-center gap-1.5 sm:gap-2 cursor-pointer px-2 py-1.5 sm:px-3 sm:py-2 rounded-md hover:bg-white/20 transition-colors text-xs sm:text-sm text-white">
               <input
                 type="checkbox"
                 checked={showRiskZones}

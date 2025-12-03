@@ -1921,39 +1921,40 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
         
         // Use the first risk zone feature
         const clickedFeature = riskZoneFeatures[0];
-      if (!clickedFeature || !clickedFeature.properties) {
-        console.warn('⚠️ Clicked feature missing properties');
-        return;
-      }
-      
-      const props = clickedFeature.properties;
-      const zoneId = props.id as string;
-      console.log('🔵 Zone ID from click:', zoneId, 'Available zones:', riskZones.length);
-      
-      // Find zone by index (zones are indexed in the GeoJSON)
-      const zoneIndex = parseInt(zoneId.replace('risk-zone-', ''), 10);
-      const zone = riskZones[zoneIndex];
-      
-      if (!zone) {
-        console.warn('⚠️ Zone not found for ID:', zoneId, 'Index:', zoneIndex);
-        return;
-      }
-      
-      // Check if zone is currently hidden (before toggle)
-      const isCurrentlyHidden = hiddenRiskZones.has(zoneId);
-      
-      // Toggle zone visibility on click (hide/show)
-      setHiddenRiskZones((prev) => {
-        const newSet = new Set(prev);
-        if (newSet.has(zoneId)) {
-          newSet.delete(zoneId); // Show zone
-        } else {
-          newSet.add(zoneId); // Hide zone
+        
+        if (!clickedFeature || !clickedFeature.properties) {
+          console.warn('⚠️ Clicked feature missing properties');
+          return;
         }
-        return newSet;
-      });
-      
-      if (zone && map.current) {
+        
+        const props = clickedFeature.properties;
+        const zoneId = props.id as string;
+        console.log('🔵 Zone ID from click:', zoneId, 'Available zones:', riskZones.length);
+        
+        // Find zone by index (zones are indexed in the GeoJSON)
+        const zoneIndex = parseInt(zoneId.replace('risk-zone-', ''), 10);
+        const zone = riskZones[zoneIndex];
+        
+        if (!zone) {
+          console.warn('⚠️ Zone not found for ID:', zoneId, 'Index:', zoneIndex);
+          return;
+        }
+        
+        // Check if zone is currently hidden (before toggle)
+        const isCurrentlyHidden = hiddenRiskZones.has(zoneId);
+        
+        // Toggle zone visibility on click (hide/show)
+        setHiddenRiskZones((prev) => {
+          const newSet = new Set(prev);
+          if (newSet.has(zoneId)) {
+            newSet.delete(zoneId); // Show zone
+          } else {
+            newSet.add(zoneId); // Hide zone
+          }
+          return newSet;
+        });
+        
+        if (zone && map.current) {
         const riskLevel = zone.riskLevel;
         const riskColor = riskLevel === 'elevated' ? '#ffff00' :
                         riskLevel === 'high' ? '#ff7e00' :
@@ -2047,10 +2048,14 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
             `;
         
         // Create and show popup
-        new mapboxgl.Popup({ closeOnClick: true, maxWidth: '450px' })
-          .setLngLat(e.lngLat)
-          .setHTML(popupContent)
-          .addTo(map.current);
+          new mapboxgl.Popup({ closeOnClick: true, maxWidth: '450px' })
+            .setLngLat(e.lngLat)
+            .setHTML(popupContent)
+            .addTo(map.current);
+        }
+      } catch (error: any) {
+        console.error('❌ Error in risk zone click handler:', error.message);
+        return;
       }
     };
     

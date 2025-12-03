@@ -1898,40 +1898,29 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
         return; // Silently ignore if point missing
       }
       
-      // Build layers array with only existing layers
-      const layersToQuery: string[] = [];
-      if (fillLayerExists) layersToQuery.push('risk-zones-fill');
-      if (outlineLayerExists) layersToQuery.push('risk-zones-outline');
-      
-      if (layersToQuery.length === 0) {
-        return; // No layers to query
-      }
-      
-      let features: mapboxgl.MapboxGeoJSONFeature[] = [];
+      // Query ALL features at the point first, then filter for risk zones
+      // This approach works even if other layers are on top
+      let allFeatures: mapboxgl.MapboxGeoJSONFeature[] = [];
       try {
-        features = map.current.queryRenderedFeatures(point, {
-          layers: layersToQuery
-        });
+        // First, try querying all features at the point
+        allFeatures = map.current.queryRenderedFeatures(point);
         
-        console.log('🔵 Risk zone features at click point:', features.length, 'Layers queried:', layersToQuery, 'Point:', point);
+        // Filter for risk zone features
+        const riskZoneFeatures = allFeatures.filter(f => 
+          f.layer && (f.layer.id === 'risk-zones-fill' || f.layer.id === 'risk-zones-outline')
+        );
         
-        if (features.length === 0) {
+        console.log('🔵 All features at click:', allFeatures.length, 'Risk zone features:', riskZoneFeatures.length, 'Point:', point);
+        
+        if (riskZoneFeatures.length === 0) {
           // No risk zone clicked, ignore
           return;
         }
         
-        console.log('✅ Risk zone clicked! Features:', features);
-      } catch (error: any) {
-        console.error('❌ Error querying risk zone features:', error.message);
-        return;
-      }
-      
-      if (features.length === 0) {
-        // No risk zone clicked, ignore
-        return;
-      }
-      
-      const clickedFeature = features[0];
+        console.log('✅ Risk zone clicked! Features:', riskZoneFeatures);
+        
+        // Use the first risk zone feature
+        const clickedFeature = riskZoneFeatures[0];
       if (!clickedFeature || !clickedFeature.properties) {
         console.warn('⚠️ Clicked feature missing properties');
         return;

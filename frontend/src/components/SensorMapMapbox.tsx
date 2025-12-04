@@ -144,14 +144,15 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
     const navControl = new mapboxgl.NavigationControl();
     map.current.addControl(navControl, 'top-right');
     
-    // Adjust zoom controls position via CSS to be below wind/legend panels
+    // Adjust zoom controls position via CSS to be below wind conditions panel
     // Wait for map to fully load before adjusting
     map.current.on('load', () => {
       setTimeout(() => {
         const navElement = map.current?.getContainer().querySelector('.mapboxgl-ctrl-top-right');
         if (navElement) {
           const isMobile = window.innerWidth < 640;
-          (navElement as HTMLElement).style.top = isMobile ? '100px' : '120px'; // Below wind conditions and legend
+          // Position below wind conditions panel (which is ~80-90px tall including padding)
+          (navElement as HTMLElement).style.top = isMobile ? '110px' : '130px'; // Lower to avoid blocking
           (navElement as HTMLElement).style.right = '8px';
           (navElement as HTMLElement).style.transition = 'top 0.3s ease';
         }

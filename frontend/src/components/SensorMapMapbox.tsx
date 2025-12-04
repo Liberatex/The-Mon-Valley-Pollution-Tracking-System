@@ -90,8 +90,9 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
   const [userHealthProfile, setUserHealthProfile] = useState<HealthProfile | null>(null);
   const riskZoneClickHandlerRef = useRef<((e: mapboxgl.MapLayerMouseEvent) => void) | null>(null);
   
-  // Use real-time polling hook (60 seconds as per VCAN requirement)
-  const { sensors: realtimeSensors, loading: sensorsLoading } = useRealtimeSensorData(60000);
+  // Use real-time polling hook (5 minutes - reduced from 60s to save API points)
+  // Backend caches for 10 minutes, so this provides fresh data while minimizing API calls
+  const { sensors: realtimeSensors, loading: sensorsLoading } = useRealtimeSensorData(300000);
 
   // Initialize Mapbox map
   useEffect(() => {

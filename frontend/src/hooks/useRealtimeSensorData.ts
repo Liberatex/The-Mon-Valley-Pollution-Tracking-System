@@ -1,6 +1,7 @@
 /**
  * useRealtimeSensorData Hook
- * Polls backend API every 60 seconds for latest sensor data
+ * Polls backend API every 5 minutes for latest sensor data (reduced from 60s to save API points)
+ * Backend caches data for 10 minutes, so this provides fresh data while minimizing API calls
  * Updates Mapbox GeoJSON source in real-time
  */
 
@@ -20,7 +21,9 @@ export interface SensorData {
   timestamp: Date;
 }
 
-export function useRealtimeSensorData(intervalMs: number = 60000) {
+// Reduced polling interval from 60s to 5 minutes (300000ms) to save API points
+// Backend caches for 10 minutes, so this still provides fresh data
+export function useRealtimeSensorData(intervalMs: number = 300000) {
   const [sensors, setSensors] = useState<SensorData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

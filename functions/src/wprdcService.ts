@@ -51,7 +51,16 @@ export async function fetchACHDWPRDC(): Promise<{
     const baseUrl = 'https://data.wprdc.org/api/3/action/datastore_search';
     const resourceId = '36fb4629-8003-4acc-a1ca-3302778a530d';
     
-    // Get latest PM2.5 readings from multiple sites - get more recent data
+    // Map site names to coordinates
+    const siteCoords: Record<string, { lat: number; lng: number }> = {
+      'Liberty': { lat: 40.291, lng: -79.886 },
+      'Lawrenceville': { lat: 40.467, lng: -79.958 },
+      'Lincoln': { lat: 40.265, lng: -79.932 },
+      'North Braddock': { lat: 40.400, lng: -79.863 },
+      'Clairton': { lat: 40.292, lng: -79.881 }
+    };
+    
+    // Get latest PM2.5 readings from all sites
     const pm25Readings = await axios.get(`${baseUrl}`, {
       params: {
         resource_id: resourceId,
@@ -59,73 +68,75 @@ export async function fetchACHDWPRDC(): Promise<{
           parameter: 'PM25',
           is_valid: true
         }),
-        limit: 10, // Get more readings to find valid ones
+        limit: 50, // Get more readings to find valid ones across multiple sites
         sort: 'datetime_est desc'
       },
-      timeout: 10000
+      timeout: 15000
     });
     
     const data = pm25Readings.data as any;
     
     if (!data.success || !data.result?.records || data.result.records.length === 0) {
-      console.log('No recent Liberty PM2.5 data found');
-      
-      // Try to get ANY recent VALID PM25 data
-      const anyPM25 = await axios.get(`${baseUrl}`, {
-        params: {
-          resource_id: resourceId,
-          filters: JSON.stringify({
-            parameter: 'PM25',
-            is_valid: true
-          }),
-          limit: 10,
-          sort: 'datetime_est desc'
-        },
-        timeout: 10000
-      });
-      
-      const anyData = anyPM25.data as any;
-      
-      if (!anyData.success || !anyData.result?.records || anyData.result.records.length === 0) {
-        throw new Error('No PM25 data available');
-      }
-      
-      const reading = anyData.result.records[0];
-      const pm25Value = parseFloat(reading.report_value);
-      
+      console.log('No recent PM2.5 data found in WPRDC');
       return {
-        success: true,
-        data: [{
-          pm25: pm25Value,
-          timestamp: reading.datetime_est,
-          location: reading.site,
-          source: 'Official ACHD Data (WPRDC)',
-          aqi: calculateAQI(pm25Value)
-        }],
+        success: false,
+        data: [],
         source: 'WPRDC CKAN DataStore',
-        lastUpdated: new Date().toISOString()
+        lastUpdated: new Date().toISOString(),
+        message: 'No PM25 data available'
       };
     }
     
-    // We have Liberty data - get related readings
-    const latestReading = data.result.records[0];
-    console.log('Latest Liberty reading:', latestReading);
+    // Process all valid readings - get unique sites with their latest readings
+    const siteMap = new Map<string, { pm25: number; timestamp: string; coords: { lat: number; lng: number } }>();
     
-    // Only parse if report_value exists and is not null
-    if (!latestReading.report_value || latestReading.report_value === 'null' || latestReading.report_value.trim() === '') {
-      console.log('Invalid report_value:', latestReading.report_value);
-      throw new Error('Invalid PM25 reading');
+    for (const record of data.result.records) {
+      const pm25Value = parseFloat(record.report_value);
+      if (!isNaN(pm25Value) && pm25Value >= 0) {
+        // Only keep the most recent reading per site
+        const existing = siteMap.get(record.site);
+        if (!existing || new Date(record.datetime_est) > new Date(existing.timestamp)) {
+          siteMap.set(record.site, {
+            pm25: Math.max(pm25Value, 0.1), // Use 0.1 minimum to ensure visibility
+            timestamp: record.datetime_est,
+            coords: siteCoords[record.site] || { lat: 40.292, lng: -79.881 }
+          });
+        }
+      }
     }
     
-    const pm25Value = parseFloat(latestReading.report_value);
-    console.log('Parsed PM25 value:', pm25Value);
-    
-    if (isNaN(pm25Value)) {
-      console.log('PM25 value is NaN');
-      throw new Error('PM25 value is NaN');
+    if (siteMap.size === 0) {
+      console.log('No valid PM25 readings found after processing');
+      return {
+        success: false,
+        data: [],
+        source: 'WPRDC CKAN DataStore',
+        lastUpdated: new Date().toISOString(),
+        message: 'No valid PM25 readings found'
+      };
     }
     
-    const timestamp = latestReading.datetime_est;
+    // Convert to array format with coordinates
+    const processedReadings = Array.from(siteMap.entries()).map(([site, data]) => ({
+      pm25: data.pm25,
+      timestamp: data.timestamp,
+      location: site,
+      source: 'Official ACHD Data (WPRDC)',
+      aqi: calculateAQI(data.pm25),
+      coordinates: data.coords
+    }));
+    
+    console.log(`✅ WPRDC: Found ${processedReadings.length} unique monitoring sites`);
+    
+    return {
+      success: true,
+      data: processedReadings,
+      source: 'WPRDC CKAN DataStore',
+      lastUpdated: new Date().toISOString()
+    };
+    
+    // Legacy code below (not reached, but kept for reference)
+    const timestamp = new Date().toISOString();
     
     // Get SO2 and Ozone for same time period
     let so2Value: number | undefined;

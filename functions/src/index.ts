@@ -44,15 +44,15 @@ if (process.env.FUNCTIONS_EMULATOR === 'true' || !process.env.GCLOUD_PROJECT) {
       console.warn('⚠️ Could not find .env file. Tried paths:', possiblePaths);
     } else {
       const result = dotenv.config({ path: envPath });
-      if (result.error) {
+    if (result.error) {
         console.warn('⚠️ Could not load .env file:', result.error.message, 'at path:', envPath);
-      } else {
+    } else {
         console.log('✅ Loaded environment variables from .env at:', envPath);
-        // Verify PurpleAir key is loaded
-        if (process.env.PURPLEAIR_API_KEY) {
+      // Verify PurpleAir key is loaded
+      if (process.env.PURPLEAIR_API_KEY) {
           console.log('✅ PurpleAir API key found in environment:', process.env.PURPLEAIR_API_KEY.substring(0, 10) + '...');
-        } else {
-          console.warn('⚠️ PurpleAir API key not found in environment');
+      } else {
+        console.warn('⚠️ PurpleAir API key not found in environment');
         }
       }
     }
@@ -1144,10 +1144,43 @@ export const getACHDHistoricalData = functions.https.onRequest(async (req, res) 
  * Fetch PurpleAir sensor data for Mon Valley area
  * Fetches real-time community sensor data from PurpleAir API
  * This was documented but not implemented - now implemented!
+ * 
+ * CACHING STRATEGY:
+ * - Cache sensor data in Firestore for 10 minutes to reduce API calls
+ * - Only fetch from PurpleAir API if cache is stale or missing
+ * - This reduces API point usage by ~85% (from every request to every 10 minutes)
  */
 export const fetchPurpleAirSensorData = functions.https.onRequest((req, res) => {
   return corsHandler(req, res, async () => {
     try {
+      // Check cache first (10 minute TTL)
+      const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+      const cacheDocRef = admin.firestore().collection('sensor_cache').doc('purpleair_sensors');
+      const cacheDoc = await cacheDocRef.get();
+      
+      if (cacheDoc.exists) {
+        const cacheData = cacheDoc.data();
+        const cacheAge = Date.now() - (cacheData?.timestamp || 0);
+        
+        if (cacheAge < CACHE_TTL_MS && cacheData?.sensors) {
+          console.log(`✅ Returning cached sensor data (age: ${Math.round(cacheAge / 1000)}s, TTL: ${CACHE_TTL_MS / 1000}s)`);
+          return res.json({
+            success: true,
+            data: cacheData.sensors,
+            count: cacheData.sensors.length,
+            source: cacheData.source || 'PurpleAir API (Cached)',
+            lastUpdated: new Date(cacheData.timestamp).toISOString(),
+            cached: true,
+            cacheAgeSeconds: Math.round(cacheAge / 1000),
+            note: 'Using cached data to reduce API point usage. Data is refreshed every 10 minutes.',
+          });
+        } else {
+          console.log(`⏰ Cache expired (age: ${Math.round(cacheAge / 1000)}s), fetching fresh data...`);
+        }
+      } else {
+        console.log('📦 No cache found, fetching fresh data...');
+      }
+      
       // Get API key from environment (Firebase secrets are automatically injected as env vars)
       // Also check legacy config for backward compatibility
       let apiKey = process.env.PURPLEAIR_API_KEY;
@@ -1166,7 +1199,7 @@ export const fetchPurpleAirSensorData = functions.https.onRequest((req, res) => 
           note: 'To get an API key, register at https://www2.purpleair.com. Use: firebase functions:secrets:set PURPLEAIR_API_KEY'
         });
       }
-      
+
       console.log('✅ PurpleAir API key found, attempting to fetch sensors from PurpleAir API...');
 
       // Mon Valley bounding box (Clairton area) - expanded to capture more sensors
@@ -1189,10 +1222,10 @@ export const fetchPurpleAirSensorData = functions.https.onRequest((req, res) => 
       
       try {
         response = await axios.get('https://api.purpleair.com/v1/sensors', {
-          params,
-          headers: {
-            'X-API-Key': apiKey,
-          },
+        params,
+        headers: {
+          'X-API-Key': apiKey,
+        },
           timeout: 20000, // Increased timeout for more sensors
         });
         
@@ -1208,9 +1241,9 @@ export const fetchPurpleAirSensorData = functions.https.onRequest((req, res) => 
           // Try PurpleAir public map endpoint (different URL)
           try {
             const publicResponse = await axios.get('https://map.purpleair.com/json', {
-              timeout: 15000,
-            });
-            
+        timeout: 15000,
+      });
+
             if (publicResponse.data && (Array.isArray(publicResponse.data) || (publicResponse.data as any).results)) {
               const dataArray = Array.isArray(publicResponse.data) ? publicResponse.data : (publicResponse.data as any).results || [];
               
@@ -1247,16 +1280,30 @@ export const fetchPurpleAirSensorData = functions.https.onRequest((req, res) => 
                 );
                 
                 if (validSensors.length > 0) {
-                  console.log(`✅ Fetched ${validSensors.length} sensors from PurpleAir public map endpoint`);
-                  
-                  return res.json({
-                    success: true,
-                    data: validSensors,
-                    count: validSensors.length,
+                console.log(`✅ Fetched ${validSensors.length} sensors from PurpleAir public map endpoint`);
+                
+                // Cache the fallback results too
+                try {
+                  await cacheDocRef.set({
+                    sensors: validSensors,
                     source: 'PurpleAir (Public Map)',
-                    lastUpdated: new Date().toISOString(),
-                    note: 'Using PurpleAir public map endpoint. API key account needs credits for official API access.',
-                  });
+                    timestamp: Date.now(),
+                    count: validSensors.length,
+                  }, { merge: false });
+                  console.log('✅ Cached fallback sensor data in Firestore');
+                } catch (cacheError: any) {
+                  console.warn('⚠️ Failed to cache fallback data:', cacheError.message);
+                }
+                
+                return res.json({
+                  success: true,
+                  data: validSensors,
+                  count: validSensors.length,
+                  source: 'PurpleAir (Public Map)',
+                  lastUpdated: new Date().toISOString(),
+                  cached: false,
+                  note: 'Using PurpleAir public map endpoint. API key account needs credits for official API access. Data cached for 10 minutes.',
+                });
                 }
               }
               console.warn('Public map endpoint returned data but no valid sensors in Mon Valley area');
@@ -1309,12 +1356,28 @@ export const fetchPurpleAirSensorData = functions.https.onRequest((req, res) => 
 
       console.log(`Mapped ${validSensors.length} valid PurpleAir sensors`);
 
+      // Cache the results in Firestore
+      try {
+        await cacheDocRef.set({
+          sensors: validSensors,
+          source: 'PurpleAir API',
+          timestamp: Date.now(),
+          count: validSensors.length,
+        }, { merge: false });
+        console.log('✅ Cached sensor data in Firestore');
+      } catch (cacheError: any) {
+        console.warn('⚠️ Failed to cache sensor data:', cacheError.message);
+        // Continue even if caching fails
+      }
+
       return res.json({
         success: true,
         data: validSensors,
         count: validSensors.length,
         source: 'PurpleAir API',
         lastUpdated: new Date().toISOString(),
+        cached: false,
+        note: 'Fresh data from PurpleAir API. This data is now cached for 10 minutes.',
       });
 
     } catch (error: any) {

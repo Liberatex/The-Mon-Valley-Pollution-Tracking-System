@@ -2857,7 +2857,7 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
 
         {/* Map Legend */}
         {showLegend && (
-          <div className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-white rounded-lg shadow-xl p-3 sm:p-4 z-[1000] max-w-[calc(100vw-20px)] sm:max-w-xs border border-gray-200">
+          <div className="absolute top-20 right-2 sm:top-24 sm:right-4 bg-white rounded-lg shadow-xl p-3 sm:p-4 z-[1000] max-w-[calc(100vw-20px)] sm:max-w-xs border border-gray-200">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-bold text-sm flex items-center gap-2">
                 <Info className="w-4 h-4" />
@@ -3038,7 +3038,7 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
         {!showLegend && (
           <button
             onClick={() => setShowLegend(true)}
-            className="absolute top-4 right-4 bg-white rounded-lg shadow-lg p-2 z-[1000] border border-gray-200 hover:bg-gray-50 transition-colors"
+            className="absolute top-20 right-2 sm:top-24 sm:right-4 bg-white rounded-lg shadow-lg p-2 z-[1000] border border-gray-200 hover:bg-gray-50 transition-colors"
             title="Show Legend"
           >
             <Info className="w-5 h-5 text-gray-600" />

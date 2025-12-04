@@ -2775,86 +2775,86 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
           style={{ minHeight: 'calc(100vh - 60px)' }}
         />
         
-        {/* Layer Controls - Overlay on left side of map (mobile) */}
-        <div className="absolute top-2 left-2 sm:top-4 sm:left-4 z-[1000] bg-black/40 backdrop-blur-md rounded-lg shadow-xl p-2 sm:p-3 border border-white/20 max-w-[calc(100vw-16px)] sm:max-w-none">
-          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-            <label className="flex items-center gap-1.5 sm:gap-2 cursor-pointer px-2 py-1.5 sm:px-3 sm:py-2 rounded-md hover:bg-white/20 transition-colors text-xs sm:text-sm text-white">
+        {/* Layer Controls - Overlay on left side of map (mobile) - Compact design */}
+        <div className="absolute top-2 left-2 sm:top-4 sm:left-4 z-[1000] bg-black/40 backdrop-blur-md rounded-lg shadow-xl p-1.5 sm:p-2 border border-white/20 max-w-[calc(100vw-16px)] sm:max-w-none">
+          <div className="flex flex-col gap-1 sm:flex-row sm:flex-wrap">
+            <label className="flex items-center gap-1 sm:gap-1.5 cursor-pointer px-1.5 py-1 sm:px-2 sm:py-1.5 rounded-md hover:bg-white/20 transition-colors text-xs sm:text-sm text-white">
             <input
               type="checkbox"
               checked={showSensors}
               onChange={(e) => setShowSensors(e.target.checked)}
                 className="cursor-pointer w-3 h-3 sm:w-4 sm:h-4"
               />
-              <span className="font-medium whitespace-nowrap">
+              <span className="font-medium whitespace-nowrap text-xs">
                 <Activity className="inline w-3 h-3 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />
                 <span className="hidden sm:inline">PurpleAir Sensors</span>
                 <span className="sm:hidden">Sensors</span>
                 <span className="ml-0.5 sm:ml-1">({sensors.length})</span>
-            </span>
+              </span>
           </label>
-            <label className="flex items-center gap-1.5 sm:gap-2 cursor-pointer px-2 py-1.5 sm:px-3 sm:py-2 rounded-md hover:bg-white/20 transition-colors text-xs sm:text-sm text-white">
+            <label className="flex items-center gap-1 sm:gap-1.5 cursor-pointer px-1.5 py-1 sm:px-2 sm:py-1.5 rounded-md hover:bg-white/20 transition-colors text-xs sm:text-sm text-white">
             <input
               type="checkbox"
               checked={showFacilities}
               onChange={(e) => setShowFacilities(e.target.checked)}
                 className="cursor-pointer w-3 h-3 sm:w-4 sm:h-4"
               />
-              <span className="font-medium whitespace-nowrap">
+              <span className="font-medium whitespace-nowrap text-xs">
                 <Factory className="inline w-3 h-3 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />
                 <span className="hidden sm:inline">Title V Facilities</span>
                 <span className="sm:hidden">Facilities</span>
                 <span className="ml-0.5 sm:ml-1">({facilities.length})</span>
-            </span>
+              </span>
           </label>
-            <label className="flex items-center gap-1.5 sm:gap-2 cursor-pointer px-2 py-1.5 sm:px-3 sm:py-2 rounded-md hover:bg-white/20 transition-colors text-xs sm:text-sm text-white">
+            <label className="flex items-center gap-1 sm:gap-1.5 cursor-pointer px-1.5 py-1 sm:px-2 sm:py-1.5 rounded-md hover:bg-white/20 transition-colors text-xs sm:text-sm text-white">
             <input
               type="checkbox"
               checked={showMyLocation}
               onChange={(e) => setShowMyLocation(e.target.checked)}
                 className="cursor-pointer w-3 h-3 sm:w-4 sm:h-4"
               />
-              <span className="font-medium whitespace-nowrap">
+              <span className="font-medium whitespace-nowrap text-xs">
                 <Navigation className="inline w-3 h-3 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />
                 <span className="hidden sm:inline">My Location</span>
                 <span className="sm:hidden">Location</span>
-            </span>
+              </span>
           </label>
-            <label className="flex items-center gap-1.5 sm:gap-2 cursor-pointer px-2 py-1.5 sm:px-3 sm:py-2 rounded-md hover:bg-white/20 transition-colors text-xs sm:text-sm text-white">
+            <label className="flex items-center gap-1 sm:gap-1.5 cursor-pointer px-1.5 py-1 sm:px-2 sm:py-1.5 rounded-md hover:bg-white/20 transition-colors text-xs sm:text-sm text-white">
               <input
                 type="checkbox"
                 checked={showSmellReports}
                 onChange={(e) => setShowSmellReports(e.target.checked)}
                 className="cursor-pointer w-3 h-3 sm:w-4 sm:h-4"
               />
-              <span className="font-medium whitespace-nowrap">
+              <span className="font-medium whitespace-nowrap text-xs">
                 <AlertCircle className="inline w-3 h-3 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />
                 <span className="hidden sm:inline">Smell Reports</span>
                 <span className="sm:hidden">Smell</span>
                 <span className="ml-0.5 sm:ml-1">({smellClusters.length > 0 ? smellClusters.length : '0'})</span>
               </span>
             </label>
-            <label className="flex items-center gap-1.5 sm:gap-2 cursor-pointer px-2 py-1.5 sm:px-3 sm:py-2 rounded-md hover:bg-white/20 transition-colors text-xs sm:text-sm text-white">
+            <label className="flex items-center gap-1 sm:gap-1.5 cursor-pointer px-1.5 py-1 sm:px-2 sm:py-1.5 rounded-md hover:bg-white/20 transition-colors text-xs sm:text-sm text-white">
               <input
                 type="checkbox"
                 checked={showRiskZones}
                 onChange={(e) => setShowRiskZones(e.target.checked)}
                 className="cursor-pointer w-3 h-3 sm:w-4 sm:h-4"
               />
-              <span className="font-medium whitespace-nowrap">
+              <span className="font-medium whitespace-nowrap text-xs">
                 <AlertTriangle className="inline w-3 h-3 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />
                 <span className="hidden sm:inline">Risk Zones</span>
                 <span className="sm:hidden">Risk</span>
                 <span className="ml-0.5 sm:ml-1">({riskZones.length > 0 ? riskZones.length : '0'})</span>
               </span>
             </label>
-            <label className="flex items-center gap-1.5 sm:gap-2 cursor-pointer px-2 py-1.5 sm:px-3 sm:py-2 rounded-md hover:bg-white/20 transition-colors text-xs sm:text-sm text-white">
+            <label className="flex items-center gap-1 sm:gap-1.5 cursor-pointer px-1.5 py-1 sm:px-2 sm:py-1.5 rounded-md hover:bg-white/20 transition-colors text-xs sm:text-sm text-white">
               <input
                 type="checkbox"
                 checked={showVCANDistribution}
                 onChange={(e) => setShowVCANDistribution(e.target.checked)}
                 className="cursor-pointer w-3 h-3 sm:w-4 sm:h-4"
               />
-              <span className="font-medium whitespace-nowrap">
+              <span className="font-medium whitespace-nowrap text-xs">
                 <Heart className="inline w-3 h-3 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" style={{ color: '#22c55e' }} />
                 <span className="hidden sm:inline">VCAN Distribution</span>
                 <span className="sm:hidden">VCAN</span>
@@ -3050,21 +3050,11 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
               </div>
             )}
 
-        {/* Show Legend Button (when hidden) - positioned to left of wind conditions */}
-        {!showLegend && windData && (
+        {/* Show Legend Button (when hidden) - positioned at top right corner */}
+        {!showLegend && (
           <button
             onClick={() => setShowLegend(true)}
-            className="absolute top-2 right-[calc(100%-140px)] sm:top-4 sm:right-[calc(100%-160px)] bg-white rounded-lg shadow-lg p-2 z-[1000] border border-gray-200 hover:bg-gray-50 transition-colors"
-            title="Show Legend"
-          >
-            <Info className="w-5 h-5 text-gray-600" />
-          </button>
-        )}
-        {/* Show Legend Button (when hidden and no wind data) */}
-        {!showLegend && !windData && (
-          <button
-            onClick={() => setShowLegend(true)}
-            className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-white rounded-lg shadow-lg p-2 z-[1000] border border-gray-200 hover:bg-gray-50 transition-colors"
+            className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-white rounded-lg shadow-lg p-2 z-[1001] border border-gray-200 hover:bg-gray-50 transition-colors"
             title="Show Legend"
           >
             <Info className="w-5 h-5 text-gray-600" />
@@ -3074,8 +3064,8 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
         {/* Wind Visualization on Map */}
         {windData && map.current && (
           <>
-            {/* Wind Info Panel - Top right, with legend button positioned to its left */}
-          <div className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-black/40 backdrop-blur-md rounded-lg p-3 shadow-lg z-[999] border border-white/20" style={{ minWidth: '140px' }}>
+            {/* Wind Info Panel - Positioned more to the right, below legend button */}
+          <div className="absolute top-12 right-2 sm:top-16 sm:right-4 bg-black/40 backdrop-blur-md rounded-lg p-2.5 sm:p-3 shadow-lg z-[999] border border-white/20" style={{ minWidth: '140px', maxWidth: '160px' }}>
               <div className="text-xs font-semibold text-white mb-1 flex items-center gap-2">
                 <Navigation className="w-4 h-4 text-white" style={{ transform: `rotate(${windData.direction}deg)` }} />
                 Wind Conditions

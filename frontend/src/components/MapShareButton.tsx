@@ -100,7 +100,7 @@ const MapShareButton: React.FC<MapShareButtonProps> = ({
 
   // Web Share API (for mobile devices)
   const handleNativeShare = async () => {
-    if (navigator.share) {
+    if (typeof navigator !== 'undefined' && 'share' in navigator && typeof navigator.share === 'function') {
       try {
         await navigator.share({
           title: mapTitle,
@@ -123,7 +123,7 @@ const MapShareButton: React.FC<MapShareButtonProps> = ({
       <button
         onClick={() => {
           // Try native share on mobile, otherwise show menu
-          if (navigator.share && window.innerWidth < 640) {
+          if (typeof navigator !== 'undefined' && 'share' in navigator && typeof navigator.share === 'function' && window.innerWidth < 640) {
             handleNativeShare();
           } else {
             setShowMenu(!showMenu);

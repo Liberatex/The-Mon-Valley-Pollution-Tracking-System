@@ -3050,22 +3050,23 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
               </div>
             )}
 
-        {/* Show Legend Button (when hidden) - positioned at top right corner */}
+        {/* Show Legend Button (when hidden) - small button on top-right corner of wind panel */}
         {!showLegend && (
           <button
             onClick={() => setShowLegend(true)}
-            className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-white rounded-lg shadow-lg p-2 z-[1001] border border-gray-200 hover:bg-gray-50 transition-colors"
+            className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-white rounded shadow-lg p-1 z-[1001] border border-gray-200 hover:bg-gray-50 transition-colors"
             title="Show Legend"
+            style={{ borderRadius: '6px' }}
           >
-            <Info className="w-5 h-5 text-gray-600" />
+            <Info className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-600" />
           </button>
         )}
 
         {/* Wind Visualization on Map */}
         {windData && map.current && (
           <>
-            {/* Wind Info Panel - Positioned more to the right, below legend button */}
-          <div className="absolute top-12 right-2 sm:top-16 sm:right-4 bg-black/40 backdrop-blur-md rounded-lg p-2.5 sm:p-3 shadow-lg z-[999] border border-white/20" style={{ minWidth: '140px', maxWidth: '160px' }}>
+            {/* Wind Info Panel - Top right corner of map */}
+          <div className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-black/40 backdrop-blur-md rounded-lg p-2.5 sm:p-3 shadow-lg z-[999] border border-white/20" style={{ minWidth: '140px', maxWidth: '160px', marginTop: '32px' }}>
               <div className="text-xs font-semibold text-white mb-1 flex items-center gap-2">
                 <Navigation className="w-4 h-4 text-white" style={{ transform: `rotate(${windData.direction}deg)` }} />
                 Wind Conditions

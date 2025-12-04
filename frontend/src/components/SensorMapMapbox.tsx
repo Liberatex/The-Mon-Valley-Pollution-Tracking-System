@@ -2749,7 +2749,7 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
             Interactive map showing air quality sensors, industrial facilities, and official monitoring stations.
           </p>
         </div>
-      </div>
+        </div>
 
       {/* Map Container - Full width, moved up */}
       <div className="relative w-full">
@@ -2763,10 +2763,10 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
         <div className="absolute top-2 left-2 sm:top-4 sm:left-4 z-[1000] bg-black/40 backdrop-blur-md rounded-lg shadow-xl p-2 sm:p-3 border border-white/20 max-w-[calc(100vw-16px)] sm:max-w-none">
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
             <label className="flex items-center gap-1.5 sm:gap-2 cursor-pointer px-2 py-1.5 sm:px-3 sm:py-2 rounded-md hover:bg-white/20 transition-colors text-xs sm:text-sm text-white">
-              <input
-                type="checkbox"
-                checked={showSensors}
-                onChange={(e) => setShowSensors(e.target.checked)}
+            <input
+              type="checkbox"
+              checked={showSensors}
+              onChange={(e) => setShowSensors(e.target.checked)}
                 className="cursor-pointer w-3 h-3 sm:w-4 sm:h-4"
               />
               <span className="font-medium whitespace-nowrap">
@@ -2774,13 +2774,13 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
                 <span className="hidden sm:inline">PurpleAir Sensors</span>
                 <span className="sm:hidden">Sensors</span>
                 <span className="ml-0.5 sm:ml-1">({sensors.length})</span>
-              </span>
-            </label>
+            </span>
+          </label>
             <label className="flex items-center gap-1.5 sm:gap-2 cursor-pointer px-2 py-1.5 sm:px-3 sm:py-2 rounded-md hover:bg-white/20 transition-colors text-xs sm:text-sm text-white">
-              <input
-                type="checkbox"
-                checked={showFacilities}
-                onChange={(e) => setShowFacilities(e.target.checked)}
+            <input
+              type="checkbox"
+              checked={showFacilities}
+              onChange={(e) => setShowFacilities(e.target.checked)}
                 className="cursor-pointer w-3 h-3 sm:w-4 sm:h-4"
               />
               <span className="font-medium whitespace-nowrap">
@@ -2788,21 +2788,21 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
                 <span className="hidden sm:inline">Title V Facilities</span>
                 <span className="sm:hidden">Facilities</span>
                 <span className="ml-0.5 sm:ml-1">({facilities.length})</span>
-              </span>
-            </label>
+            </span>
+          </label>
             <label className="flex items-center gap-1.5 sm:gap-2 cursor-pointer px-2 py-1.5 sm:px-3 sm:py-2 rounded-md hover:bg-white/20 transition-colors text-xs sm:text-sm text-white">
-              <input
-                type="checkbox"
-                checked={showMyLocation}
-                onChange={(e) => setShowMyLocation(e.target.checked)}
+            <input
+              type="checkbox"
+              checked={showMyLocation}
+              onChange={(e) => setShowMyLocation(e.target.checked)}
                 className="cursor-pointer w-3 h-3 sm:w-4 sm:h-4"
               />
               <span className="font-medium whitespace-nowrap">
                 <Navigation className="inline w-3 h-3 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />
                 <span className="hidden sm:inline">My Location</span>
                 <span className="sm:hidden">Location</span>
-              </span>
-            </label>
+            </span>
+          </label>
             <label className="flex items-center gap-1.5 sm:gap-2 cursor-pointer px-2 py-1.5 sm:px-3 sm:py-2 rounded-md hover:bg-white/20 transition-colors text-xs sm:text-sm text-white">
               <input
                 type="checkbox"
@@ -2852,8 +2852,8 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
                 mapUrl={typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}#map` : ''}
               />
             </div>
-          </div>
         </div>
+      </div>
 
         {/* Map Legend */}
         {showLegend && (
@@ -2995,7 +2995,7 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
                 </p>
               </div>
 
-              {/* Title V Facilities - Fourth Section (Bottom) */}
+              {/* Title V Facilities - Fourth Section */}
               <div className="border-t border-gray-200 pt-3">
                 <h4 className="font-semibold mb-2 flex items-center gap-2">
                   <Factory className="w-3 h-3" />
@@ -3004,13 +3004,28 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
                 <div className="flex items-center gap-2 ml-5">
                   <div className="w-4 h-4 rounded-full bg-red-600 flex items-center justify-center text-white text-xs">🏭</div>
                   <span>Industrial facilities with major air pollution permits</span>
-                </div>
+              </div>
                 <p className="text-gray-500 mt-1 ml-5 text-xs">
                   Regulated under Clean Air Act Title V permits
                 </p>
-              </div>
             </div>
-            
+
+              {/* VCAN Distribution - Fifth Section */}
+              <div className="border-t border-gray-200 pt-3">
+                <h4 className="font-semibold mb-2 flex items-center gap-2">
+                  <Heart className="w-3 h-3" style={{ color: '#22c55e' }} />
+                  VCAN Distribution
+                </h4>
+                <div className="flex items-center gap-2 ml-5">
+                  <span className="text-lg" style={{ color: '#22c55e' }}>❤️</span>
+                  <span>Air filter and purifier distribution locations</span>
+          </div>
+                <p className="text-gray-500 mt-1 ml-5 text-xs">
+                  Locations where VCAN (Valley Clean Air Now) has distributed air quality improvement devices to residents
+                </p>
+              </div>
+      </div>
+
             <div className="mt-4 pt-3 border-t border-gray-200">
               <p className="text-xs text-gray-500">
                 <strong>Tip:</strong> Click any marker to see detailed information. Use checkboxes above to filter what's displayed.

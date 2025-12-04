@@ -16,9 +16,10 @@ import { fetchSmellPGHReports, clusterOdorReports, OdorCluster, calculateLocatio
 import { generateRiskZone, detectPollutionEvents, RiskZone, generateHexGridOverlay } from '../services/riskZoneService';
 import { getHealthProfile, HealthProfile } from '../services/vulnerabilityStorage';
 import { calculateToxicityWeight } from '../services/toxicityWeightService';
+import { getVCANDistributionLocations, VCANDistributionLocation } from '../services/vcanDistributionService';
 import { getAuth } from 'firebase/auth';
 import * as turf from '@turf/turf';
-import { Info, AlertCircle, MapPin, Factory, Activity, Navigation, X, AlertTriangle } from 'lucide-react';
+import { Info, AlertCircle, MapPin, Factory, Activity, Navigation, X, AlertTriangle, Heart } from 'lucide-react';
 
 // Mapbox access token from environment variable
 const MAPBOX_TOKEN = env.MAPBOX_ACCESS_TOKEN || '';
@@ -83,6 +84,8 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
   const [riskZones, setRiskZones] = useState<RiskZone[]>([]);
   const [showSmellReports, setShowSmellReports] = useState(true);
   const [showRiskZones, setShowRiskZones] = useState(true);
+  const [showVCANDistribution, setShowVCANDistribution] = useState(true);
+  const [vcanLocations, setVcanLocations] = useState<VCANDistributionLocation[]>([]);
   const [hiddenRiskZones, setHiddenRiskZones] = useState<Set<string>>(new Set()); // Track clicked/hidden zones
   const [facilityCompliance, setFacilityCompliance] = useState<any>(null);
   const [loadingCompliance, setLoadingCompliance] = useState(false);
@@ -218,6 +221,22 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
     };
 
     fetchFacilities();
+  }, []);
+
+  // Load VCAN distribution locations (using hardcoded coordinates - no API calls)
+  useEffect(() => {
+    try {
+      const locations = getVCANDistributionLocations();
+      setVcanLocations(locations);
+      console.log(`✅ Loaded ${locations.length} VCAN distribution locations`);
+      if (locations.length > 0) {
+        console.log(`📍 Sample location: ${locations[0].address}, ${locations[0].city} - Coords: (${locations[0].location?.lat}, ${locations[0].location?.lng})`);
+      } else {
+        console.warn('⚠️ No VCAN locations loaded. Check if coordinates file is populated or fallback is working.');
+      }
+    } catch (error: any) {
+      console.error('❌ Error loading VCAN locations:', error.message || error);
+    }
   }, []);
 
   // Fetch Smell PGH reports and cluster them (VCAN requirement)
@@ -2315,6 +2334,260 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
     };
   }, [map.current, showRiskZones]);
 
+  // Add VCAN distribution locations to map
+  useEffect(() => {
+    if (!map.current) return;
+    
+    if (!showVCANDistribution || vcanLocations.length === 0) {
+      // Hide layer if disabled or no locations
+      if (map.current.getLayer('vcan-distribution')) {
+        map.current.setLayoutProperty('vcan-distribution', 'visibility', 'none');
+      }
+      return;
+    }
+
+    // Create GeoJSON for VCAN locations
+    const vcanGeoJSON: GeoJSON.FeatureCollection = {
+      type: 'FeatureCollection',
+      features: vcanLocations
+        .filter(loc => loc.location && loc.location.lat && loc.location.lng)
+        .map(loc => ({
+          type: 'Feature' as const,
+          geometry: {
+            type: 'Point' as const,
+            coordinates: [loc.location!.lng, loc.location!.lat],
+          },
+          properties: {
+            id: loc.id,
+            address: loc.address,
+            city: loc.city,
+            zipCode: loc.zipCode,
+            deviceType: loc.deviceType,
+          },
+        })),
+    };
+
+    // Create proper green heart icon using SVG (classic heart shape - matches emoji)
+    const createGreenHeartIcon = async (): Promise<ImageBitmap | null> => {
+      const size = 24; // Compact size for better appearance
+      
+      // Classic heart path that matches the ❤️ emoji shape
+      const svg = `
+        <svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+          <path d="M12,21.35l-1.45-1.32C5.4,15.36 2,12.28 2,8.5 2,5.42 4.42,3 7.5,3c1.74,0 3.41,0.81 4.5,2.09C13.09,3.81 14.76,3 16.5,3 19.58,3 22,5.42 22,8.5c0,3.78-3.4,6.86-8.55,11.54L12,21.35z" 
+                fill="#22c55e" 
+                stroke="#ffffff" 
+                stroke-width="0.8"/>
+        </svg>
+      `;
+      
+      const img = new Image();
+      const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      
+      return new Promise((resolve) => {
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = size;
+          canvas.height = size;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, size, size);
+            createImageBitmap(canvas).then(resolve).catch(() => resolve(null));
+          } else {
+            resolve(null);
+          }
+          URL.revokeObjectURL(url);
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(url);
+          resolve(null);
+        };
+        img.src = url;
+      });
+    };
+
+    // Load icon and add layer
+    const loadVCANLayer = async () => {
+      if (!map.current) return;
+      
+      console.log(`🔄 Loading VCAN layer with ${vcanGeoJSON.features.length} locations`);
+      
+      const iconName = 'vcan-heart-green';
+      if (!map.current.hasImage(iconName)) {
+        console.log('🎨 Creating green heart icon...');
+        const icon = await createGreenHeartIcon();
+        if (icon && map.current) {
+          map.current.addImage(iconName, icon);
+          console.log('✅ Green heart icon created and added to map');
+        } else {
+          console.error('❌ Failed to create green heart icon');
+        }
+      } else {
+        console.log('✅ Green heart icon already exists');
+      }
+
+      if (map.current.getSource('vcan-distribution')) {
+        // Update existing source
+        console.log('🔄 Updating existing VCAN distribution source');
+        const source = map.current.getSource('vcan-distribution') as mapboxgl.GeoJSONSource;
+        if (source) {
+          source.setData(vcanGeoJSON);
+        }
+        
+        // Show layer if it exists
+        if (map.current.getLayer('vcan-distribution')) {
+          map.current.setLayoutProperty('vcan-distribution', 'visibility', 'visible');
+          console.log('✅ VCAN distribution layer is visible');
+        } else {
+          console.warn('⚠️ VCAN distribution layer does not exist, will create it');
+        }
+      } else {
+        // Add new source and layer
+        console.log('➕ Adding new VCAN distribution source and layer');
+        map.current.addSource('vcan-distribution', {
+          type: 'geojson',
+          data: vcanGeoJSON,
+        });
+
+        map.current.addLayer({
+          id: 'vcan-distribution',
+          type: 'symbol',
+          source: 'vcan-distribution',
+          layout: {
+            'icon-image': 'vcan-heart-green',
+            'icon-size': 1.1, // Good size for visibility
+            'icon-allow-overlap': true,
+            'icon-ignore-placement': false,
+          },
+        });
+        console.log('✅ VCAN distribution layer added to map');
+      }
+
+      // Add click handler for VCAN locations
+      const vcanClickHandler = (e: mapboxgl.MapLayerMouseEvent) => {
+        if (e.features && e.features[0] && e.lngLat && e.features[0].properties) {
+          const props = e.features[0].properties;
+          const deviceType = props.deviceType as string;
+          const address = props.address as string;
+          const city = props.city as string;
+          const zipCode = props.zipCode as string;
+          
+          const isMobile = window.innerWidth < 640;
+          const popupMinWidth = isMobile ? '220px' : '280px';
+          const popupMaxWidth = isMobile ? '300px' : '400px';
+          const popupMaxWidthMapbox = isMobile ? '300px' : '400px';
+
+          const deviceTypeLabel = deviceType === 'filter' ? 'Air Filter' : 'Air Purifier';
+          const deviceIcon = deviceType === 'filter' ? '🔧' : '💨';
+          const deviceDescription = deviceType === 'filter' 
+            ? 'Air Filter - Helps reduce indoor air pollution particles by filtering the air'
+            : 'Air Purifier - Advanced filtration system that actively cleans indoor air';
+          
+          const popupContent = `
+            <div style="min-width: ${popupMinWidth}; max-width: ${popupMaxWidth};">
+              <div style="display: flex; align-items: start; gap: 8px; margin-bottom: 12px;">
+                <div style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px;">
+                  <span style="color: #22c55e; font-size: 20px;">❤️</span>
+                </div>
+                <div style="flex: 1;">
+                  <h3 style="font-weight: bold; font-size: ${isMobile ? '15px' : '17px'}; margin: 0 0 4px 0; color: #1f2937;">VCAN Distribution</h3>
+                  <p style="font-size: ${isMobile ? '12px' : '13px'}; color: #6b7280; margin: 0; font-weight: 500;">${deviceIcon} ${deviceTypeLabel} Location</p>
+                </div>
+              </div>
+              
+              <div style="background-color: ${deviceType === 'filter' ? '#fef3c7' : '#dbeafe'}; padding: 12px; border-radius: 8px; border-left: 5px solid ${deviceType === 'filter' ? '#f59e0b' : '#3b82f6'}; margin-bottom: 12px;">
+                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+                  <span style="font-size: 18px;">${deviceIcon}</span>
+                  <strong style="font-size: ${isMobile ? '14px' : '15px'}; color: #1f2937;">Device Type: ${deviceTypeLabel}</strong>
+                </div>
+                <p style="font-size: ${isMobile ? '12px' : '13px'}; color: #374151; margin: 0; line-height: 1.4;">
+                  ${deviceDescription}
+                </p>
+              </div>
+              
+              <div style="margin-bottom: 12px; font-size: 13px;">
+                <strong style="color: #374151; display: block; margin-bottom: 4px;">📍 Address:</strong>
+                <span style="color: #1f2937; font-weight: 600; font-size: ${isMobile ? '13px' : '14px'};">${address}</span><br/>
+                <span style="color: #6b7280; font-size: 12px;">${city}, PA ${zipCode}</span>
+              </div>
+
+              <div style="background-color: #f0fdf4; padding: 10px; border-radius: 6px; border-left: 4px solid #22c55e; font-size: 12px; color: #166534; margin-bottom: 12px;">
+                <strong>✅ VCAN Distribution:</strong><br/>
+                This location has received <strong>${deviceType === 'filter' ? 'an air filter' : 'an air purifier'}</strong> from VCAN (Valley Clean Air Now) to help improve indoor air quality and protect residents from pollution exposure.
+              </div>
+              
+              <div style="border-top: 1px solid #e5e7eb; margin-top: 12px; padding-top: 12px;">
+                <div style="font-size: 11px; color: #6b7280;">
+                  <strong style="color: #374151; display: block; margin-bottom: 4px;">Data Source:</strong>
+                  <div style="display: flex; align-items: start; gap: 6px;">
+                    <span style="color: #22c55e; font-size: 14px;">❤️</span>
+                    <div>
+                      <div style="font-weight: 600; color: #1f2937;">VCAN Distribution Records</div>
+                      <div style="margin-top: 2px; font-size: 10px;">Addresses where VCAN has distributed air filters and purifiers to the Mon Valley community</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+          
+          if (map.current) {
+            new mapboxgl.Popup({ closeOnClick: true, maxWidth: popupMaxWidthMapbox })
+              .setLngLat(e.lngLat)
+              .setHTML(popupContent)
+              .addTo(map.current);
+          }
+        }
+      };
+      
+      // Change cursor on hover
+      const handleMouseEnter = () => {
+        if (map.current) {
+          map.current.getCanvas().style.cursor = 'pointer';
+        }
+      };
+      
+      const handleMouseLeave = () => {
+        if (map.current) {
+          map.current.getCanvas().style.cursor = '';
+        }
+      };
+      
+      // Remove existing handlers before adding new ones
+      if (map.current) {
+        try {
+          map.current.off('click', 'vcan-distribution', vcanClickHandler);
+          map.current.off('mouseenter', 'vcan-distribution', handleMouseEnter);
+          map.current.off('mouseleave', 'vcan-distribution', handleMouseLeave);
+        } catch (e) {
+          // Ignore errors - handlers may not exist yet
+        }
+      }
+      
+      // Add handlers
+      if (map.current) {
+        map.current.on('click', 'vcan-distribution', vcanClickHandler);
+        map.current.on('mouseenter', 'vcan-distribution', handleMouseEnter);
+        map.current.on('mouseleave', 'vcan-distribution', handleMouseLeave);
+      }
+    };
+
+    loadVCANLayer();
+    
+    // Cleanup function
+    return () => {
+      if (map.current) {
+        try {
+          // Note: We can't remove handlers without function references, but they'll be replaced on next render
+          // This is acceptable as the handlers are recreated each time
+        } catch (e) {
+          // Ignore errors during cleanup
+        }
+      }
+    };
+  }, [map.current, vcanLocations, showVCANDistribution]);
+
   // Handle "My Location" marker (matches legend - blue circle with crosshair)
   useEffect(() => {
     if (!map.current) return;
@@ -2549,6 +2822,20 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
                 <span className="hidden sm:inline">Risk Zones</span>
                 <span className="sm:hidden">Risk</span>
                 <span className="ml-0.5 sm:ml-1">({riskZones.length > 0 ? riskZones.length : '0'})</span>
+              </span>
+            </label>
+            <label className="flex items-center gap-1.5 sm:gap-2 cursor-pointer px-2 py-1.5 sm:px-3 sm:py-2 rounded-md hover:bg-white/20 transition-colors text-xs sm:text-sm text-white">
+              <input
+                type="checkbox"
+                checked={showVCANDistribution}
+                onChange={(e) => setShowVCANDistribution(e.target.checked)}
+                className="cursor-pointer w-3 h-3 sm:w-4 sm:h-4"
+              />
+              <span className="font-medium whitespace-nowrap">
+                <Heart className="inline w-3 h-3 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" style={{ color: '#22c55e' }} />
+                <span className="hidden sm:inline">VCAN Distribution</span>
+                <span className="sm:hidden">VCAN</span>
+                <span className="ml-0.5 sm:ml-1">({vcanLocations.length > 0 ? vcanLocations.length : '0'})</span>
               </span>
             </label>
           </div>

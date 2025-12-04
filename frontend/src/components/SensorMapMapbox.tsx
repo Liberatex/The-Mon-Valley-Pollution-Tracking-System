@@ -3065,8 +3065,8 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
         {/* Wind Visualization on Map */}
         {windData && map.current && (
           <>
-            {/* Wind Info Panel - Top right corner of map */}
-          <div className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-black/40 backdrop-blur-md rounded-lg p-2.5 sm:p-3 shadow-lg z-[999] border border-white/20" style={{ minWidth: '140px', maxWidth: '160px', marginTop: '32px' }}>
+            {/* Wind Info Panel - Aligned with checklist on left side */}
+          <div className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-black/40 backdrop-blur-md rounded-lg p-2.5 sm:p-3 shadow-lg z-[999] border border-white/20" style={{ minWidth: '140px', maxWidth: '160px' }}>
               <div className="text-xs font-semibold text-white mb-1 flex items-center gap-2">
                 <Navigation className="w-4 h-4 text-white" style={{ transform: `rotate(${windData.direction}deg)` }} />
                 Wind Conditions

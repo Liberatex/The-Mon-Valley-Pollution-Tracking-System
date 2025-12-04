@@ -140,7 +140,23 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
     });
 
     // Add navigation controls (including 3D tilt/rotation)
-    map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+    // Positioned below wind conditions and legend to avoid blocking
+    const navControl = new mapboxgl.NavigationControl();
+    map.current.addControl(navControl, 'top-right');
+    
+    // Adjust zoom controls position via CSS to be below wind/legend panels
+    // Wait for map to fully load before adjusting
+    map.current.on('load', () => {
+      setTimeout(() => {
+        const navElement = map.current?.getContainer().querySelector('.mapboxgl-ctrl-top-right');
+        if (navElement) {
+          const isMobile = window.innerWidth < 640;
+          (navElement as HTMLElement).style.top = isMobile ? '100px' : '120px'; // Below wind conditions and legend
+          (navElement as HTMLElement).style.right = '8px';
+          (navElement as HTMLElement).style.transition = 'top 0.3s ease';
+        }
+      }, 200);
+    });
 
     // Cleanup
     return () => {
@@ -2857,7 +2873,7 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
 
         {/* Map Legend */}
         {showLegend && (
-          <div className="absolute top-20 right-2 sm:top-24 sm:right-4 bg-white rounded-lg shadow-xl p-3 sm:p-4 z-[1000] max-w-[calc(100vw-20px)] sm:max-w-xs border border-gray-200">
+          <div className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-white rounded-lg shadow-xl p-3 sm:p-4 z-[1000] max-w-[calc(100vw-20px)] sm:max-w-xs border border-gray-200" style={{ maxWidth: '280px' }}>
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-bold text-sm flex items-center gap-2">
                 <Info className="w-4 h-4" />
@@ -3034,11 +3050,21 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
               </div>
             )}
 
-        {/* Show Legend Button (when hidden) */}
-        {!showLegend && (
+        {/* Show Legend Button (when hidden) - positioned to left of wind conditions */}
+        {!showLegend && windData && (
           <button
             onClick={() => setShowLegend(true)}
-            className="absolute top-20 right-2 sm:top-24 sm:right-4 bg-white rounded-lg shadow-lg p-2 z-[1000] border border-gray-200 hover:bg-gray-50 transition-colors"
+            className="absolute top-2 right-[calc(100%-140px)] sm:top-4 sm:right-[calc(100%-160px)] bg-white rounded-lg shadow-lg p-2 z-[1000] border border-gray-200 hover:bg-gray-50 transition-colors"
+            title="Show Legend"
+          >
+            <Info className="w-5 h-5 text-gray-600" />
+          </button>
+        )}
+        {/* Show Legend Button (when hidden and no wind data) */}
+        {!showLegend && !windData && (
+          <button
+            onClick={() => setShowLegend(true)}
+            className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-white rounded-lg shadow-lg p-2 z-[1000] border border-gray-200 hover:bg-gray-50 transition-colors"
             title="Show Legend"
           >
             <Info className="w-5 h-5 text-gray-600" />
@@ -3048,8 +3074,8 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
         {/* Wind Visualization on Map */}
         {windData && map.current && (
           <>
-            {/* Wind Info Panel */}
-          <div className="absolute top-20 right-2 sm:top-24 sm:right-4 bg-black/40 backdrop-blur-md rounded-lg p-3 shadow-lg z-10 border border-white/20">
+            {/* Wind Info Panel - Top right, with legend button positioned to its left */}
+          <div className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-black/40 backdrop-blur-md rounded-lg p-3 shadow-lg z-[999] border border-white/20" style={{ minWidth: '140px' }}>
               <div className="text-xs font-semibold text-white mb-1 flex items-center gap-2">
                 <Navigation className="w-4 h-4 text-white" style={{ transform: `rotate(${windData.direction}deg)` }} />
                 Wind Conditions

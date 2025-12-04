@@ -20,6 +20,7 @@ import { getVCANDistributionLocations, VCANDistributionLocation } from '../servi
 import { getAuth } from 'firebase/auth';
 import * as turf from '@turf/turf';
 import { Info, AlertCircle, MapPin, Factory, Activity, Navigation, X, AlertTriangle, Heart } from 'lucide-react';
+import MapShareButton from './MapShareButton';
 
 // Mapbox access token from environment variable
 const MAPBOX_TOKEN = env.MAPBOX_ACCESS_TOKEN || '';
@@ -84,7 +85,7 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
   const [riskZones, setRiskZones] = useState<RiskZone[]>([]);
   const [showSmellReports, setShowSmellReports] = useState(true);
   const [showRiskZones, setShowRiskZones] = useState(true);
-  const [showVCANDistribution, setShowVCANDistribution] = useState(true);
+  const [showVCANDistribution, setShowVCANDistribution] = useState(false);
   const [vcanLocations, setVcanLocations] = useState<VCANDistributionLocation[]>([]);
   const [hiddenRiskZones, setHiddenRiskZones] = useState<Set<string>>(new Set()); // Track clicked/hidden zones
   const [facilityCompliance, setFacilityCompliance] = useState<any>(null);
@@ -2338,11 +2339,17 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
   useEffect(() => {
     if (!map.current) return;
     
-    if (!showVCANDistribution || vcanLocations.length === 0) {
-      // Hide layer if disabled or no locations
+    // Don't load layer if checkbox is not checked OR if locations haven't loaded yet
+    if (!showVCANDistribution) {
+      // Hide layer if disabled
       if (map.current.getLayer('vcan-distribution')) {
         map.current.setLayoutProperty('vcan-distribution', 'visibility', 'none');
       }
+      return;
+    }
+    
+    // Wait for locations to load before showing layer
+    if (vcanLocations.length === 0) {
       return;
     }
 
@@ -2838,6 +2845,11 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
                 <span className="ml-0.5 sm:ml-1">({vcanLocations.length > 0 ? vcanLocations.length : '0'})</span>
               </span>
             </label>
+            
+            {/* Share Button */}
+            <div className="mt-2 sm:mt-0 sm:ml-2">
+              <MapShareButton />
+            </div>
           </div>
         </div>
 

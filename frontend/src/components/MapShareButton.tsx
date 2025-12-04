@@ -13,7 +13,7 @@ interface MapShareButtonProps {
 }
 
 const MapShareButton: React.FC<MapShareButtonProps> = ({
-  mapUrl = typeof window !== 'undefined' ? window.location.href : '',
+  mapUrl,
   mapTitle = 'Mon Valley Pollution Tracking System - Interactive Air Quality Map',
   mapDescription = 'Real-time air quality monitoring and pollution tracking for the Mon Valley region. View PurpleAir sensors, Title V facilities, risk zones, and more.',
 }) => {
@@ -36,7 +36,12 @@ const MapShareButton: React.FC<MapShareButtonProps> = ({
     }
   }, [showMenu]);
 
-  const encodedUrl = encodeURIComponent(mapUrl);
+  // Compute share URL - use provided mapUrl or default to current URL with #map hash
+  const shareUrl = mapUrl || (typeof window !== 'undefined' 
+    ? `${window.location.origin}${window.location.pathname}#map` 
+    : '');
+
+  const encodedUrl = encodeURIComponent(shareUrl);
   const encodedTitle = encodeURIComponent(mapTitle);
   const encodedDescription = encodeURIComponent(mapDescription);
 
@@ -45,13 +50,13 @@ const MapShareButton: React.FC<MapShareButtonProps> = ({
     twitter: `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}`,
     facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
     instagram: `https://www.instagram.com/`, // Instagram doesn't support direct URL sharing, will copy link instead
-    email: `mailto:?subject=${encodedTitle}&body=${encodedDescription}%0A%0A${mapUrl}`,
+    email: `mailto:?subject=${encodedTitle}&body=${encodedDescription}%0A%0A${shareUrl}`,
   };
 
   const handleShare = (platform: 'twitter' | 'facebook' | 'instagram' | 'email' | 'embed') => {
     if (platform === 'instagram') {
       // Instagram doesn't support direct URL sharing, so copy link to clipboard
-      navigator.clipboard.writeText(mapUrl).then(() => {
+      navigator.clipboard.writeText(shareUrl).then(() => {
         // Show a subtle notification (you can replace with a toast library if preferred)
         const notification = document.createElement('div');
         notification.textContent = 'Link copied! Paste it into your Instagram post.';
@@ -64,14 +69,14 @@ const MapShareButton: React.FC<MapShareButtonProps> = ({
         }, 3000);
         setShowMenu(false);
       }).catch(() => {
-        alert('Failed to copy link. Please copy manually: ' + mapUrl);
+        alert('Failed to copy link. Please copy manually: ' + shareUrl);
       });
       return;
     }
 
     if (platform === 'embed') {
       // Copy embed code to clipboard
-      const embedCode = `<iframe src="${mapUrl}" width="100%" height="600" frameborder="0" allowfullscreen></iframe>`;
+      const embedCode = `<iframe src="${shareUrl}" width="100%" height="600" frameborder="0" allowfullscreen></iframe>`;
       navigator.clipboard.writeText(embedCode).then(() => {
         // Show a subtle notification
         const notification = document.createElement('div');
@@ -91,9 +96,9 @@ const MapShareButton: React.FC<MapShareButtonProps> = ({
     }
 
     // Open sharing window
-    const shareUrl = shareLinks[platform];
-    if (shareUrl) {
-      window.open(shareUrl, '_blank', 'width=600,height=400,scrollbars=yes,resizable=yes');
+    const shareLinkUrl = shareLinks[platform];
+    if (shareLinkUrl) {
+      window.open(shareLinkUrl, '_blank', 'width=600,height=400,scrollbars=yes,resizable=yes');
       setShowMenu(false);
     }
   };
@@ -105,7 +110,7 @@ const MapShareButton: React.FC<MapShareButtonProps> = ({
         await navigator.share({
           title: mapTitle,
           text: mapDescription,
-          url: mapUrl,
+          url: shareUrl,
         });
         setShowMenu(false);
       } catch (err) {

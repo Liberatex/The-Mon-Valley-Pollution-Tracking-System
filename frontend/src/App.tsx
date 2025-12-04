@@ -10,8 +10,43 @@ import { FloatingChatBubble } from './components/FloatingChatBubble';
 type View = 'home' | 'map' | 'symptoms' | 'ai' | 'exposure'; // 'dashboard' removed for now (kept in codebase for future use)
 
 function App() {
-  const [currentView, setCurrentView] = useState<View>('home');
+  // Initialize view from URL hash, default to 'home'
+  const getInitialView = (): View => {
+    const hash = window.location.hash.slice(1); // Remove '#'
+    const validViews: View[] = ['home', 'map', 'symptoms', 'ai', 'exposure'];
+    return validViews.includes(hash as View) ? (hash as View) : 'home';
+  };
+
+  const [currentView, setCurrentView] = useState<View>(getInitialView());
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Sync URL hash with current view
+  useEffect(() => {
+    if (currentView === 'home') {
+      // Remove hash for home page
+      if (window.location.hash) {
+        window.history.replaceState(null, '', window.location.pathname);
+      }
+    } else {
+      // Set hash for other views
+      if (window.location.hash !== `#${currentView}`) {
+        window.history.replaceState(null, '', `#${currentView}`);
+      }
+    }
+  }, [currentView]);
+
+  // Listen for hash changes (back/forward browser buttons)
+  useEffect(() => {
+    const handleHashChange = () => {
+      const newView = getInitialView();
+      if (newView !== currentView) {
+        setCurrentView(newView);
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [currentView]);
 
   // Close mobile menu when switching views
   useEffect(() => {

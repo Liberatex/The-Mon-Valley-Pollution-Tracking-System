@@ -2848,7 +2848,9 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
             
             {/* Share Button */}
             <div className="mt-2 sm:mt-0 sm:ml-2">
-              <MapShareButton />
+              <MapShareButton 
+                mapUrl={typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}#map` : ''}
+              />
             </div>
           </div>
         </div>

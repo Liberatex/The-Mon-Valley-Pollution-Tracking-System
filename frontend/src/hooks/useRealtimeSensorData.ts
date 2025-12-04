@@ -36,7 +36,7 @@ export function useRealtimeSensorData(intervalMs: number = 300000) {
 
     try {
       const response = await axios.get(`${baseUrl}/fetchPurpleAirSensorData`, {
-        timeout: 20000,
+        timeout: 45000, // Increased to 45 seconds to handle cold starts and cache operations
         headers: { 'Content-Type': 'application/json' },
       });
 

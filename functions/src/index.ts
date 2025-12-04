@@ -1371,7 +1371,8 @@ export const fetchPurpleAirSensorData = functions.https.onRequest((req, res) => 
 
       console.log(`Mapped ${validSensors.length} valid PurpleAir sensors`);
 
-      // Cache the results in Firestore (await to ensure it completes)
+      // Cache the results in Firestore (don't await to avoid delaying response)
+      // Cache write happens in background - next request will benefit
       const cacheData = {
         sensors: validSensors,
         source: 'PurpleAir API',
@@ -1379,27 +1380,15 @@ export const fetchPurpleAirSensorData = functions.https.onRequest((req, res) => 
         count: validSensors.length,
       };
       
-      try {
-        await cacheDocRef.set(cacheData, { merge: false });
-        console.log(`✅ Successfully cached ${validSensors.length} sensors in Firestore at sensor_cache/purpleair_sensors (timestamp: ${cacheData.timestamp})`);
-        
-        // Verify cache was written by reading it back
-        const verifyDoc = await cacheDocRef.get();
-        if (verifyDoc.exists) {
-          const verifyData = verifyDoc.data();
-          console.log(`✅ Cache verification: Found ${verifyData?.sensors?.length || 0} sensors in cache`);
-        } else {
-          console.warn('⚠️ Cache verification failed: Document does not exist after write');
-        }
-      } catch (cacheError: any) {
-        console.error('❌ Failed to cache sensor data:', {
-          message: cacheError.message,
-          code: cacheError.code,
-          details: cacheError.details || 'No details',
-          stack: cacheError.stack?.substring(0, 300)
+      // Write cache in background (don't await to avoid timeout)
+      cacheDocRef.set(cacheData, { merge: false })
+        .then(() => {
+          console.log(`✅ Successfully cached ${validSensors.length} sensors in Firestore`);
+        })
+        .catch((cacheError: any) => {
+          console.error('❌ Failed to cache sensor data:', cacheError.message);
+          // Cache failure doesn't affect API response
         });
-        // Continue even if caching fails - API still works without cache
-      }
 
       return res.json({
         success: true,

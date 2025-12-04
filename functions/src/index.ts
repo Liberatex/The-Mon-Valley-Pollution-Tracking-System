@@ -1156,29 +1156,40 @@ export const fetchPurpleAirSensorData = functions.https.onRequest((req, res) => 
       // Check cache first (10 minute TTL)
       const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
       const cacheDocRef = admin.firestore().collection('sensor_cache').doc('purpleair_sensors');
-      const cacheDoc = await cacheDocRef.get();
       
-      if (cacheDoc.exists) {
-        const cacheData = cacheDoc.data();
-        const cacheAge = Date.now() - (cacheData?.timestamp || 0);
+      try {
+        const cacheDoc = await cacheDocRef.get();
+        console.log('🔍 Cache check: exists=', cacheDoc.exists);
         
-        if (cacheAge < CACHE_TTL_MS && cacheData?.sensors) {
-          console.log(`✅ Returning cached sensor data (age: ${Math.round(cacheAge / 1000)}s, TTL: ${CACHE_TTL_MS / 1000}s)`);
-          return res.json({
-            success: true,
-            data: cacheData.sensors,
-            count: cacheData.sensors.length,
-            source: cacheData.source || 'PurpleAir API (Cached)',
-            lastUpdated: new Date(cacheData.timestamp).toISOString(),
-            cached: true,
-            cacheAgeSeconds: Math.round(cacheAge / 1000),
-            note: 'Using cached data to reduce API point usage. Data is refreshed every 10 minutes.',
-          });
+        if (cacheDoc.exists) {
+          const cacheData = cacheDoc.data();
+          const cacheAge = Date.now() - (cacheData?.timestamp || 0);
+          console.log(`📊 Cache data: age=${Math.round(cacheAge / 1000)}s, hasSensors=${!!cacheData?.sensors}, sensorCount=${cacheData?.sensors?.length || 0}`);
+          
+          if (cacheAge < CACHE_TTL_MS && cacheData?.sensors && Array.isArray(cacheData.sensors) && cacheData.sensors.length > 0) {
+            console.log(`✅ Returning cached sensor data (age: ${Math.round(cacheAge / 1000)}s, TTL: ${CACHE_TTL_MS / 1000}s, count: ${cacheData.sensors.length})`);
+            return res.json({
+              success: true,
+              data: cacheData.sensors,
+              count: cacheData.sensors.length,
+              source: cacheData.source || 'PurpleAir API (Cached)',
+              lastUpdated: new Date(cacheData.timestamp).toISOString(),
+              cached: true,
+              cacheAgeSeconds: Math.round(cacheAge / 1000),
+              note: 'Using cached data to reduce API point usage. Data is refreshed every 10 minutes.',
+            });
+          } else {
+            console.log(`⏰ Cache expired or invalid (age: ${Math.round(cacheAge / 1000)}s, valid: ${cacheAge < CACHE_TTL_MS}, hasData: ${!!cacheData?.sensors}), fetching fresh data...`);
+          }
         } else {
-          console.log(`⏰ Cache expired (age: ${Math.round(cacheAge / 1000)}s), fetching fresh data...`);
+          console.log('📦 No cache found, fetching fresh data...');
         }
-      } else {
-        console.log('📦 No cache found, fetching fresh data...');
+      } catch (cacheReadError: any) {
+        console.error('❌ Error reading cache:', {
+          message: cacheReadError.message,
+          code: cacheReadError.code
+        });
+        // Continue to fetch fresh data if cache read fails
       }
       
       // Get API key from environment (Firebase secrets are automatically injected as env vars)
@@ -1284,15 +1295,19 @@ export const fetchPurpleAirSensorData = functions.https.onRequest((req, res) => 
                 
                 // Cache the fallback results too
                 try {
-                  await cacheDocRef.set({
+                  const cacheData = {
                     sensors: validSensors,
                     source: 'PurpleAir (Public Map)',
                     timestamp: Date.now(),
                     count: validSensors.length,
-                  }, { merge: false });
-                  console.log('✅ Cached fallback sensor data in Firestore');
+                  };
+                  await cacheDocRef.set(cacheData, { merge: false });
+                  console.log(`✅ Cached ${validSensors.length} fallback sensors in Firestore (timestamp: ${cacheData.timestamp})`);
                 } catch (cacheError: any) {
-                  console.warn('⚠️ Failed to cache fallback data:', cacheError.message);
+                  console.error('❌ Failed to cache fallback data:', {
+                    message: cacheError.message,
+                    code: cacheError.code
+                  });
                 }
                 
                 return res.json({
@@ -1356,18 +1371,24 @@ export const fetchPurpleAirSensorData = functions.https.onRequest((req, res) => 
 
       console.log(`Mapped ${validSensors.length} valid PurpleAir sensors`);
 
-      // Cache the results in Firestore
+      // Cache the results in Firestore (await to ensure it completes)
       try {
-        await cacheDocRef.set({
+        const cacheData = {
           sensors: validSensors,
           source: 'PurpleAir API',
           timestamp: Date.now(),
           count: validSensors.length,
-        }, { merge: false });
-        console.log('✅ Cached sensor data in Firestore');
+        };
+        
+        await cacheDocRef.set(cacheData, { merge: false });
+        console.log(`✅ Successfully cached ${validSensors.length} sensors in Firestore at sensor_cache/purpleair_sensors (timestamp: ${cacheData.timestamp})`);
       } catch (cacheError: any) {
-        console.warn('⚠️ Failed to cache sensor data:', cacheError.message);
-        // Continue even if caching fails
+        console.error('❌ Failed to cache sensor data:', {
+          message: cacheError.message,
+          code: cacheError.code,
+          stack: cacheError.stack?.substring(0, 300)
+        });
+        // Continue even if caching fails - API still works without cache
       }
 
       return res.json({

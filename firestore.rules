@@ -132,6 +132,12 @@ service cloud.firestore {
     // ANALYTICS & AGGREGATED DATA (NO PHI)
     // ===================================================================
     
+    // Sensor cache - public read, backend write only (for API optimization)
+    match /sensor_cache/{cacheId} {
+      allow read: if true; // Public read for cached sensor data
+      allow write: if false; // Only backend (admin SDK) can write
+    }
+    
     // Symptom report aggregates - aggregated data only (no PHI)
     match /symptomReportAggregates/{aggregateId} {
       allow read: if isAdmin() || isAuthenticated(); // Analysts can read aggregates

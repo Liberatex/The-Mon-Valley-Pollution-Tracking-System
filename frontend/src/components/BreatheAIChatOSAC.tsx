@@ -70,7 +70,8 @@ export const BreatheAIChatOSAC: React.FC<BreatheAIChatOSACProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Get real-time sensor data for correlation
-  const { sensors } = useRealtimeSensorData(60000);
+  // Use same 5-minute polling as map to reduce API calls (was 60s, now 300s)
+  const { sensors } = useRealtimeSensorData(300000);
 
   const scrollToBottom = () => {
     if (

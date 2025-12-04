@@ -1153,8 +1153,8 @@ export const getACHDHistoricalData = functions.https.onRequest(async (req, res) 
 export const fetchPurpleAirSensorData = functions.https.onRequest((req, res) => {
   return corsHandler(req, res, async () => {
     try {
-      // Check cache first (10 minute TTL)
-      const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+      // Check cache first (30 minute TTL - dramatically increased to reduce API calls)
+      const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes (was 10 minutes)
       const cacheDocRef = admin.firestore().collection('sensor_cache').doc('purpleair_sensors');
       
       try {
@@ -1176,7 +1176,7 @@ export const fetchPurpleAirSensorData = functions.https.onRequest((req, res) => 
               lastUpdated: new Date(cacheData.timestamp).toISOString(),
               cached: true,
               cacheAgeSeconds: Math.round(cacheAge / 1000),
-              note: 'Using cached data to reduce API point usage. Data is refreshed every 10 minutes.',
+              note: 'Using cached data to reduce API point usage. Data is refreshed every 30 minutes.',
             });
           } else {
             console.log(`⏰ Cache expired or invalid (age: ${Math.round(cacheAge / 1000)}s, valid: ${cacheAge < CACHE_TTL_MS}, hasData: ${!!cacheData?.sensors}), fetching fresh data...`);

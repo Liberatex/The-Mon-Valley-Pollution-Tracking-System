@@ -21,9 +21,9 @@ export interface SensorData {
   timestamp: Date;
 }
 
-// Reduced polling interval from 60s to 5 minutes (300000ms) to save API points
-// Backend caches for 10 minutes, so this still provides fresh data
-export function useRealtimeSensorData(intervalMs: number = 300000) {
+// Reduced polling interval from 60s to 15 minutes (900000ms) to dramatically reduce API calls
+// Backend caches for 30 minutes, so this still provides fresh data while minimizing costs
+export function useRealtimeSensorData(intervalMs: number = 900000) {
   const [sensors, setSensors] = useState<SensorData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

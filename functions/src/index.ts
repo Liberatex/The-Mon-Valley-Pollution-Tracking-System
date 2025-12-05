@@ -1531,11 +1531,37 @@ export const fetchPurpleAirSensorData = functions.https.onRequest((req, res) => 
           console.error('WPRDC fallback error:', wprdcError.message);
         }
         
+        // LAST RESORT: Check for ANY cached data (even very old) before giving up
+        try {
+          const cacheDoc = await cacheDocRef.get();
+          if (cacheDoc.exists) {
+            const cacheData = cacheDoc.data();
+            if (cacheData?.sensors && Array.isArray(cacheData.sensors) && cacheData.sensors.length > 0) {
+              const cacheAge = Date.now() - (cacheData.timestamp || 0);
+              const cacheAgeHours = Math.round(cacheAge / (1000 * 60 * 60));
+              const cacheAgeDays = Math.round(cacheAgeHours / 24);
+              console.log(`✅ Using cached sensor data as LAST RESORT fallback (age: ${cacheAgeDays}d, count: ${cacheData.sensors.length})`);
+              return res.json({
+                success: true,
+                data: cacheData.sensors,
+                count: cacheData.sensors.length,
+                source: cacheData.source || 'PurpleAir API (Cached - Last Resort)',
+                lastUpdated: new Date(cacheData.timestamp).toISOString(),
+                cached: true,
+                cacheAgeDays: cacheAgeDays,
+                note: `Using cached data as last resort (${cacheAgeDays} days old). API credits expired and all fallbacks failed. Please add credits to refresh data.`,
+              });
+            }
+          }
+        } catch (lastResortCacheError: any) {
+          console.error('Error reading cache for last resort:', lastResortCacheError.message);
+        }
+        
         // If all fallbacks fail, return error (no mock data)
-        console.error('All fallback data sources failed. Returning 402 error.');
+        console.error('All fallback data sources failed. No cached data available. Returning 402 error.');
         return res.status(402).json({
           success: false,
-          error: 'PurpleAir API subscription required. The API key is valid but the account needs credits. Please add credits to your PurpleAir account at https://www2.purpleair.com. Alternative data sources (OpenAQ, WPRDC) also unavailable or have no valid PM2.5 readings.',
+          error: 'PurpleAir API subscription required. The API key is valid but the account needs credits. Please add credits to your PurpleAir account at https://www2.purpleair.com. Alternative data sources (OpenAQ, WPRDC) also unavailable or have no valid PM2.5 readings. No cached data available.',
           message: error.message,
           statusCode: 402,
           data: [],

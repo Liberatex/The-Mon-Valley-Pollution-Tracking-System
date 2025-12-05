@@ -1245,11 +1245,37 @@ export const fetchPurpleAirSensorData = functions.https.onRequest((req, res) => 
         fields = responseData.fields || [];
         console.log(`PurpleAir API returned ${data.length} sensors`);
       } catch (apiError: any) {
-        // If API key fails due to credits (402), try public JSON endpoint as fallback
+        // If API key fails due to credits (402), try fallbacks including expired cache
         if (apiError.response?.status === 402) {
           console.warn('PurpleAir API requires credits (402). Attempting fallback data sources...');
           
-          // Try PurpleAir public map endpoint (different URL)
+          // FIRST: Check for cached data (even if expired) as fallback
+          try {
+            const cacheDoc = await cacheDocRef.get();
+            if (cacheDoc.exists) {
+              const cacheData = cacheDoc.data();
+              if (cacheData?.sensors && Array.isArray(cacheData.sensors) && cacheData.sensors.length > 0) {
+                const cacheAge = Date.now() - (cacheData.timestamp || 0);
+                const cacheAgeHours = Math.round(cacheAge / (1000 * 60 * 60));
+                console.log(`✅ Using cached sensor data as fallback (age: ${cacheAgeHours}h, count: ${cacheData.sensors.length})`);
+                return res.json({
+                  success: true,
+                  data: cacheData.sensors,
+                  count: cacheData.sensors.length,
+                  source: cacheData.source || 'PurpleAir API (Cached Fallback)',
+                  lastUpdated: new Date(cacheData.timestamp).toISOString(),
+                  cached: true,
+                  cacheAgeHours: cacheAgeHours,
+                  note: `Using cached data as fallback (${cacheAgeHours}h old). API credits expired. Please add credits to refresh data.`,
+                });
+              }
+            }
+          } catch (cacheFallbackError: any) {
+            console.error('Error reading cache for fallback:', cacheFallbackError.message);
+            // Continue to other fallbacks
+          }
+          
+          // SECOND: Try PurpleAir public map endpoint (different URL)
           try {
             const publicResponse = await axios.get('https://map.purpleair.com/json', {
         timeout: 15000,

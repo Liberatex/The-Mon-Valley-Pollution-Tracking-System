@@ -2791,7 +2791,7 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
                 <span className="hidden sm:inline">PurpleAir Sensors</span>
                 <span className="sm:hidden">Sensors</span>
                 <span className="ml-0.5 sm:ml-1">({sensors.length})</span>
-              </span>
+            </span>
           </label>
             <label className="flex items-center gap-1 sm:gap-1.5 cursor-pointer px-1.5 py-1 sm:px-2 sm:py-1.5 rounded-md hover:bg-white/20 transition-colors text-xs sm:text-sm text-white">
             <input
@@ -2805,7 +2805,7 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
                 <span className="hidden sm:inline">Title V Facilities</span>
                 <span className="sm:hidden">Facilities</span>
                 <span className="ml-0.5 sm:ml-1">({facilities.length})</span>
-              </span>
+            </span>
           </label>
             <label className="flex items-center gap-1 sm:gap-1.5 cursor-pointer px-1.5 py-1 sm:px-2 sm:py-1.5 rounded-md hover:bg-white/20 transition-colors text-xs sm:text-sm text-white">
             <input
@@ -2818,7 +2818,7 @@ const SensorMapMapbox: React.FC<SensorMapMapboxProps> = ({ sensors: propSensors,
                 <Navigation className="inline w-3 h-3 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />
                 <span className="hidden sm:inline">My Location</span>
                 <span className="sm:hidden">Location</span>
-              </span>
+            </span>
           </label>
             <label className="flex items-center gap-1 sm:gap-1.5 cursor-pointer px-1.5 py-1 sm:px-2 sm:py-1.5 rounded-md hover:bg-white/20 transition-colors text-xs sm:text-sm text-white">
               <input

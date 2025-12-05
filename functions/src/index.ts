@@ -1251,13 +1251,19 @@ export const fetchPurpleAirSensorData = functions.https.onRequest((req, res) => 
           
           // FIRST: Check for cached data (even if expired) as fallback
           try {
+            console.log('🔍 Checking Firestore cache for fallback data...');
             const cacheDoc = await cacheDocRef.get();
+            console.log(`📦 Cache document exists: ${cacheDoc.exists}`);
+            
             if (cacheDoc.exists) {
               const cacheData = cacheDoc.data();
+              console.log(`📊 Cache data check: hasSensors=${!!cacheData?.sensors}, isArray=${Array.isArray(cacheData?.sensors)}, count=${cacheData?.sensors?.length || 0}`);
+              
               if (cacheData?.sensors && Array.isArray(cacheData.sensors) && cacheData.sensors.length > 0) {
                 const cacheAge = Date.now() - (cacheData.timestamp || 0);
                 const cacheAgeHours = Math.round(cacheAge / (1000 * 60 * 60));
-                console.log(`✅ Using cached sensor data as fallback (age: ${cacheAgeHours}h, count: ${cacheData.sensors.length})`);
+                const cacheAgeDays = Math.round(cacheAgeHours / 24);
+                console.log(`✅ Using cached sensor data as fallback (age: ${cacheAgeHours}h / ${cacheAgeDays}d, count: ${cacheData.sensors.length})`);
                 return res.json({
                   success: true,
                   data: cacheData.sensors,
@@ -1266,12 +1272,21 @@ export const fetchPurpleAirSensorData = functions.https.onRequest((req, res) => 
                   lastUpdated: new Date(cacheData.timestamp).toISOString(),
                   cached: true,
                   cacheAgeHours: cacheAgeHours,
-                  note: `Using cached data as fallback (${cacheAgeHours}h old). API credits expired. Please add credits to refresh data.`,
+                  cacheAgeDays: cacheAgeDays,
+                  note: `Using cached data as fallback (${cacheAgeDays > 0 ? cacheAgeDays + ' days' : cacheAgeHours + ' hours'} old). API credits expired. Please add credits to refresh data.`,
                 });
+              } else {
+                console.warn('⚠️ Cache exists but has no valid sensor data');
               }
+            } else {
+              console.warn('⚠️ No cache document found in Firestore');
             }
           } catch (cacheFallbackError: any) {
-            console.error('Error reading cache for fallback:', cacheFallbackError.message);
+            console.error('❌ Error reading cache for fallback:', {
+              message: cacheFallbackError.message,
+              code: cacheFallbackError.code,
+              stack: cacheFallbackError.stack
+            });
             // Continue to other fallbacks
           }
           

@@ -45,8 +45,24 @@ export function useRealtimeSensorData(intervalMs: number = 900000) {
         hasData: !!response.data?.data,
         dataLength: response.data?.data?.length || 0,
         count: response.data?.count,
+        cached: response.data?.cached,
+        cacheAgeHours: response.data?.cacheAgeHours,
+        cacheAgeDays: response.data?.cacheAgeDays,
+        source: response.data?.source,
+        note: response.data?.note,
         message: response.data?.message,
       });
+      
+      // Log cache status prominently if using cached data
+      if (response.data?.cached) {
+        const age = response.data.cacheAgeHours 
+          ? `${response.data.cacheAgeHours} hours`
+          : response.data.cacheAgeDays 
+          ? `${response.data.cacheAgeDays} days`
+          : 'unknown';
+        console.log(`✅ Using CACHED sensor data (${age} old) - Source: ${response.data.source}`);
+        console.log(`📝 Note: ${response.data.note || 'Using cached data as fallback'}`);
+      }
 
       if (response.data?.success && response.data.data) {
         const calibratedSensors: SensorData[] = response.data.data

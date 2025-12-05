@@ -1533,7 +1533,8 @@ export const fetchPurpleAirSensorData = functions.https.onRequest((req, res) => 
         
         // LAST RESORT: Check for ANY cached data (even very old) before giving up
         try {
-          const cacheDoc = await cacheDocRef.get();
+          const lastResortCacheRef = admin.firestore().collection('sensor_cache').doc('purpleair_sensors');
+          const cacheDoc = await lastResortCacheRef.get();
           if (cacheDoc.exists) {
             const cacheData = cacheDoc.data();
             if (cacheData?.sensors && Array.isArray(cacheData.sensors) && cacheData.sensors.length > 0) {

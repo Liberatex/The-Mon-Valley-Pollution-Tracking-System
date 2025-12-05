@@ -81,8 +81,10 @@ export function useRealtimeSensorData(intervalMs: number = 900000) {
               pm25: calibrated.correctedPM,
               humidity: s.humidity,
               temperature: s.temperature,
-              source: 'PurpleAir',
-              timestamp: new Date(),
+              source: response.data?.cached ? (response.data.source || 'PurpleAir (Cached)') : (s.source || 'PurpleAir'),
+              timestamp: response.data?.cached && response.data?.lastUpdated 
+                ? new Date(response.data.lastUpdated) 
+                : new Date(),
             };
           })
           .filter((s: SensorData) => s.location.lat !== 0 && s.location.lng !== 0);

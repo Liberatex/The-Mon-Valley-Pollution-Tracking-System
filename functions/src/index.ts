@@ -1423,12 +1423,23 @@ export const fetchPurpleAirSensorData = functions.https.onRequest((req, res) => 
       };
       
       try {
+        console.log(`💾 Attempting to write cache to Firestore: ${validSensors.length} sensors, timestamp: ${cacheData.timestamp}`);
         await cacheDocRef.set(cacheData, { merge: false });
         console.log(`✅ Successfully cached ${validSensors.length} sensors in Firestore (timestamp: ${cacheData.timestamp})`);
+        
+        // Verify cache was written by reading it back
+        const verifyCache = await cacheDocRef.get();
+        if (verifyCache.exists) {
+          const verifyData = verifyCache.data();
+          console.log(`✅ Cache verification: Document exists with ${verifyData?.sensors?.length || 0} sensors`);
+        } else {
+          console.error('❌ Cache verification failed: Document does not exist after write');
+        }
       } catch (cacheError: any) {
         console.error('❌ Failed to cache sensor data:', {
           message: cacheError.message,
-          code: cacheError.code
+          code: cacheError.code,
+          stack: cacheError.stack
         });
         // Cache failure doesn't affect API response, but log it for debugging
       }

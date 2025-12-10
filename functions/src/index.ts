@@ -1411,6 +1411,7 @@ export const fetchPurpleAirSensorData = functions.https.onRequest((req, res) => 
       );
 
       console.log(`Mapped ${validSensors.length} valid PurpleAir sensors`);
+      console.log(`📝 About to write cache - validSensors.length: ${validSensors.length}, cacheDocRef path: sensor_cache/purpleair_sensors`);
 
       // Cache the results in Firestore
       // IMPORTANT: We await the cache write to ensure it completes before responding
@@ -1421,6 +1422,8 @@ export const fetchPurpleAirSensorData = functions.https.onRequest((req, res) => 
         timestamp: Date.now(),
         count: validSensors.length,
       };
+      
+      console.log(`💾 Cache data prepared: ${cacheData.count} sensors, timestamp: ${cacheData.timestamp}, source: ${cacheData.source}`);
       
       try {
         console.log(`💾 Attempting to write cache to Firestore: ${validSensors.length} sensors, timestamp: ${cacheData.timestamp}`);

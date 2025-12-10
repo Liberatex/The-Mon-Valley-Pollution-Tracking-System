@@ -1412,8 +1412,9 @@ export const fetchPurpleAirSensorData = functions.https.onRequest((req, res) => 
 
       console.log(`Mapped ${validSensors.length} valid PurpleAir sensors`);
 
-      // Cache the results in Firestore (don't await to avoid delaying response)
-      // Cache write happens in background - next request will benefit
+      // Cache the results in Firestore
+      // IMPORTANT: We await the cache write to ensure it completes before responding
+      // This ensures the next request will definitely use the cache
       const cacheData = {
         sensors: validSensors,
         source: 'PurpleAir API',
@@ -1421,15 +1422,16 @@ export const fetchPurpleAirSensorData = functions.https.onRequest((req, res) => 
         count: validSensors.length,
       };
       
-      // Write cache in background (don't await to avoid timeout)
-      cacheDocRef.set(cacheData, { merge: false })
-        .then(() => {
-          console.log(`✅ Successfully cached ${validSensors.length} sensors in Firestore`);
-        })
-        .catch((cacheError: any) => {
-          console.error('❌ Failed to cache sensor data:', cacheError.message);
-          // Cache failure doesn't affect API response
+      try {
+        await cacheDocRef.set(cacheData, { merge: false });
+        console.log(`✅ Successfully cached ${validSensors.length} sensors in Firestore (timestamp: ${cacheData.timestamp})`);
+      } catch (cacheError: any) {
+        console.error('❌ Failed to cache sensor data:', {
+          message: cacheError.message,
+          code: cacheError.code
         });
+        // Cache failure doesn't affect API response, but log it for debugging
+      }
 
       return res.json({
         success: true,

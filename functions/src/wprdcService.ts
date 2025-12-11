@@ -82,8 +82,7 @@ export async function fetchACHDWPRDC(): Promise<{
         success: false,
         data: [],
         source: 'WPRDC CKAN DataStore',
-        lastUpdated: new Date().toISOString(),
-        message: 'No PM25 data available'
+        lastUpdated: new Date().toISOString()
       };
     }
     
@@ -111,8 +110,7 @@ export async function fetchACHDWPRDC(): Promise<{
         success: false,
         data: [],
         source: 'WPRDC CKAN DataStore',
-        lastUpdated: new Date().toISOString(),
-        message: 'No valid PM25 readings found'
+        lastUpdated: new Date().toISOString()
       };
     }
     
@@ -135,77 +133,7 @@ export async function fetchACHDWPRDC(): Promise<{
       lastUpdated: new Date().toISOString()
     };
     
-    // Legacy code below (not reached, but kept for reference)
-    const timestamp = new Date().toISOString();
-    
-    // Get SO2 and Ozone for same time period
-    let so2Value: number | undefined;
-    let ozoneValue: number | undefined;
-    
-    try {
-      const so2Resp = await axios.get(`${baseUrl}`, {
-        params: {
-          resource_id: resourceId,
-          filters: JSON.stringify({
-            site: 'Liberty',
-            parameter: 'SO2',
-            datetime_est: timestamp
-          }),
-          limit: 1
-        },
-        timeout: 5000
-      });
-      
-      const so2Data = so2Resp.data as any;
-      if (so2Data.success && so2Data.result?.records && so2Data.result.records.length > 0) {
-        so2Value = parseFloat(so2Data.result.records[0].report_value);
-      }
-    } catch (err) {
-      // SO2 not critical
-    }
-    
-    try {
-      const ozoneResp = await axios.get(`${baseUrl}`, {
-        params: {
-          resource_id: resourceId,
-          filters: JSON.stringify({
-            site: 'Liberty',
-            parameter: 'OZONE',
-            datetime_est: timestamp
-          }),
-          limit: 1
-        },
-        timeout: 5000
-      });
-      
-      const ozoneData = ozoneResp.data as any;
-      if (ozoneData.success && ozoneData.result?.records && ozoneData.result.records.length > 0) {
-        ozoneValue = parseFloat(ozoneData.result.records[0].report_value);
-      }
-    } catch (err) {
-      // Ozone not critical
-    }
-    
-    console.log('✅ Got ACHD data from WPRDC:', {
-      pm25: pm25Value,
-      timestamp,
-      site: 'Liberty'
-    });
-    
-    return {
-      success: true,
-      data: [{
-        pm25: pm25Value,
-        so2: so2Value,
-        ozone: ozoneValue,
-        timestamp,
-        location: 'Liberty - Mon Valley (Official ACHD)',
-        source: 'Official ACHD Data (WPRDC)',
-        aqi: calculateAQI(pm25Value)
-      }],
-      source: 'WPRDC CKAN DataStore (Official ACHD)',
-      lastUpdated: new Date().toISOString()
-    };
+    // Legacy code below removed - unreachable after return statement above
     
   } catch (error: any) {
     console.error('Error fetching WPRDC data:', error.message);

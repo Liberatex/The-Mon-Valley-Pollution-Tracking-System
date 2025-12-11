@@ -1157,6 +1157,21 @@ export const fetchPurpleAirSensorData = functions.https.onRequest((req, res) => 
       const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes (was 10 minutes)
       const cacheDocRef = admin.firestore().collection('sensor_cache').doc('purpleair_sensors');
       
+      // TEST: Verify Firestore access by attempting a simple write
+      console.log('🔍 Testing Firestore access for cache...');
+      try {
+        await cacheDocRef.set({ test: true, timestamp: Date.now() }, { merge: true });
+        const testRead = await cacheDocRef.get();
+        console.log(`✅ Firestore access verified. Test write successful. Document exists: ${testRead.exists}`);
+      } catch (firestoreTestError: any) {
+        console.error('❌ CRITICAL: Firestore access test failed:', {
+          message: firestoreTestError.message,
+          code: firestoreTestError.code,
+          stack: firestoreTestError.stack
+        });
+        // Continue anyway - might be a permissions issue we can work around
+      }
+      
       try {
         const cacheDoc = await cacheDocRef.get();
         console.log('🔍 Cache check: exists=', cacheDoc.exists);
@@ -1427,24 +1442,49 @@ export const fetchPurpleAirSensorData = functions.https.onRequest((req, res) => 
       
       try {
         console.log(`💾 Attempting to write cache to Firestore: ${validSensors.length} sensors, timestamp: ${cacheData.timestamp}`);
-        await cacheDocRef.set(cacheData, { merge: false });
-        console.log(`✅ Successfully cached ${validSensors.length} sensors in Firestore (timestamp: ${cacheData.timestamp})`);
+        console.log(`💾 Cache document path: sensor_cache/purpleair_sensors`);
+        console.log(`💾 Cache data structure:`, {
+          hasSensors: !!cacheData.sensors,
+          sensorCount: cacheData.sensors?.length,
+          hasTimestamp: !!cacheData.timestamp,
+          hasSource: !!cacheData.source,
+          hasCount: !!cacheData.count
+        });
         
-        // Verify cache was written by reading it back
+        await cacheDocRef.set(cacheData, { merge: false });
+        console.log(`✅ Cache write completed (await finished)`);
+        
+        // Verify cache was written by reading it back immediately
+        console.log(`🔍 Verifying cache write...`);
         const verifyCache = await cacheDocRef.get();
         if (verifyCache.exists) {
           const verifyData = verifyCache.data();
-          console.log(`✅ Cache verification: Document exists with ${verifyData?.sensors?.length || 0} sensors`);
+          console.log(`✅ Cache verification SUCCESS: Document exists with ${verifyData?.sensors?.length || 0} sensors`);
+          console.log(`✅ Cache verification details:`, {
+            timestamp: verifyData?.timestamp,
+            source: verifyData?.source,
+            count: verifyData?.count,
+            sensorCount: verifyData?.sensors?.length
+          });
         } else {
-          console.error('❌ Cache verification failed: Document does not exist after write');
+          console.error('❌ Cache verification FAILED: Document does not exist after write');
+          console.error('❌ This indicates the cache write did not persist. Check Firestore permissions and function logs.');
         }
       } catch (cacheError: any) {
-        console.error('❌ Failed to cache sensor data:', {
+        console.error('═══════════════════════════════════════════════════════════');
+        console.error('❌ CRITICAL: CACHE WRITE FAILED');
+        console.error('═══════════════════════════════════════════════════════════');
+        console.error('Error details:', {
           message: cacheError.message,
           code: cacheError.code,
-          stack: cacheError.stack
+          stack: cacheError.stack,
+          errorType: cacheError.constructor?.name,
+          fullError: JSON.stringify(cacheError, Object.getOwnPropertyNames(cacheError))
         });
-        // Cache failure doesn't affect API response, but log it for debugging
+        console.error('Cache document path: sensor_cache/purpleair_sensors');
+        console.error('This error will NOT break the API response, but cache will not be available.');
+        console.error('═══════════════════════════════════════════════════════════');
+        // Cache failure doesn't affect API response, but log it prominently for debugging
       }
 
       return res.json({
@@ -1616,7 +1656,7 @@ export const fetchPurpleAirSensorData = functions.https.onRequest((req, res) => 
         message: error.message,
       });
 
-      res.status(statusCode).json({
+      return res.status(statusCode).json({
         success: false,
         error: errorMessage,
         message: error.message,

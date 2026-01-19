@@ -91,7 +91,54 @@ git clone git@github.com-mon-valley:Liberatex/The-Mon-Valley-Pollution-Tracking-
 
 **OR** (simpler) - just use the same key for all projects or let SSH automatically try all keys. Most people just add all their keys to the SSH agent and it works automatically.
 
-### Step 3: Clone the Repository
+### Step 3: Fix SSH Config (If You Get Errors)
+
+**If you get an error like "Bad configuration option: eval" or "Bad configuration option: ssh-add":**
+
+Your `~/.ssh/config` file has shell commands in it. SSH config files should only contain SSH configuration directives, not shell commands.
+
+**On Windows (PowerShell or Git Bash):**
+
+1. Open your SSH config file:
+   ```powershell
+   # In PowerShell
+   notepad $env:USERPROFILE\.ssh\config
+   
+   # Or in Git Bash
+   nano ~/.ssh/config
+   ```
+
+2. Remove any lines that contain shell commands like:
+   - `eval ...`
+   - `ssh-add ...`
+   - Any other shell commands
+
+3. Your config file should only contain SSH configuration like:
+   ```
+   Host github.com
+       HostName github.com
+       User git
+       IdentityFile ~/.ssh/id_ed25519_mon_valley
+   ```
+
+4. If you want to use multiple keys, use the format shown in Step 2 above.
+
+5. **OR** - Simplest fix: Just delete or rename the config file if you don't need it:
+   ```powershell
+   # Backup the bad config
+   mv $env:USERPROFILE\.ssh\config $env:USERPROFILE\.ssh\config.backup
+   ```
+
+6. Make sure your SSH key is added to the SSH agent:
+   ```powershell
+   # Start SSH agent (if not running)
+   Start-Service ssh-agent
+   
+   # Add your key
+   ssh-add $env:USERPROFILE\.ssh\id_ed25519_mon_valley
+   ```
+
+### Step 4: Clone the Repository
 
 On your Dell laptop, run:
 
@@ -112,14 +159,14 @@ git checkout feature/azure-dual-deployment
 git branch
 ```
 
-### Step 4: Set Up Environment Files
+### Step 5: Set Up Environment Files
 
 The project requires environment files. Check these files for setup instructions:
 - `SETUP_ENV_FILES.md`
 - `API_KEYS_SETUP_GUIDE.md`
 - `QUICK_API_SETUP.md`
 
-### Step 5: Install Dependencies
+### Step 6: Install Dependencies
 
 ```bash
 # Install root dependencies
@@ -136,7 +183,7 @@ npm install
 cd ..
 ```
 
-### Step 6: Verify Setup
+### Step 7: Verify Setup
 
 ```bash
 # Check git status

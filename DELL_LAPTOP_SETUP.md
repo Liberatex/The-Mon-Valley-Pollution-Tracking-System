@@ -57,6 +57,30 @@ Then add this new key to GitHub following Step 1 above.
 
 **Note:** You can store SSH keys for multiple projects in the same `~/.ssh/` folder. SSH supports multiple keys - just make sure each public key is added to GitHub.
 
+#### Important: Config File vs Key Files
+
+**SSH Config File:**
+- **MUST** be named exactly `config` (no extension, no other name)
+- Location: `~/.ssh/config` (or `C:\Users\YourName\.ssh\config` on Windows)
+- This is a special file that SSH automatically reads
+- Contains configuration directives (Host, HostName, IdentityFile, etc.)
+
+**SSH Key Files:**
+- **CAN** be named anything you want
+- Examples: `mon-valley-pollution-tracker_ssh_key`, `id_ed25519_mon_valley`, `my_key`, etc.
+- Usually come in pairs: `filename` (private key) and `filename.pub` (public key)
+- Location: `~/.ssh/` folder
+
+**Example:**
+```
+~/.ssh/
+  ├── config                                    ← MUST be named "config"
+  ├── mon-valley-pollution-tracker_ssh_key      ← Can be named anything
+  ├── mon-valley-pollution-tracker_ssh_key.pub  ← Can be named anything
+  ├── id_ed25519_other_project                 ← Can be named anything
+  └── id_ed25519_other_project.pub              ← Can be named anything
+```
+
 #### Optional: Using SSH Config for Multiple Projects
 
 If you want to use different SSH keys for different GitHub projects, create/edit `~/.ssh/config`:

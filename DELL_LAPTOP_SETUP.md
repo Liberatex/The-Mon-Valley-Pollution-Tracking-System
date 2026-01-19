@@ -121,46 +121,68 @@ git clone git@github.com-mon-valley:Liberatex/The-Mon-Valley-Pollution-Tracking-
 
 Your `~/.ssh/config` file has shell commands in it. SSH config files should only contain SSH configuration directives, not shell commands.
 
-**On Windows (PowerShell or Git Bash):**
+**QUICKEST FIX - On Windows (PowerShell):**
 
-1. Open your SSH config file:
-   ```powershell
-   # In PowerShell
-   notepad $env:USERPROFILE\.ssh\config
-   
-   # Or in Git Bash
-   nano ~/.ssh/config
-   ```
+**Option A: Delete the bad config file (if you don't need it):**
+```powershell
+# Backup and remove the bad config
+Copy-Item $env:USERPROFILE\.ssh\config $env:USERPROFILE\.ssh\config.backup
+Remove-Item $env:USERPROFILE\.ssh\config
 
-2. Remove any lines that contain shell commands like:
+# Now try cloning - SSH will work without a config file
+git clone git@github.com:Liberatex/The-Mon-Valley-Pollution-Tracking-System.git
+```
+
+**Option B: Create a clean config file from scratch:**
+```powershell
+# 1. Backup the bad config
+Copy-Item $env:USERPROFILE\.ssh\config $env:USERPROFILE\.ssh\config.backup
+
+# 2. Delete the bad config
+Remove-Item $env:USERPROFILE\.ssh\config
+
+# 3. Create a new clean config file (replace 'mon-valley-pollution-tracker_ssh_key' with your actual key name)
+@"
+Host github.com
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/mon-valley-pollution-tracker_ssh_key
+"@ | Out-File -FilePath $env:USERPROFILE\.ssh\config -Encoding utf8
+
+# 4. Now try cloning
+git clone git@github.com:Liberatex/The-Mon-Valley-Pollution-Tracking-System.git
+```
+
+**Option C: Manually edit the config file:**
+```powershell
+# Open the config file
+notepad $env:USERPROFILE\.ssh\config
+```
+
+Then:
+1. **Delete ALL lines** that contain:
    - `eval ...`
    - `ssh-add ...`
    - Any other shell commands
 
-3. Your config file should only contain SSH configuration like:
+2. **Replace with** (replace `mon-valley-pollution-tracker_ssh_key` with your actual key filename):
    ```
    Host github.com
        HostName github.com
        User git
-       IdentityFile ~/.ssh/id_ed25519_mon_valley
+       IdentityFile ~/.ssh/mon-valley-pollution-tracker_ssh_key
    ```
 
-4. If you want to use multiple keys, use the format shown in Step 2 above.
+3. Save and close
 
-5. **OR** - Simplest fix: Just delete or rename the config file if you don't need it:
-   ```powershell
-   # Backup the bad config
-   mv $env:USERPROFILE\.ssh\config $env:USERPROFILE\.ssh\config.backup
-   ```
+**After fixing, make sure your SSH key is added to the SSH agent:**
+```powershell
+# Start SSH agent (if not running)
+Start-Service ssh-agent
 
-6. Make sure your SSH key is added to the SSH agent:
-   ```powershell
-   # Start SSH agent (if not running)
-   Start-Service ssh-agent
-   
-   # Add your key
-   ssh-add $env:USERPROFILE\.ssh\id_ed25519_mon_valley
-   ```
+# Add your key (replace with your actual key name)
+ssh-add $env:USERPROFILE\.ssh\mon-valley-pollution-tracker_ssh_key
+```
 
 ### Step 4: Clone the Repository
 

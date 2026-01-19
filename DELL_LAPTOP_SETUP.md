@@ -55,6 +55,42 @@ ssh-add ~/.ssh/id_ed25519_dell_laptop
 
 Then add this new key to GitHub following Step 1 above.
 
+**Note:** You can store SSH keys for multiple projects in the same `~/.ssh/` folder. SSH supports multiple keys - just make sure each public key is added to GitHub.
+
+#### Optional: Using SSH Config for Multiple Projects
+
+If you want to use different SSH keys for different GitHub projects, create/edit `~/.ssh/config`:
+
+```bash
+# Edit SSH config
+nano ~/.ssh/config
+# or
+code ~/.ssh/config
+```
+
+Add entries like this:
+
+```
+# Other project
+Host github.com-other-project
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/id_ed25519_other_project
+
+# Mon Valley Project
+Host github.com-mon-valley
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/id_ed25519_mon_valley
+```
+
+Then clone using the specific host:
+```bash
+git clone git@github.com-mon-valley:Liberatex/The-Mon-Valley-Pollution-Tracking-System.git
+```
+
+**OR** (simpler) - just use the same key for all projects or let SSH automatically try all keys. Most people just add all their keys to the SSH agent and it works automatically.
+
 ### Step 3: Clone the Repository
 
 On your Dell laptop, run:

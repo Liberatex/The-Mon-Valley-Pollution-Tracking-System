@@ -121,7 +121,29 @@ git clone git@github.com-mon-valley:Liberatex/The-Mon-Valley-Pollution-Tracking-
 
 Your `~/.ssh/config` file has shell commands in it. SSH config files should only contain SSH configuration directives, not shell commands.
 
-**QUICKEST FIX - On Windows (PowerShell):**
+**QUICKEST FIX - Choose your terminal:**
+
+**If using Git Bash (error shows `/c/Users/liber/.ssh/config`):**
+
+```bash
+# 1. Navigate to .ssh directory
+cd ~/.ssh
+
+# 2. Backup the bad config
+cp config config.backup
+
+# 3. DELETE the bad config file completely
+rm config
+
+# 4. Verify it's gone
+ls -la config
+
+# 5. Now try cloning - SSH will work without a config file
+cd ~
+git clone git@github.com:Liberatex/The-Mon-Valley-Pollution-Tracking-System.git
+```
+
+**If using PowerShell:**
 
 **Option A: Delete the bad config file (if you don't need it):**
 ```powershell
@@ -129,11 +151,47 @@ Your `~/.ssh/config` file has shell commands in it. SSH config files should only
 Copy-Item $env:USERPROFILE\.ssh\config $env:USERPROFILE\.ssh\config.backup
 Remove-Item $env:USERPROFILE\.ssh\config
 
+# Verify it's gone
+Test-Path $env:USERPROFILE\.ssh\config
+
 # Now try cloning - SSH will work without a config file
 git clone git@github.com:Liberatex/The-Mon-Valley-Pollution-Tracking-System.git
 ```
 
 **Option B: Create a clean config file from scratch:**
+
+**If using Git Bash:**
+```bash
+# 1. Navigate to .ssh directory
+cd ~/.ssh
+
+# 2. Backup the bad config
+cp config config.backup
+
+# 3. Delete the bad config
+rm config
+
+# 4. Create a new clean config file
+cat > config << 'EOF'
+Host github.com
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/mon-valley-pollution-tracker_ssh_key
+EOF
+
+# 5. Verify the config file is clean
+cat config
+
+# 6. Add key to SSH agent
+eval "$(ssh-agent -s)"
+ssh-add ~/.ssh/mon-valley-pollution-tracker_ssh_key
+
+# 7. Now try cloning
+cd ~
+git clone git@github.com:Liberatex/The-Mon-Valley-Pollution-Tracking-System.git
+```
+
+**If using PowerShell:**
 ```powershell
 # 1. Backup the bad config
 Copy-Item $env:USERPROFILE\.ssh\config $env:USERPROFILE\.ssh\config.backup
@@ -141,7 +199,7 @@ Copy-Item $env:USERPROFILE\.ssh\config $env:USERPROFILE\.ssh\config.backup
 # 2. Delete the bad config
 Remove-Item $env:USERPROFILE\.ssh\config
 
-# 3. Create a new clean config file (replace 'mon-valley-pollution-tracker_ssh_key' with your actual key name)
+# 3. Create a new clean config file
 @"
 Host github.com
     HostName github.com
@@ -149,7 +207,14 @@ Host github.com
     IdentityFile ~/.ssh/mon-valley-pollution-tracker_ssh_key
 "@ | Out-File -FilePath $env:USERPROFILE\.ssh\config -Encoding utf8
 
-# 4. Now try cloning
+# 4. Verify the config file is clean
+Get-Content $env:USERPROFILE\.ssh\config
+
+# 5. Add key to SSH agent
+Start-Service ssh-agent
+ssh-add $env:USERPROFILE\.ssh\mon-valley-pollution-tracker_ssh_key
+
+# 6. Now try cloning
 git clone git@github.com:Liberatex/The-Mon-Valley-Pollution-Tracking-System.git
 ```
 

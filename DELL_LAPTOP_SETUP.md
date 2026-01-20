@@ -272,10 +272,49 @@ git branch
 
 ### Step 5: Set Up Environment Files
 
-The project requires environment files. Check these files for setup instructions:
+**✅ IMPORTANT: Environment files are backed up as `.env.example` files!**
+
+The project requires environment files. `.env.example` files have been committed to GitHub with all the required variables (with placeholder values).
+
+**Quick Setup:**
+
+**On Windows (PowerShell):**
+```powershell
+# Copy the example files to create your .env files
+Copy-Item frontend\.env.example frontend\.env
+Copy-Item functions\.env.example functions\.env
+```
+
+**On Git Bash:**
+```bash
+# Copy the example files to create your .env files
+cp frontend/.env.example frontend/.env
+cp functions/.env.example functions/.env
+```
+
+**Then edit the `.env` files** and replace the placeholder values with your actual API keys and configuration:
+
+1. **`frontend/.env`** - Add your:
+   - Firebase configuration (from Firebase Console)
+   - Mapbox access token
+   - OpenWeatherMap API key
+   - PurpleAir API key (optional)
+   - Other API keys as needed
+
+2. **`functions/.env`** - Add your:
+   - EPA AQS credentials (if using official ACHD data)
+   - OpenAQ API key
+   - OpenWeatherMap API key
+   - PurpleAir API key
+   - Admin secret (generate a strong random string)
+   - Other secrets as needed
+
+**For detailed instructions, see:**
 - `SETUP_ENV_FILES.md`
 - `API_KEYS_SETUP_GUIDE.md`
 - `QUICK_API_SETUP.md`
+
+**Note:** The actual `.env` files are in `.gitignore` and won't be committed (for security). Only the `.env.example` files are in the repository.
 
 ### Step 6: Install Dependencies
 
